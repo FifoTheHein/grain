@@ -101,37 +101,36 @@ class WorkItemPreview extends StatelessWidget {
                           style:
                               const TextStyle(fontWeight: FontWeight.w600),
                         ),
-                        Text(
-                          '#$workItemId · ${workItem!.state}',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: stateColor,
-                                  ),
-                        ),
-                        if (workItem!.createdByName != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              children: [
-                                _AvatarWidget(
-                                  name: workItem!.createdByName!,
-                                  imageUrl: workItem!.createdByAvatarUrl,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  workItem!.createdByName!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
+                        Row(
+                          children: [
+                            Text(
+                              '#$workItemId · ${workItem!.state}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: stateColor),
                             ),
-                          ),
+                            if (workItem!.createdByName != null) ...[
+                              const Spacer(),
+                              _AvatarWidget(
+                                name: workItem!.createdByName!,
+                                imageUrl: workItem!.createdByAvatarUrl,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                workItem!.createdByName!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
