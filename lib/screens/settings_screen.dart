@@ -287,10 +287,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: urlController,
                 decoration: const InputDecoration(
-                  labelText: 'Work Items Base URL',
+                  labelText: 'Project URL',
                   border: OutlineInputBorder(),
-                  hintText:
-                      'https://dev.azure.com/org/project/_workitems/edit/',
+                  hintText: 'https://dev.azure.com/org/project',
+                  helperText: '/_workitems/edit/{id} is appended automatically',
                 ),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Required' : null,

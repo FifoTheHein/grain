@@ -4,7 +4,8 @@ class AdoInstance {
 
   const AdoInstance({required this.label, required this.baseUrl});
 
-  String permalinkFor(String workItemId) => '$baseUrl$workItemId';
+  String permalinkFor(String workItemId) =>
+      '$baseUrl/_workitems/edit/$workItemId';
 
   Map<String, dynamic> toJson() => {'label': label, 'baseUrl': baseUrl};
 
