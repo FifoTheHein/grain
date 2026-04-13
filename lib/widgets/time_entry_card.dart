@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:web/web.dart' as web;
 import '../models/time_entry.dart';
 
 class TimeEntryCard extends StatelessWidget {
@@ -57,10 +57,7 @@ class TimeEntryCard extends StatelessWidget {
                   onTap: () {
                     final permalink = entry.externalReference!.permalink;
                     if (permalink != null) {
-                      launchUrl(
-                        Uri.parse(permalink),
-                        webOnlyWindowName: '_blank',
-                      );
+                      web.window.open(permalink, '_blank');
                     }
                   },
                   child: Row(
