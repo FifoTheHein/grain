@@ -54,6 +54,7 @@ class TimeEntry {
   final String? notes;
   final String projectName;
   final String taskName;
+  final String? userName;
   final ExternalReference? externalReference;
 
   const TimeEntry({
@@ -63,11 +64,13 @@ class TimeEntry {
     this.notes,
     required this.projectName,
     required this.taskName,
+    this.userName,
     this.externalReference,
   });
 
   factory TimeEntry.fromJson(Map<String, dynamic> json) {
     final ext = json['external_reference'] as Map<String, dynamic>?;
+    final user = json['user'] as Map<String, dynamic>?;
     return TimeEntry(
       id: json['id'] as int,
       spentDate: json['spent_date'] as String,
@@ -76,6 +79,7 @@ class TimeEntry {
       projectName:
           (json['project'] as Map<String, dynamic>)['name'] as String,
       taskName: (json['task'] as Map<String, dynamic>)['name'] as String,
+      userName: user?['name'] as String?,
       externalReference: ext == null
           ? null
           : ExternalReference(

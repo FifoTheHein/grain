@@ -17,6 +17,9 @@ class WorkItemPreview extends StatelessWidget {
   /// When provided the card opens this URL on tap.
   final String? permalink;
 
+  /// Harvest user who logged this entry, shown at the bottom of the card.
+  final String? loggedBy;
+
   const WorkItemPreview({
     super.key,
     required this.isLoading,
@@ -26,6 +29,7 @@ class WorkItemPreview extends StatelessWidget {
     required this.instance,
     this.showNoPat = true,
     this.permalink,
+    this.loggedBy,
   });
 
   @override
@@ -108,6 +112,18 @@ class WorkItemPreview extends StatelessWidget {
                                     color: stateColor,
                                   ),
                         ),
+                        if (loggedBy != null)
+                          Text(
+                            'Logged by $loggedBy',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
                       ],
                     ),
                   ),
