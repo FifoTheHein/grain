@@ -7,12 +7,14 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - **Project & task selection** — loads your assigned projects and tasks from the Harvest API, with cascading dropdowns
 - **Default project & task** — configure a default project and task in Settings so the form is pre-filled on load
 - **Hours & minutes input** — pick hours (0–24) and minutes (5-minute intervals) instead of typing decimals
-- **Azure DevOps linking** — optionally link a work item from two configured ADO instances:
-  - **Transport** (`codecollective1`)
-  - **TFN Project** (`agile-bridge`)
-  - Permalink is auto-constructed from the work item number; notes are automatically prefixed with e.g. `Transport Azure DevOps User Story #13483`
+- **Azure DevOps linking** — optionally link a work item to a time entry:
+  - Select an ADO instance (configurable in Settings) and enter a work item number
+  - Permalink is auto-constructed as `{projectUrl}/_workitems/edit/{id}`
+  - Notes are automatically prefixed, e.g. `Transport Azure DevOps User Story #13483 - your notes here`
+  - Work item links in the Recent tab are clickable and open in a new tab
 - **Daily entries view** — browse entries by day with prev/next navigation and a date picker
 - **8-hour progress bar** — visual indicator of daily progress toward the 8h goal, with overflow tracking
+- **Configurable settings** — all credentials and ADO instances are stored in browser `localStorage` and can be updated at runtime without recompiling
 
 ## Project Structure
 
@@ -20,13 +22,14 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 lib/
 ├── main.dart
 ├── config/
-│   └── app_config.dart          # credentials & ADO config (gitignored)
+│   └── app_config.dart              # credentials & default ADO instances (gitignored)
 ├── models/
 │   ├── project_assignment.dart
 │   └── time_entry.dart
 ├── services/
-│   └── harvest_service.dart     # Harvest API v2 calls
+│   └── harvest_service.dart         # Harvest API v2 calls
 ├── providers/
+│   ├── ado_instance_provider.dart   # ADO instances (localStorage)
 │   ├── assignment_provider.dart
 │   └── time_entry_provider.dart
 ├── screens/
@@ -61,14 +64,17 @@ class AppConfig {
   static const String userAgent = 'YourName (your@email.com)';
   static const String baseUrl = 'https://api.harvestapp.com/v2';
 
-  static const List<AdoInstance> adoInstances = [
+  // Default ADO instances — can be overridden at runtime in Settings
+  static const List<AdoInstance> defaultAdoInstances = [
     AdoInstance(
-      label: 'Transport',
-      baseUrl: 'https://dev.azure.com/your-org/Your-Project/_workitems/edit/',
+      label: 'My Project',
+      baseUrl: 'https://dev.azure.com/my-org/My-Project',
     ),
   ];
 }
 ```
+
+> **Note:** `/_workitems/edit/{id}` is appended automatically — only provide the project base URL.
 
 ### 3. Install dependencies & run
 
@@ -87,6 +93,14 @@ flutter build web --release
 
 Serve the `build/web` directory from any static host.
 
-## Runtime credential override
+## Settings
 
-Credentials can be changed at runtime via the **Settings** tab without recompiling. Values are stored in browser `localStorage` and take precedence over the compiled-in defaults.
+All settings persist in browser `localStorage` and take effect immediately without recompiling:
+
+| Setting | Description |
+|---|---|
+| API Token | Harvest personal access token |
+| Account ID | Harvest account ID |
+| Default Project | Pre-selected project on the Log Time screen |
+| Default Task | Pre-selected task for the default project |
+| ADO Instances | Add, edit, or remove Azure DevOps project links |
