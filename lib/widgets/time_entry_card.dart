@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/time_entry.dart';
 
 class TimeEntryCard extends StatelessWidget {
@@ -52,17 +53,30 @@ class TimeEntryCard extends StatelessWidget {
             if (hasAdoRef)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, size: 12),
-                    const SizedBox(width: 4),
-                    Text(
-                      'ADO #${entry.externalReference!.id}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                  ],
+                child: InkWell(
+                  onTap: () {
+                    final permalink = entry.externalReference!.permalink;
+                    if (permalink != null) {
+                      launchUrl(Uri.parse(permalink),
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_new,
+                          size: 12,
+                          color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'ADO #${entry.externalReference!.id}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],
