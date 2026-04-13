@@ -98,45 +98,58 @@ class WorkItemPreview extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          workItem!.title,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600),
+                        // Top row: title + creator
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                workItem!.title,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (workItem!.createdByName != null) ...[
+                              const SizedBox(width: 8),
+                              _AvatarWidget(
+                                name: workItem!.createdByName!,
+                                imageUrl: workItem!.createdByAvatarUrl,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                workItem!.createdByName!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ],
                         ),
-                        Text(
-                          '#$workItemId · ${workItem!.state}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: stateColor),
+                        // Bottom row: id·state + link icon
+                        Row(
+                          children: [
+                            Text(
+                              '#$workItemId · ${workItem!.state}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: stateColor),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.open_in_new,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ),
-                  if (workItem!.createdByName != null) ...[
-                    const SizedBox(width: 8),
-                    _AvatarWidget(
-                      name: workItem!.createdByName!,
-                      imageUrl: workItem!.createdByAvatarUrl,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      workItem!.createdByName!,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Icon(
-                    Icons.open_in_new,
-                    size: 14,
-                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ],
               ),
