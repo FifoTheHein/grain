@@ -42,7 +42,9 @@ class _AdoInstanceList extends StatelessWidget {
             leading: const Icon(Icons.link),
             title: Text(instance.label),
             subtitle: Text(
-              instance.baseUrl,
+              instance.pat != null
+                  ? '${instance.baseUrl}  •  PAT configured'
+                  : instance.baseUrl,
               style: Theme.of(context).textTheme.bodySmall,
               overflow: TextOverflow.ellipsis,
             ),
@@ -262,63 +264,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
         TextEditingController(text: existing?.label ?? '');
     final urlController =
         TextEditingController(text: existing?.baseUrl ?? '');
+    final patController =
+        TextEditingController(text: existing?.pat ?? '');
     final formKey = GlobalKey<FormState>();
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(existing == null ? 'Add ADO Instance' : 'Edit ADO Instance'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: labelController,
-                decoration: const InputDecoration(
-                  labelText: 'Label',
-                  border: OutlineInputBorder(),
-                  hintText: 'Transport',
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setDialogState) {
+          bool obscurePat = true;
+          return AlertDialog(
+            title: Text(
+                existing == null ? 'Add ADO Instance' : 'Edit ADO Instance'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: labelController,
+                    decoration: const InputDecoration(
+                      labelText: 'Label',
+                      border: OutlineInputBorder(),
+                      hintText: 'Transport',
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: urlController,
+                    decoration: const InputDecoration(
+                      labelText: 'Project URL',
+                      border: OutlineInputBorder(),
+                      hintText: 'https://dev.azure.com/org/project',
+                      helperText:
+                          '/_workitems/edit/{id} is appended automatically',
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  StatefulBuilder(
+                    builder: (_, setPATState) => TextFormField(
+                      controller: patController,
+                      obscureText: obscurePat,
+                      decoration: InputDecoration(
+                        labelText: 'Personal Access Token (PAT)',
+                        border: const OutlineInputBorder(),
+                        helperText: 'Needs Read access to Work Items',
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePat
+                              ? Icons.visibility
+                              : Icons.visibility_off),
+                          onPressed: () =>
+                              setPATState(() => obscurePat = !obscurePat),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: urlController,
-                decoration: const InputDecoration(
-                  labelText: 'Project URL',
-                  border: OutlineInputBorder(),
-                  hintText: 'https://dev.azure.com/org/project',
-                  helperText: '/_workitems/edit/{id} is appended automatically',
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx2, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.pop(ctx2, true);
+                  }
+                },
+                child: const Text('Save'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(ctx, true);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+          );
+        },
       ),
     );
+
+    patController.dispose();
 
     if (confirmed == true && context.mounted) {
       final instance = AdoInstance(
         label: labelController.text.trim(),
         baseUrl: urlController.text.trim(),
+        pat: patController.text.trim().isEmpty
+            ? null
+            : patController.text.trim(),
       );
       final provider = context.read<AdoInstanceProvider>();
       if (index == null) {

@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
+import '../models/ado_work_item.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/time_entry_provider.dart';
+import '../services/ado_service.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/error_banner.dart';
 
@@ -26,14 +29,63 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   DateTime _selectedDate = DateTime.now();
   AdoInstance? _selectedAdoInstance;
   bool _hasAdoRef = false;
+  Timer? _debounce;
+  AdoWorkItem? _previewItem;
+  bool _previewLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _workItemIdController.addListener(_onWorkItemChanged);
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _hoursController.dispose();
     _minutesController.dispose();
     _notesController.dispose();
     _workItemIdController.dispose();
     super.dispose();
+  }
+
+  void _onWorkItemChanged() {
+    final text = _workItemIdController.text.trim();
+    if (text.isEmpty || _selectedAdoInstance == null) {
+      _debounce?.cancel();
+      setState(() {
+        _previewItem = null;
+        _previewLoading = false;
+      });
+      return;
+    }
+
+    final adoService = context.read<AdoService>();
+    final cached = adoService.getCached(_selectedAdoInstance!.label, text);
+    if (cached != null) {
+      setState(() {
+        _previewItem = cached;
+        _previewLoading = false;
+      });
+      return;
+    }
+
+    _debounce?.cancel();
+    setState(() {
+      _previewItem = null;
+      _previewLoading = true;
+    });
+    _debounce = Timer(const Duration(milliseconds: 600), () async {
+      if (!mounted) return;
+      final instance = _selectedAdoInstance;
+      if (instance == null) return;
+      await adoService.fetchWorkItem(instance, text);
+      if (!mounted) return;
+      setState(() {
+        _previewItem = adoService.getCached(instance.label, text);
+        _previewLoading = false;
+      });
+    });
   }
 
   Future<void> _pickDate(BuildContext context) async {
@@ -275,10 +327,11 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                       ? {_selectedAdoInstance!}
                       : {},
                   emptySelectionAllowed: true,
-                  onSelectionChanged: (selection) => setState(
-                    () => _selectedAdoInstance =
-                        selection.isEmpty ? null : selection.first,
-                  ),
+                  onSelectionChanged: (selection) {
+                    setState(() => _selectedAdoInstance =
+                        selection.isEmpty ? null : selection.first);
+                    _onWorkItemChanged();
+                  },
                 );
               }),
               const SizedBox(height: 8),
@@ -303,18 +356,14 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 4),
-              if (_workItemIdController.text.isNotEmpty &&
-                  _selectedAdoInstance != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: Text(
-                    _selectedAdoInstance!
-                        .permalinkFor(_workItemIdController.text.trim()),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
+              const SizedBox(height: 8),
+              if (_selectedAdoInstance != null)
+                _WorkItemPreview(
+                  isLoading: _previewLoading,
+                  workItem: _previewItem,
+                  hasPat: _selectedAdoInstance!.pat != null,
+                  workItemId: _workItemIdController.text.trim(),
+                  instance: _selectedAdoInstance!,
                 ),
             ],
 
@@ -345,5 +394,130 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         ),
       ),
     );
+  }
+}
+
+class _WorkItemPreview extends StatelessWidget {
+  final bool isLoading;
+  final AdoWorkItem? workItem;
+  final bool hasPat;
+  final String workItemId;
+  final AdoInstance instance;
+
+  const _WorkItemPreview({
+    required this.isLoading,
+    required this.workItem,
+    required this.hasPat,
+    required this.workItemId,
+    required this.instance,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasPat) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          'Configure a PAT in Settings to see work item details.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      );
+    }
+
+    if (workItemId.isEmpty) return const SizedBox.shrink();
+
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text('Looking up work item...'),
+          ],
+        ),
+      );
+    }
+
+    if (workItem != null) {
+      final stateColor = _stateColor(context, workItem!.state);
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(top: 3, right: 8),
+              decoration: BoxDecoration(
+                color: stateColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    workItem!.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    workItem!.state,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: stateColor,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Fallback: show permalink
+    final permalink = instance.permalinkFor(workItemId);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        permalink,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Color _stateColor(BuildContext context, String state) {
+    final s = state.toLowerCase();
+    if (s.contains('done') || s.contains('closed') || s.contains('resolved')) {
+      return Colors.green;
+    }
+    if (s.contains('active') ||
+        s.contains('in progress') ||
+        s.contains('committed')) {
+      return Colors.blue;
+    }
+    if (s.contains('removed') || s.contains('cut')) {
+      return Colors.grey;
+    }
+    return Theme.of(context).colorScheme.secondary;
   }
 }

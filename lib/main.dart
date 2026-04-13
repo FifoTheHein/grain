@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/ado_instance_provider.dart';
 import 'providers/assignment_provider.dart';
+import 'services/ado_service.dart';
 import 'providers/time_entry_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/harvest_service.dart';
@@ -18,6 +19,9 @@ class HarvestApp extends StatelessWidget {
     final service = HarvestService();
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => AdoService(),
+        ),
         ChangeNotifierProvider(
           create: (_) => AdoInstanceProvider()..load(),
         ),

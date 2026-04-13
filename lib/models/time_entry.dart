@@ -1,17 +1,23 @@
 class AdoInstance {
   final String label;
   final String baseUrl;
+  final String? pat;
 
-  const AdoInstance({required this.label, required this.baseUrl});
+  const AdoInstance({required this.label, required this.baseUrl, this.pat});
 
   String permalinkFor(String workItemId) =>
       '$baseUrl/_workitems/edit/$workItemId';
 
-  Map<String, dynamic> toJson() => {'label': label, 'baseUrl': baseUrl};
+  Map<String, dynamic> toJson() => {
+        'label': label,
+        'baseUrl': baseUrl,
+        if (pat != null) 'pat': pat,
+      };
 
   factory AdoInstance.fromJson(Map<String, dynamic> json) => AdoInstance(
         label: json['label'] as String,
         baseUrl: json['baseUrl'] as String,
+        pat: json['pat'] as String?,
       );
 }
 

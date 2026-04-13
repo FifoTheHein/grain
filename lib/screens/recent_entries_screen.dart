@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../providers/ado_instance_provider.dart';
 import '../providers/time_entry_provider.dart';
+import '../services/ado_service.dart';
 import '../widgets/time_entry_card.dart';
 import '../widgets/error_banner.dart';
 
@@ -13,6 +15,33 @@ class RecentEntriesScreen extends StatefulWidget {
 }
 
 class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
+  TimeEntryProvider? _timeEntryProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<TimeEntryProvider>();
+    if (provider != _timeEntryProvider) {
+      _timeEntryProvider?.removeListener(_onEntriesChanged);
+      _timeEntryProvider = provider;
+      _timeEntryProvider!.addListener(_onEntriesChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timeEntryProvider?.removeListener(_onEntriesChanged);
+    super.dispose();
+  }
+
+  void _onEntriesChanged() {
+    final provider = _timeEntryProvider;
+    if (provider == null || provider.isLoading) return;
+    final adoService = context.read<AdoService>();
+    final instances = context.read<AdoInstanceProvider>().instances;
+    adoService.prefetchForEntries(provider.entries, instances);
+  }
+
   Future<void> _pickDate(BuildContext context) async {
     final provider = context.read<TimeEntryProvider>();
     final picked = await showDatePicker(
