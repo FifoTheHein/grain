@@ -1,5 +1,7 @@
 # Harvest Tracker
 
+[![Claude Code Review](https://github.com/FifoTheHein/harvest-tracker/actions/workflows/claude-code-review.yml/badge.svg)](https://github.com/FifoTheHein/harvest-tracker/actions/workflows/claude-code-review.yml)
+
 A personal Flutter web app for logging time entries to [Harvest](https://www.getharvest.com/) directly from the browser, with first-class Azure DevOps integration.
 
 ## Features
