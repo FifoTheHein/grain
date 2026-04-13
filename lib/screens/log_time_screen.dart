@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/time_entry.dart';
+import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../widgets/project_task_selector.dart';
@@ -260,22 +261,26 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               const SizedBox(height: 12),
 
               // ADO instance selector
-              SegmentedButton<AdoInstance>(
-                segments: AppConfig.adoInstances
-                    .map((instance) => ButtonSegment<AdoInstance>(
-                          value: instance,
-                          label: Text(instance.label),
-                        ))
-                    .toList(),
-                selected: _selectedAdoInstance != null
-                    ? {_selectedAdoInstance!}
-                    : {},
-                emptySelectionAllowed: true,
-                onSelectionChanged: (selection) => setState(
-                  () => _selectedAdoInstance =
-                      selection.isEmpty ? null : selection.first,
-                ),
-              ),
+              Builder(builder: (context) {
+                final adoInstances =
+                    context.watch<AdoInstanceProvider>().instances;
+                return SegmentedButton<AdoInstance>(
+                  segments: adoInstances
+                      .map((instance) => ButtonSegment<AdoInstance>(
+                            value: instance,
+                            label: Text(instance.label),
+                          ))
+                      .toList(),
+                  selected: _selectedAdoInstance != null
+                      ? {_selectedAdoInstance!}
+                      : {},
+                  emptySelectionAllowed: true,
+                  onSelectionChanged: (selection) => setState(
+                    () => _selectedAdoInstance =
+                        selection.isEmpty ? null : selection.first,
+                  ),
+                );
+              }),
               const SizedBox(height: 8),
 
               TextFormField(

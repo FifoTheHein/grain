@@ -5,6 +5,13 @@ class AdoInstance {
   const AdoInstance({required this.label, required this.baseUrl});
 
   String permalinkFor(String workItemId) => '$baseUrl$workItemId';
+
+  Map<String, dynamic> toJson() => {'label': label, 'baseUrl': baseUrl};
+
+  factory AdoInstance.fromJson(Map<String, dynamic> json) => AdoInstance(
+        label: json['label'] as String,
+        baseUrl: json['baseUrl'] as String,
+      );
 }
 
 class ExternalReference {
