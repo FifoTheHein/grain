@@ -81,15 +81,17 @@ class WorkItemPreview extends StatelessWidget {
                 ),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: stateColor,
-                      shape: BoxShape.circle,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3, right: 8),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: stateColor,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -101,39 +103,36 @@ class WorkItemPreview extends StatelessWidget {
                           style:
                               const TextStyle(fontWeight: FontWeight.w600),
                         ),
-                        Row(
-                          children: [
-                            Text(
-                              '#$workItemId · ${workItem!.state}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: stateColor),
-                            ),
-                            if (workItem!.createdByName != null) ...[
-                              const Spacer(),
-                              _AvatarWidget(
-                                name: workItem!.createdByName!,
-                                imageUrl: workItem!.createdByAvatarUrl,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                workItem!.createdByName!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
-                          ],
+                        Text(
+                          '#$workItemId · ${workItem!.state}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: stateColor),
                         ),
                       ],
                     ),
                   ),
+                  if (workItem!.createdByName != null) ...[
+                    const SizedBox(width: 8),
+                    _AvatarWidget(
+                      name: workItem!.createdByName!,
+                      imageUrl: workItem!.createdByAvatarUrl,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      workItem!.createdByName!,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Icon(
                     Icons.open_in_new,
                     size: 14,
