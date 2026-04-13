@@ -102,7 +102,7 @@ class WorkItemPreview extends StatelessWidget {
                               const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          workItem!.state,
+                          '#$workItemId · ${workItem!.state}',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: stateColor,

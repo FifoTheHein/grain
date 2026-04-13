@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:web/web.dart' as web;
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../services/ado_service.dart';
@@ -69,18 +70,49 @@ class TimeEntryCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-            if (hasAdoRef && matchingInstance != null && adoService != null)
-              WorkItemPreview(
-                isLoading:
-                    adoService.isPending(matchingInstance.label, workItemId),
-                workItem:
-                    adoService.getCached(matchingInstance.label, workItemId),
-                hasPat: matchingInstance.pat != null,
-                workItemId: workItemId,
-                instance: matchingInstance,
-                permalink: entry.externalReference!.permalink,
-                showNoPat: false,
-              ),
+            if (hasAdoRef) ...[
+              if (matchingInstance != null && adoService != null)
+                WorkItemPreview(
+                  isLoading: adoService.isPending(
+                      matchingInstance.label, workItemId),
+                  workItem: adoService.getCached(
+                      matchingInstance.label, workItemId),
+                  hasPat: matchingInstance.pat != null,
+                  workItemId: workItemId,
+                  instance: matchingInstance,
+                  permalink: entry.externalReference!.permalink,
+                  showNoPat: false,
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: InkWell(
+                    onTap: () {
+                      final p = entry.externalReference!.permalink;
+                      if (p != null) web.window.open(p, '_blank');
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.open_in_new,
+                            size: 12,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'ADO #$workItemId',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ],
         ),
         isThreeLine: (entry.notes != null && entry.notes!.isNotEmpty) ||
