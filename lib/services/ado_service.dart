@@ -14,6 +14,9 @@ class AdoService extends ChangeNotifier {
   AdoWorkItem? getCached(String instanceLabel, String workItemId) =>
       _cache['$instanceLabel:$workItemId'];
 
+  bool isPending(String instanceLabel, String workItemId) =>
+      _pending.contains('$instanceLabel:$workItemId');
+
   Future<void> fetchWorkItem(AdoInstance instance, String workItemId) async {
     final trimmed = workItemId.trim();
     if (trimmed.isEmpty) return;
