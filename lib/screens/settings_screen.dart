@@ -345,15 +345,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
+    final labelText = labelController.text.trim();
+    final urlText = urlController.text.trim();
+    final patText = patController.text.trim();
+    labelController.dispose();
+    urlController.dispose();
     patController.dispose();
 
     if (confirmed == true && context.mounted) {
       final instance = AdoInstance(
-        label: labelController.text.trim(),
-        baseUrl: urlController.text.trim(),
-        pat: patController.text.trim().isEmpty
-            ? null
-            : patController.text.trim(),
+        label: labelText,
+        baseUrl: urlText,
+        pat: patText.isEmpty ? null : patText,
       );
       final provider = context.read<AdoInstanceProvider>();
       if (index == null) {
@@ -451,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ADO Instances',
+                'Azure DevOps Instances',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               TextButton.icon(
