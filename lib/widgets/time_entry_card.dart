@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:web/web.dart' as web;
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
+import '../screens/edit_time_screen.dart';
 import '../services/ado_service.dart';
 import 'work_item_preview.dart';
 
@@ -130,6 +131,15 @@ class TimeEntryCard extends StatelessWidget {
         ),
         isThreeLine: (entry.notes != null && entry.notes!.isNotEmpty) ||
             hasAdoRef,
+        trailing: IconButton(
+          icon: const Icon(Icons.edit_outlined),
+          tooltip: 'Edit entry',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => EditTimeScreen(entry: entry),
+            ),
+          ),
+        ),
       ),
     );
   }

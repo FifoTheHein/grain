@@ -37,6 +37,29 @@ class TimeEntryProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> update(int entryId, UpdateTimeEntryRequest request) async {
+    isSubmitting = true;
+    error = null;
+    successMessage = null;
+    notifyListeners();
+    try {
+      final updated = await _service.updateTimeEntry(entryId, request);
+      final idx = entries.indexWhere((e) => e.id == entryId);
+      if (idx != -1) entries[idx] = updated;
+      successMessage = 'Updated ${updated.projectName}';
+      return true;
+    } on HarvestApiException catch (e) {
+      error = '${e.statusCode}: ${e.message}';
+      return false;
+    } catch (e) {
+      error = e.toString();
+      return false;
+    } finally {
+      isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> submit(CreateTimeEntryRequest request) async {
     isSubmitting = true;
     error = null;

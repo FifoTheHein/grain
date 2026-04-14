@@ -24,6 +24,7 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
 - **Work item cards** — each ADO-linked entry shows a clickable card with title, `#id · state` (colour-coded dot), and the work item creator's avatar and display name
 - **8-hour progress bar** — visual indicator of daily progress toward the 8 h goal, with overflow tracking
+- **Edit entries** — tap the pencil icon on any card to open a pre-filled edit form; changes are saved via `PATCH` and reflected immediately in the list
 
 ### Settings
 - All credentials and ADO instances persist in browser `localStorage` and take effect immediately without recompiling
@@ -48,6 +49,7 @@ lib/
 │   └── time_entry_provider.dart
 ├── screens/
 │   ├── home_screen.dart
+│   ├── edit_time_screen.dart           # pre-filled edit form (pushes as new route)
 │   ├── log_time_screen.dart
 │   ├── recent_entries_screen.dart
 │   └── settings_screen.dart

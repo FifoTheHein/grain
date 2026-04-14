@@ -88,4 +88,16 @@ class HarvestService {
     return TimeEntry.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);
   }
+
+  Future<TimeEntry> updateTimeEntry(
+      int id, UpdateTimeEntryRequest request) async {
+    final response = await _client.patch(
+      _uri('/time_entries/$id'),
+      headers: await _headers(),
+      body: jsonEncode(request.toJson()),
+    );
+    _assertOk(response);
+    return TimeEntry.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
 }

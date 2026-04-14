@@ -49,6 +49,28 @@ class AssignmentProvider extends ChangeNotifier {
     }
   }
 
+  void selectProjectById(int projectId, {int? taskId}) {
+    if (projects.isEmpty) return;
+    final project = projects.firstWhere((p) => p.id == projectId,
+        orElse: () => projects.first);
+    selectedProject = project;
+    if (taskId != null) {
+      selectedTask = project.tasks.firstWhere((t) => t.id == taskId,
+          orElse: () =>
+              project.tasks.isNotEmpty ? project.tasks.first : project.tasks.first);
+    } else {
+      selectedTask = project.tasks.isNotEmpty ? project.tasks.first : null;
+    }
+    notifyListeners();
+  }
+
+  /// Restores a previously saved selection (used by EditTimeScreen on dispose).
+  void restoreSelection(HarvestProject? project, HarvestTask? task) {
+    selectedProject = project;
+    selectedTask = task;
+    notifyListeners();
+  }
+
   void selectProject(HarvestProject project) {
     selectedProject = project;
     selectedTask =

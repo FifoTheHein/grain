@@ -52,7 +52,9 @@ class TimeEntry {
   final String spentDate;
   final double hours;
   final String? notes;
+  final int projectId;
   final String projectName;
+  final int taskId;
   final String taskName;
   final String? userName;
   final ExternalReference? externalReference;
@@ -62,7 +64,9 @@ class TimeEntry {
     required this.spentDate,
     required this.hours,
     this.notes,
+    required this.projectId,
     required this.projectName,
+    required this.taskId,
     required this.taskName,
     this.userName,
     this.externalReference,
@@ -71,14 +75,17 @@ class TimeEntry {
   factory TimeEntry.fromJson(Map<String, dynamic> json) {
     final ext = json['external_reference'] as Map<String, dynamic>?;
     final user = json['user'] as Map<String, dynamic>?;
+    final project = json['project'] as Map<String, dynamic>;
+    final task = json['task'] as Map<String, dynamic>;
     return TimeEntry(
       id: json['id'] as int,
       spentDate: json['spent_date'] as String,
       hours: (json['hours'] as num).toDouble(),
       notes: json['notes'] as String?,
-      projectName:
-          (json['project'] as Map<String, dynamic>)['name'] as String,
-      taskName: (json['task'] as Map<String, dynamic>)['name'] as String,
+      projectId: project['id'] as int,
+      projectName: project['name'] as String,
+      taskId: task['id'] as int,
+      taskName: task['name'] as String,
       userName: user?['name'] as String?,
       externalReference: ext == null
           ? null
@@ -111,6 +118,34 @@ class CreateTimeEntryRequest {
 
   Map<String, dynamic> toJson() => {
         'user_id': userId,
+        'project_id': projectId,
+        'task_id': taskId,
+        'spent_date': spentDate,
+        'hours': hours,
+        if (notes != null && notes!.isNotEmpty) 'notes': notes,
+        if (externalReference != null)
+          'external_reference': externalReference!.toJson(),
+      };
+}
+
+class UpdateTimeEntryRequest {
+  final int projectId;
+  final int taskId;
+  final String spentDate;
+  final double hours;
+  final String? notes;
+  final ExternalReference? externalReference;
+
+  const UpdateTimeEntryRequest({
+    required this.projectId,
+    required this.taskId,
+    required this.spentDate,
+    required this.hours,
+    this.notes,
+    this.externalReference,
+  });
+
+  Map<String, dynamic> toJson() => {
         'project_id': projectId,
         'task_id': taskId,
         'spent_date': spentDate,
