@@ -32,7 +32,7 @@ class TimeEntryCard extends StatelessWidget {
       final instances = context.watch<AdoInstanceProvider>().instances;
       final permalink = entry.externalReference!.permalink ?? '';
       for (final inst in instances) {
-        if (permalink.startsWith(inst.baseUrl)) {
+        if (inst.matchesPermalink(permalink)) {
           matchingInstance = inst;
           break;
         }
@@ -40,7 +40,9 @@ class TimeEntryCard extends StatelessWidget {
     }
 
     final adoService = hasAdoRef ? context.watch<AdoService>() : null;
-    final workItemId = entry.externalReference?.id ?? '';
+    final rawRefId = entry.externalReference?.id ?? '';
+    final workItemId =
+        rawRefId.isNotEmpty ? AdoService.parseWorkItemId(rawRefId) : '';
 
     // Self-trigger fetch when the card renders without cached data.
     // Handles race where AdoInstanceProvider hasn't finished loading

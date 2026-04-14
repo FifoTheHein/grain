@@ -72,11 +72,12 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     // ADO reference
     if (entry.externalReference != null) {
       _hasAdoRef = true;
-      _workItemIdController.text = entry.externalReference!.id;
+      _workItemIdController.text =
+          AdoService.parseWorkItemId(entry.externalReference!.id);
       final permalink = entry.externalReference!.permalink ?? '';
       final instances = context.read<AdoInstanceProvider>().instances;
       for (final inst in instances) {
-        if (permalink.startsWith(inst.baseUrl)) {
+        if (inst.matchesPermalink(permalink)) {
           _selectedAdoInstance = inst;
           break;
         }
@@ -190,8 +191,25 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
         _workItemIdController.text.trim().isNotEmpty &&
         _selectedAdoInstance != null) {
       final workItemId = _workItemIdController.text.trim();
+      final adoService = context.read<AdoService>();
+      final projectGuid =
+          await adoService.fetchProjectGuid(_selectedAdoInstance!);
+
+      // Use the work item type from the preview, or from the existing reference, or fallback
+      var workItemType = _previewItem?.workItemType;
+      if (workItemType == null && widget.entry.externalReference != null) {
+        // Try to parse the type from the existing external reference ID
+        workItemType =
+            AdoService.parseWorkItemType(widget.entry.externalReference!.id);
+      }
+      workItemType ??= 'Work Item';
+
+      final refId = projectGuid != null
+          ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
+          : workItemId; // fallback to simple ID if GUID unavailable
+
       extRef = ExternalReference(
-        id: workItemId,
+        id: refId,
         permalink: _selectedAdoInstance!.permalinkFor(workItemId),
       );
     }

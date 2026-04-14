@@ -8,6 +8,23 @@ class AdoInstance {
   String permalinkFor(String workItemId) =>
       '$baseUrl/_workitems/edit/$workItemId';
 
+  /// Returns true if [permalink] belongs to this ADO instance.
+  /// Tries an exact baseUrl prefix first, then falls back to matching on the
+  /// organisation segment only — native Harvest entries use the project GUID
+  /// in the permalink rather than the project name.
+  bool matchesPermalink(String permalink) {
+    if (permalink.startsWith(baseUrl)) return true;
+    try {
+      final uri = Uri.parse(baseUrl);
+      final segs = uri.pathSegments;
+      if (segs.isNotEmpty) {
+        final orgPrefix = '${uri.scheme}://${uri.host}/${segs[0]}/';
+        return permalink.startsWith(orgPrefix);
+      }
+    } catch (_) {}
+    return false;
+  }
+
   Map<String, dynamic> toJson() => {
         'label': label,
         'baseUrl': baseUrl,

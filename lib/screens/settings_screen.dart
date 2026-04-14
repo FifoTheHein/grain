@@ -382,6 +382,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _clearCache(BuildContext context) async {
+    context.read<TimeEntryProvider>().entries.clear();
+    await context.read<TimeEntryProvider>().loadRecentEntries();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cache cleared — refreshed time entries'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -474,6 +486,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () => _save(context),
             icon: const Icon(Icons.save),
             label: const Text('Save & Reload'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _clearCache(context),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Clear Cache & Refresh'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(

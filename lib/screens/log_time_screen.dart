@@ -124,8 +124,17 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         _workItemIdController.text.trim().isNotEmpty &&
         _selectedAdoInstance != null) {
       final workItemId = _workItemIdController.text.trim();
+      final adoService = context.read<AdoService>();
+      final projectGuid =
+          await adoService.fetchProjectGuid(_selectedAdoInstance!);
+      final workItemType = _previewItem?.workItemType ?? 'Work Item';
+
+      final refId = projectGuid != null
+          ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
+          : workItemId; // fallback to simple ID if GUID unavailable
+
       extRef = ExternalReference(
-        id: workItemId,
+        id: refId,
         permalink: _selectedAdoInstance!.permalinkFor(workItemId),
       );
     }
@@ -133,8 +142,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     final userNotes = _notesController.text.trim();
     String? notes;
     if (extRef != null) {
+      final workItemId = _workItemIdController.text.trim();
+      final workItemType = _previewItem?.workItemType ?? 'Work Item';
       final prefix =
-          '${_selectedAdoInstance!.label} Azure DevOps User Story #${extRef.id}';
+          '${_selectedAdoInstance!.label} Azure DevOps $workItemType #$workItemId';
       notes = userNotes.isEmpty ? prefix : '$prefix - $userNotes';
     } else if (userNotes.isNotEmpty) {
       notes = userNotes;

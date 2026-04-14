@@ -4,6 +4,7 @@ class AdoWorkItem {
   final String state;
   final String? createdByName;
   final String? createdByAvatarUrl;
+  final String? workItemType;
 
   const AdoWorkItem({
     required this.id,
@@ -11,6 +12,7 @@ class AdoWorkItem {
     required this.state,
     this.createdByName,
     this.createdByAvatarUrl,
+    this.workItemType,
   });
 
   factory AdoWorkItem.fromJson(String id, Map<String, dynamic> json) {
@@ -22,6 +24,7 @@ class AdoWorkItem {
       state: fields['System.State'] as String? ?? '',
       createdByName: createdBy?['displayName'] as String?,
       createdByAvatarUrl: createdBy?['imageUrl'] as String?,
+      workItemType: fields['System.WorkItemType'] as String?,
     );
   }
 }
