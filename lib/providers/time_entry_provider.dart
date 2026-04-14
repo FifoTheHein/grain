@@ -124,7 +124,7 @@ class TimeEntryProvider extends ChangeNotifier {
 
     for (final entry in candidates) {
       final ref = entry.externalReference!;
-      final workItemId = ref.id; // already numeric — no parsing needed
+      final workItemId = AdoService.parseWorkItemId(ref.id);
       final permalink = ref.permalink ?? '';
 
       AdoInstance? instance;

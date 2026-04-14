@@ -388,19 +388,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final adoService = context.read<AdoService>();
     final instances = context.read<AdoInstanceProvider>().instances;
 
-    final candidateCount = entryProvider.entries
-        .where((e) =>
-            e.externalReference != null &&
-            !e.externalReference!.id.startsWith('AzureDevOps_'))
-        .length;
-
-    if (candidateCount == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No entries need migration')),
-      );
-      return;
-    }
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -563,16 +550,25 @@ class _MigrationProgressDialogState extends State<_MigrationProgressDialog> {
   @override
   void initState() {
     super.initState();
-    widget.stream.listen((progress) {
-      if (mounted) {
-        setState(() {
-          done = progress.done;
-          total = progress.total;
-          failed = progress.failed;
-          finished = progress.total > 0 && progress.done == progress.total;
-        });
-      }
-    });
+    widget.stream.listen(
+      (progress) {
+        if (mounted) {
+          setState(() {
+            done = progress.done;
+            total = progress.total;
+            failed = progress.failed;
+            finished = progress.total > 0 && progress.done == progress.total;
+          });
+        }
+      },
+      onDone: () {
+        if (mounted) {
+          setState(() {
+            finished = true;
+          });
+        }
+      },
+    );
   }
 
   @override
@@ -588,11 +584,13 @@ class _MigrationProgressDialogState extends State<_MigrationProgressDialog> {
             ),
           const SizedBox(height: 12),
           Text(
-            total == 0
+            !finished && total == 0
                 ? 'Starting...'
-                : finished
-                    ? 'Done: ${total - failed} updated, $failed failed'
-                    : '$done / $total',
+                : finished && total == 0
+                    ? 'No entries needed migration'
+                    : finished
+                        ? 'Done: ${total - failed} updated, $failed failed'
+                        : '$done / $total',
           ),
         ],
       ),
