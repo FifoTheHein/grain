@@ -174,23 +174,23 @@ class WorkItemChip extends StatelessWidget {
                             ),
                           ],
                           const Spacer(),
-                          if (initials != null) ...[
-                            Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: HarvestTokens.brandTint,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                initials,
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: HarvestTokens.brand600,
-                                ),
-                              ),
+                          if (cached!.createdByAvatarUrl != null || initials != null) ...[
+                            CircleAvatar(
+                              radius: 8,
+                              backgroundColor: HarvestTokens.brandTint,
+                              backgroundImage: cached!.createdByAvatarUrl != null
+                                  ? NetworkImage(cached!.createdByAvatarUrl!)
+                                  : null,
+                              child: cached!.createdByAvatarUrl == null
+                                  ? Text(
+                                      initials ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: HarvestTokens.brand600,
+                                      ),
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 4),
                           ],
