@@ -604,8 +604,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   DropdownMenuItem(value: 30, child: Text('Every 30 minutes')),
                   DropdownMenuItem(value: 60, child: Text('Every hour')),
                 ],
-                onChanged: (v) =>
-                    setState(() => _autoRefreshIntervalMinutes = v!),
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() => _autoRefreshIntervalMinutes = v);
+                },
               ),
             ),
           ),
