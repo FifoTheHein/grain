@@ -138,7 +138,14 @@ class TimeEntryProvider extends ChangeNotifier {
       // locally-applied change when its response eventually arrives.
       _loadRecentEntriesRequestId++;
       final idx = entries.indexWhere((e) => e.id == entryId);
-      if (idx != -1) entries[idx] = updated;
+      if (idx != -1) {
+        final old = entries[idx];
+        weeklyTotals[old.spentDate] =
+            ((weeklyTotals[old.spentDate] ?? 0) - old.hours).clamp(0.0, double.infinity);
+        weeklyTotals[updated.spentDate] =
+            (weeklyTotals[updated.spentDate] ?? 0) + updated.hours;
+        entries[idx] = updated;
+      }
       successMessage = 'Updated ${updated.projectName}';
       return true;
     } on HarvestApiException catch (e) {
@@ -309,6 +316,11 @@ class TimeEntryProvider extends ChangeNotifier {
       // Invalidate any concurrent silent refresh so it doesn't overwrite the
       // deletion when its response eventually arrives.
       _loadRecentEntriesRequestId++;
+      final removed = entries.firstWhere((e) => e.id == entryId,
+          orElse: () => throw StateError('not found'));
+      weeklyTotals[removed.spentDate] =
+          ((weeklyTotals[removed.spentDate] ?? 0) - removed.hours)
+              .clamp(0.0, double.infinity);
       entries.removeWhere((e) => e.id == entryId);
       successMessage = 'Entry deleted';
       return true;
@@ -334,6 +346,8 @@ class TimeEntryProvider extends ChangeNotifier {
       // Invalidate any concurrent silent refresh so it doesn't overwrite our
       // locally-inserted entry when its response eventually arrives.
       _loadRecentEntriesRequestId++;
+      weeklyTotals[entry.spentDate] =
+          (weeklyTotals[entry.spentDate] ?? 0) + entry.hours;
       // Only add to the visible list if it matches the currently viewed date
       if (entry.spentDate ==
           DateFormat('yyyy-MM-dd').format(selectedDate)) {
