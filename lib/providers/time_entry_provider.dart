@@ -138,7 +138,20 @@ class TimeEntryProvider extends ChangeNotifier {
       // locally-applied change when its response eventually arrives.
       _loadRecentEntriesRequestId++;
       final idx = entries.indexWhere((e) => e.id == entryId);
-      if (idx != -1) entries[idx] = updated;
+      if (idx != -1) {
+        final old = entries[idx];
+        weeklyTotals[old.spentDate] =
+            ((weeklyTotals[old.spentDate] ?? 0) - old.hours)
+                .clamp(0.0, double.infinity)
+                .toDouble();
+        weeklyTotals[updated.spentDate] =
+            (weeklyTotals[updated.spentDate] ?? 0) + updated.hours;
+        if (updated.spentDate == old.spentDate) {
+          entries[idx] = updated;
+        } else {
+          entries.removeAt(idx);
+        }
+      }
       successMessage = 'Updated ${updated.projectName}';
       return true;
     } on HarvestApiException catch (e) {
@@ -309,7 +322,15 @@ class TimeEntryProvider extends ChangeNotifier {
       // Invalidate any concurrent silent refresh so it doesn't overwrite the
       // deletion when its response eventually arrives.
       _loadRecentEntriesRequestId++;
-      entries.removeWhere((e) => e.id == entryId);
+      final removedIndex = entries.indexWhere((e) => e.id == entryId);
+      if (removedIndex != -1) {
+        final removed = entries[removedIndex];
+        weeklyTotals[removed.spentDate] =
+            ((weeklyTotals[removed.spentDate] ?? 0) - removed.hours)
+                .clamp(0.0, double.infinity)
+                .toDouble();
+        entries.removeAt(removedIndex);
+      }
       successMessage = 'Entry deleted';
       return true;
     } on HarvestApiException catch (e) {
@@ -334,6 +355,8 @@ class TimeEntryProvider extends ChangeNotifier {
       // Invalidate any concurrent silent refresh so it doesn't overwrite our
       // locally-inserted entry when its response eventually arrives.
       _loadRecentEntriesRequestId++;
+      weeklyTotals[entry.spentDate] =
+          (weeklyTotals[entry.spentDate] ?? 0) + entry.hours;
       // Only add to the visible list if it matches the currently viewed date
       if (entry.spentDate ==
           DateFormat('yyyy-MM-dd').format(selectedDate)) {

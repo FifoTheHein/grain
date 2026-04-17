@@ -34,6 +34,11 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   AdoWorkItem? _previewItem;
   bool _previewLoading = false;
 
+  bool _useStartEndTime = false;
+  TimeOfDay _startTime = const TimeOfDay(hour: 8, minute: 30);
+  TimeOfDay _endTime = const TimeOfDay(hour: 9, minute: 30);
+  bool _showEndBeforeStartError = false;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +53,80 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     _notesController.dispose();
     _workItemIdController.dispose();
     super.dispose();
+  }
+
+  int _timeOfDayToMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+  TimeOfDay _addMinutes(TimeOfDay t, int minutes) {
+    final total = (_timeOfDayToMinutes(t) + minutes).clamp(0, 23 * 60 + 59).toInt();
+    return TimeOfDay(hour: total ~/ 60, minute: total % 60);
+  }
+
+  void _initStartEndDefaults() {
+    final entries = context.read<TimeEntryProvider>().entries;
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final totalMinutes = entries
+        .where((e) => e.spentDate == dateStr)
+        .fold<double>(0, (sum, e) => sum + e.hours * 60)
+        .round();
+
+    final startTotalMinutes = (8 * 60 + 30 + totalMinutes).clamp(0, 23 * 60 + 59).toInt();
+    final start = TimeOfDay(hour: startTotalMinutes ~/ 60, minute: startTotalMinutes % 60);
+
+    final endCandidate = _addMinutes(start, 60);
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final selectedStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final TimeOfDay end;
+    if (selectedStr == todayStr) {
+      final now = TimeOfDay.now();
+      end = _timeOfDayToMinutes(endCandidate) <= _timeOfDayToMinutes(now)
+          ? endCandidate
+          : now;
+    } else {
+      end = endCandidate;
+    }
+
+    setState(() {
+      _startTime = start;
+      _endTime = end;
+      _showEndBeforeStartError = false;
+    });
+  }
+
+  Future<void> _pickTime(bool isStart) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _startTime : _endTime,
+      builder: (ctx, child) {
+        if (child == null) {
+          return const SizedBox.shrink();
+        }
+        return MediaQuery(
+          data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+          child: child,
+        );
+      },
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _startTime = picked;
+        final endCandidate = _addMinutes(picked, 60);
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final selectedStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+        if (selectedStr == todayStr) {
+          final now = TimeOfDay.now();
+          _endTime = _timeOfDayToMinutes(endCandidate) <= _timeOfDayToMinutes(now)
+              ? endCandidate
+              : now;
+        } else {
+          _endTime = endCandidate;
+        }
+      } else {
+        _endTime = picked;
+      }
+      _showEndBeforeStartError = false;
+    });
   }
 
   void _onWorkItemChanged() {
@@ -96,15 +175,30 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+      if (_useStartEndTime) _initStartEndDefaults();
+    }
   }
 
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
-    if (int.parse(_hoursController.text) == 0 &&
-        int.parse(_minutesController.text) == 0) {
-      setState(() {}); // trigger the inline error to show
-      return;
+
+    double hours;
+    if (_useStartEndTime) {
+      if (_timeOfDayToMinutes(_endTime) <= _timeOfDayToMinutes(_startTime)) {
+        setState(() => _showEndBeforeStartError = true);
+        return;
+      }
+      hours = (_timeOfDayToMinutes(_endTime) - _timeOfDayToMinutes(_startTime)) / 60.0;
+    } else {
+      if (int.parse(_hoursController.text) == 0 &&
+          int.parse(_minutesController.text) == 0) {
+        setState(() {}); // trigger inline error
+        return;
+      }
+      hours = int.parse(_hoursController.text) +
+          int.parse(_minutesController.text) / 60.0;
     }
 
     final assignments = context.read<AssignmentProvider>();
@@ -131,7 +225,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
       final refId = projectGuid != null
           ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
-          : workItemId; // fallback to simple ID if GUID unavailable
+          : workItemId;
 
       extRef = ExternalReference(
         id: refId,
@@ -156,8 +250,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       projectId: project.id,
       taskId: task.id,
       spentDate: DateFormat('yyyy-MM-dd').format(_selectedDate),
-      hours: int.parse(_hoursController.text) +
-          int.parse(_minutesController.text) / 60.0,
+      hours: hours,
       notes: notes,
       externalReference: extRef,
     );
@@ -178,8 +271,27 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         _selectedDate = DateTime.now();
         _hasAdoRef = false;
         _selectedAdoInstance = null;
+        _showEndBeforeStartError = false;
       });
+      if (_useStartEndTime) _initStartEndDefaults();
     }
+  }
+
+  Widget _buildTimeTile(String label, TimeOfDay time, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.access_time),
+        ),
+        child: Text(
+          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+        ),
+      ),
+    );
   }
 
   @override
@@ -219,73 +331,131 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Hours + Minutes
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Hours',
-                      border: OutlineInputBorder(),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _hoursController.text,
-                        isDense: true,
-                        items: List.generate(25, (i) => '$i')
-                            .map((h) => DropdownMenuItem(
-                                  value: h,
-                                  child: Text(h),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _hoursController.text = v!),
-                      ),
-                    ),
-                  ),
+            // Mode toggle
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  label: Text('Duration'),
+                  icon: Icon(Icons.timer_outlined),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Minutes',
-                      border: OutlineInputBorder(),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _minutesController.text,
-                        isDense: true,
-                        items: List.generate(12, (i) => '${i * 5}')
-                            .map((m) => DropdownMenuItem(
-                                  value: m,
-                                  child: Text(m),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _minutesController.text = v!),
-                      ),
-                    ),
-                  ),
+                ButtonSegment(
+                  value: true,
+                  label: Text('Start & End'),
+                  icon: Icon(Icons.schedule),
                 ),
               ],
+              selected: {_useStartEndTime},
+              onSelectionChanged: (s) {
+                setState(() {
+                  _useStartEndTime = s.first;
+                  _showEndBeforeStartError = false;
+                });
+                if (_useStartEndTime) _initStartEndDefaults();
+              },
             ),
-            if (int.parse(_hoursController.text) == 0 &&
-                int.parse(_minutesController.text) == 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 6, left: 12),
-                child: Text(
-                  'Duration must be greater than 0',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
+            const SizedBox(height: 16),
+
+            // Duration inputs or start/end time pickers
+            if (!_useStartEndTime) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Hours',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _hoursController.text,
+                          isDense: true,
+                          items: List.generate(25, (i) => '$i')
+                              .map((h) => DropdownMenuItem(
+                                    value: h,
+                                    child: Text(h),
+                                  ))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _hoursController.text = v!),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Minutes',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _minutesController.text,
+                          isDense: true,
+                          items: List.generate(12, (i) => '${i * 5}')
+                              .map((m) => DropdownMenuItem(
+                                    value: m,
+                                    child: Text(m),
+                                  ))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _minutesController.text = v!),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (int.parse(_hoursController.text) == 0 &&
+                  int.parse(_minutesController.text) == 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 12),
+                  child: Text(
+                    'Duration must be greater than 0',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTimeTile(
+                      'Start',
+                      _startTime,
+                      () => _pickTime(true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTimeTile(
+                      'End',
+                      _endTime,
+                      () => _pickTime(false),
+                    ),
+                  ),
+                ],
               ),
+              if (_showEndBeforeStartError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 12),
+                  child: Text(
+                    'End time must be after start time',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
             const SizedBox(height: 16),
 
             // Notes
@@ -324,7 +494,6 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
             if (_hasAdoRef) ...[
               const SizedBox(height: 12),
 
-              // ADO instance selector
               Builder(builder: (context) {
                 final adoInstances =
                     context.watch<AdoInstanceProvider>().instances;
