@@ -29,8 +29,11 @@ class HarvestApp extends StatelessWidget {
           create: (_) => AssignmentProvider(service)..load(),
         ),
         ChangeNotifierProvider(
-          create: (_) =>
-              TimeEntryProvider(service)..loadRecentEntries()..startAutoRefresh(),
+          create: (_) {
+            final provider = TimeEntryProvider(service);
+            provider.loadRecentEntries().then((_) => provider.startAutoRefresh());
+            return provider;
+          },
         ),
       ],
       child: MaterialApp(
