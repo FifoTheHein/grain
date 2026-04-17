@@ -141,10 +141,16 @@ class TimeEntryProvider extends ChangeNotifier {
       if (idx != -1) {
         final old = entries[idx];
         weeklyTotals[old.spentDate] =
-            ((weeklyTotals[old.spentDate] ?? 0) - old.hours).clamp(0.0, double.infinity);
+            ((weeklyTotals[old.spentDate] ?? 0) - old.hours)
+                .clamp(0.0, double.infinity)
+                .toDouble();
         weeklyTotals[updated.spentDate] =
             (weeklyTotals[updated.spentDate] ?? 0) + updated.hours;
-        entries[idx] = updated;
+        if (updated.spentDate == old.spentDate) {
+          entries[idx] = updated;
+        } else {
+          entries.removeAt(idx);
+        }
       }
       successMessage = 'Updated ${updated.projectName}';
       return true;
@@ -321,7 +327,8 @@ class TimeEntryProvider extends ChangeNotifier {
         final removed = entries[removedIndex];
         weeklyTotals[removed.spentDate] =
             ((weeklyTotals[removed.spentDate] ?? 0) - removed.hours)
-                .clamp(0.0, double.infinity);
+                .clamp(0.0, double.infinity)
+                .toDouble();
         entries.removeAt(removedIndex);
       }
       successMessage = 'Entry deleted';

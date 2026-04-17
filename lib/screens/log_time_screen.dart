@@ -58,7 +58,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   int _timeOfDayToMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
   TimeOfDay _addMinutes(TimeOfDay t, int minutes) {
-    final total = (_timeOfDayToMinutes(t) + minutes).clamp(0, 23 * 60 + 59);
+    final total = (_timeOfDayToMinutes(t) + minutes).clamp(0, 23 * 60 + 59).toInt();
     return TimeOfDay(hour: total ~/ 60, minute: total % 60);
   }
 
@@ -70,14 +70,21 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         .fold<double>(0, (sum, e) => sum + e.hours * 60)
         .round();
 
-    final startTotalMinutes = (8 * 60 + 30 + totalMinutes).clamp(0, 23 * 60 + 59);
+    final startTotalMinutes = (8 * 60 + 30 + totalMinutes).clamp(0, 23 * 60 + 59).toInt();
     final start = TimeOfDay(hour: startTotalMinutes ~/ 60, minute: startTotalMinutes % 60);
 
     final endCandidate = _addMinutes(start, 60);
-    final now = TimeOfDay.now();
-    final end = _timeOfDayToMinutes(endCandidate) <= _timeOfDayToMinutes(now)
-        ? endCandidate
-        : now;
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final selectedStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final TimeOfDay end;
+    if (selectedStr == todayStr) {
+      final now = TimeOfDay.now();
+      end = _timeOfDayToMinutes(endCandidate) <= _timeOfDayToMinutes(now)
+          ? endCandidate
+          : now;
+    } else {
+      end = endCandidate;
+    }
 
     setState(() {
       _startTime = start;
@@ -105,10 +112,16 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       if (isStart) {
         _startTime = picked;
         final endCandidate = _addMinutes(picked, 60);
-        final now = TimeOfDay.now();
-        _endTime = _timeOfDayToMinutes(endCandidate) <= _timeOfDayToMinutes(now)
-            ? endCandidate
-            : now;
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final selectedStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+        if (selectedStr == todayStr) {
+          final now = TimeOfDay.now();
+          _endTime = _timeOfDayToMinutes(endCandidate) <= _timeOfDayToMinutes(now)
+              ? endCandidate
+              : now;
+        } else {
+          _endTime = endCandidate;
+        }
       } else {
         _endTime = picked;
       }
