@@ -300,6 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _obscureToken = true;
   int? _defaultProjectId;
   int? _defaultTaskId;
+  int _autoRefreshIntervalMinutes = 15;
 
   @override
   void initState() {
@@ -323,6 +324,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           prefs.getString('harvest_account_id') ?? AppConfig.defaultAccountId;
       _defaultProjectId = prefs.getInt('default_project_id');
       _defaultTaskId = prefs.getInt('default_task_id');
+      _autoRefreshIntervalMinutes =
+          prefs.getInt('auto_refresh_interval_minutes') ?? 15;
     });
   }
 
@@ -342,11 +345,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await prefs.remove('default_task_id');
     }
 
+    await prefs.setInt(
+        'auto_refresh_interval_minutes', _autoRefreshIntervalMinutes);
+
     if (!context.mounted) return;
 
-    // Reload data with new credentials
+    // Reload data with new credentials and apply new refresh interval
     context.read<AssignmentProvider>().load();
     context.read<TimeEntryProvider>().loadRecentEntries();
+    context
+        .read<TimeEntryProvider>()
+        .setRefreshInterval(_autoRefreshIntervalMinutes);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -468,11 +477,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.remove('harvest_account_id');
     await prefs.remove('default_project_id');
     await prefs.remove('default_task_id');
+    await prefs.remove('auto_refresh_interval_minutes');
     setState(() {
       _tokenController.text = AppConfig.defaultToken;
       _accountIdController.text = AppConfig.defaultAccountId;
       _defaultProjectId = null;
       _defaultTaskId = null;
+      _autoRefreshIntervalMinutes = 15;
     });
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -567,6 +578,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           Text(
             'Pre-selected on the Log Time screen when the app loads.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          Text(
+            'Background Refresh',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Refresh interval',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _autoRefreshIntervalMinutes,
+                isDense: true,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(value: 5,  child: Text('Every 5 minutes')),
+                  DropdownMenuItem(value: 15, child: Text('Every 15 minutes')),
+                  DropdownMenuItem(value: 30, child: Text('Every 30 minutes')),
+                  DropdownMenuItem(value: 60, child: Text('Every hour')),
+                ],
+                onChanged: (v) =>
+                    setState(() => _autoRefreshIntervalMinutes = v!),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Silently re-fetches the current week in the background. Takes effect after Save.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 24),

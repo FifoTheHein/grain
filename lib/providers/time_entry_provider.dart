@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/time_entry.dart';
 import '../services/ado_service.dart';
 import '../services/harvest_service.dart';
@@ -17,17 +19,28 @@ class TimeEntryProvider extends ChangeNotifier {
   String? successMessage;
   int _loadRecentEntriesRequestId = 0;
 
+  Timer? _refreshTimer;
+  int refreshIntervalMinutes = 15;
+  static const _kRefreshKey = 'auto_refresh_interval_minutes';
+
   DateTime selectedDate = DateTime.now();
 
-  Future<void> loadRecentEntries({DateTime? date}) async {
+  Future<void> loadRecentEntries({DateTime? date, bool silent = false}) async {
+    // Don't start a silent refresh while a submit/update/delete is in progress.
+    if (silent && isSubmitting) return;
+
     final requestId = ++_loadRecentEntriesRequestId;
     final targetDate = date ?? selectedDate;
     selectedDate = targetDate;
-    isLoading = true;
-    error = null;
-    entries = [];
-    weeklyTotals = {};
-    notifyListeners();
+
+    if (!silent) {
+      isLoading = true;
+      error = null;
+      entries = [];
+      weeklyTotals = {};
+      notifyListeners();
+    }
+
     try {
       final fmt = DateFormat('yyyy-MM-dd');
       final dayOfWeek = targetDate.weekday; // 1=Mon, 7=Sun
@@ -54,15 +67,47 @@ class TimeEntryProvider extends ChangeNotifier {
       entries.sort((a, b) => b.spentDate.compareTo(a.spentDate));
     } on HarvestApiException catch (e) {
       if (requestId != _loadRecentEntriesRequestId) return;
-      error = '${e.statusCode}: ${e.message}';
+      if (!silent) error = '${e.statusCode}: ${e.message}';
     } catch (e) {
       if (requestId != _loadRecentEntriesRequestId) return;
-      error = e.toString();
+      if (!silent) error = e.toString();
     } finally {
-      if (requestId != _loadRecentEntriesRequestId) return;
-      isLoading = false;
-      notifyListeners();
+      if (requestId == _loadRecentEntriesRequestId) {
+        if (!silent) isLoading = false;
+        notifyListeners();
+      }
     }
+  }
+
+  /// Reads the persisted interval and starts the background refresh timer.
+  /// Call once after the initial [loadRecentEntries] in main.dart.
+  Future<void> startAutoRefresh() async {
+    final prefs = await SharedPreferences.getInstance();
+    refreshIntervalMinutes = prefs.getInt(_kRefreshKey) ?? 15;
+    _restartTimer();
+  }
+
+  /// Updates the interval, persists it, and restarts the timer immediately.
+  Future<void> setRefreshInterval(int minutes) async {
+    refreshIntervalMinutes = minutes;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kRefreshKey, minutes);
+    _restartTimer();
+    notifyListeners();
+  }
+
+  void _restartTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(
+      Duration(minutes: refreshIntervalMinutes),
+      (_) => loadRecentEntries(silent: true),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<bool> update(int entryId, UpdateTimeEntryRequest request) async {
@@ -72,6 +117,9 @@ class TimeEntryProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final updated = await _service.updateTimeEntry(entryId, request);
+      // Invalidate any concurrent silent refresh so it doesn't overwrite our
+      // locally-applied change when its response eventually arrives.
+      _loadRecentEntriesRequestId++;
       final idx = entries.indexWhere((e) => e.id == entryId);
       if (idx != -1) entries[idx] = updated;
       successMessage = 'Updated ${updated.projectName}';
@@ -241,6 +289,9 @@ class TimeEntryProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _service.deleteTimeEntry(entryId);
+      // Invalidate any concurrent silent refresh so it doesn't overwrite the
+      // deletion when its response eventually arrives.
+      _loadRecentEntriesRequestId++;
       entries.removeWhere((e) => e.id == entryId);
       successMessage = 'Entry deleted';
       return true;
@@ -263,6 +314,9 @@ class TimeEntryProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final entry = await _service.createTimeEntry(request);
+      // Invalidate any concurrent silent refresh so it doesn't overwrite our
+      // locally-inserted entry when its response eventually arrives.
+      _loadRecentEntriesRequestId++;
       // Only add to the visible list if it matches the currently viewed date
       if (entry.spentDate ==
           DateFormat('yyyy-MM-dd').format(selectedDate)) {
