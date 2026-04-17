@@ -316,12 +316,14 @@ class TimeEntryProvider extends ChangeNotifier {
       // Invalidate any concurrent silent refresh so it doesn't overwrite the
       // deletion when its response eventually arrives.
       _loadRecentEntriesRequestId++;
-      final removed = entries.firstWhere((e) => e.id == entryId,
-          orElse: () => throw StateError('not found'));
-      weeklyTotals[removed.spentDate] =
-          ((weeklyTotals[removed.spentDate] ?? 0) - removed.hours)
-              .clamp(0.0, double.infinity);
-      entries.removeWhere((e) => e.id == entryId);
+      final removedIndex = entries.indexWhere((e) => e.id == entryId);
+      if (removedIndex != -1) {
+        final removed = entries[removedIndex];
+        weeklyTotals[removed.spentDate] =
+            ((weeklyTotals[removed.spentDate] ?? 0) - removed.hours)
+                .clamp(0.0, double.infinity);
+        entries.removeAt(removedIndex);
+      }
       successMessage = 'Entry deleted';
       return true;
     } on HarvestApiException catch (e) {
