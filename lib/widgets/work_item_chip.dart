@@ -33,8 +33,11 @@ class WorkItemChip extends StatelessWidget {
     return HarvestTokens.stateNew;
   }
 
+  bool get _canOpen => permalink != null && permalink!.trim().isNotEmpty;
+
   void _open() {
-    if (permalink != null) web.window.open(permalink!, '_blank');
+    if (!_canOpen) return;
+    web.window.open(permalink!, '_blank');
   }
 
   String? _initials(String? name) {
