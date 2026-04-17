@@ -25,6 +25,8 @@ class TimeEntryProvider extends ChangeNotifier {
     selectedDate = targetDate;
     isLoading = true;
     error = null;
+    entries = [];
+    weeklyTotals = {};
     notifyListeners();
     try {
       final fmt = DateFormat('yyyy-MM-dd');
