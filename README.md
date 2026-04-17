@@ -22,14 +22,22 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 
 ### Recent Entries
 - **Default landing screen** — the app opens directly on today's entries
+- **Weekly summary strip** — a compact Mon–Sun strip above the entries list shows each day's total hours and the week total, matching the native Harvest app; tap any day to navigate to it; the selected day is highlighted
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
 - **Work item cards** — each ADO-linked entry shows a clickable card with title, `#id · state` (colour-coded dot), and the work item creator's avatar and display name
 - **8-hour progress bar** — visual indicator of daily progress toward the 8 h goal, with overflow tracking
 - **Edit entries** — tap the pencil icon on any card to open a pre-filled edit form; changes are saved via `PATCH` and reflected immediately in the list; editing non-ADO fields (hours, notes, date) preserves the existing ADO link exactly as-is
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation; the entry is removed from Harvest and from the local list immediately
 
+### Background Auto-refresh
+- Entries logged externally (native Harvest app, web) appear automatically without a manual refresh
+- Refresh interval is configurable in Settings: 5 min, 15 min, 30 min, or 1 hour (default 15 min)
+- Refreshes are silent — no spinner or interruption while you're actively using the app
+- Skipped automatically if a submit, update, or delete is in progress to prevent conflicts
+
 ### Settings
 - All credentials and ADO instances persist in browser `localStorage` and take effect immediately without recompiling
+- **Background Refresh** — configure how often the app silently re-fetches the current week's entries
 - **Clear Cache & Refresh** — force-reloads time entries from the Harvest API
 - **Migrate ADO References** — upgrades current-week entries from plain numeric external reference IDs to the correct native composite format; also repairs entries saved with the wrong GUID or a corrupted ID from an earlier migration run; scans the past 28 days for native Harvest entries to learn the correct GUID even when all recent entries were app-created
 
@@ -110,7 +118,8 @@ Then open `http://localhost:8080` in Chrome.
 ### 4. Build for production
 
 ```bash
-flutter build web --release
+# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /Harvest/ to a Windows path
+MSYS_NO_PATHCONV=1 flutter build web --release --base-href /Harvest/ --pwa-strategy=none
 ```
 
 Serve the `build/web` directory from any static host.
@@ -125,6 +134,7 @@ All settings persist in browser `localStorage`:
 | Account ID               | Harvest account ID                                                                               |
 | Default Project          | Pre-selected project on the Log Time screen                                                      |
 | Default Task             | Pre-selected task for the default project                                                        |
+| Background Refresh       | How often the app silently re-fetches the current week (5 / 15 / 30 / 60 min; default 15 min)  |
 | ADO Instances            | Add, edit, or remove Azure DevOps project URLs                                                   |
 | PAT (per ADO)            | Personal Access Token for each ADO instance — enables work item fetch                            |
 | Harvest GUID (per ADO)   | The Harvest connection GUID, shown per instance with green/orange status; editable manually when auto-detection has not worked |
