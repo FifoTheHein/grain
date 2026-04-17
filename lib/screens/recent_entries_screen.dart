@@ -450,8 +450,9 @@ class _WeekSummaryStrip extends StatelessWidget {
   Widget _buildEmphasized(
       BuildContext context, List<_DayData> days, double weekTotal) {
     const dailyGoal = 8.0;
-    final weeklyGoal =
-        context.read<ProjectCategoryProvider>().weeklyGoalHours;
+    final weeklyGoal = context.select<ProjectCategoryProvider, double>(
+      (provider) => provider.weeklyGoalHours,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
