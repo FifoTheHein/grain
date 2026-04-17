@@ -176,7 +176,7 @@ class WorkItemChip extends StatelessWidget {
                           const Spacer(),
                           if (cached!.createdByAvatarUrl != null || initials != null) ...[
                             CircleAvatar(
-                              radius: 8,
+                              radius: 11,
                               backgroundColor: HarvestTokens.brandTint,
                               backgroundImage: cached!.createdByAvatarUrl != null
                                   ? NetworkImage(cached!.createdByAvatarUrl!)
