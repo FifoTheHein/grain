@@ -90,10 +90,15 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: isStart ? _startTime : _endTime,
-      builder: (ctx, child) => MediaQuery(
-        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
+      builder: (ctx, child) {
+        if (child == null) {
+          return const SizedBox.shrink();
+        }
+        return MediaQuery(
+          data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+          child: child,
+        );
+      },
     );
     if (picked == null) return;
     setState(() {
