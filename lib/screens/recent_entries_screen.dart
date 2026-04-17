@@ -127,8 +127,20 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
           selectedDate: provider.selectedDate,
           weeklyTotals: provider.weeklyTotals,
           isLoading: provider.isLoading,
-          onDayTap: (date) =>
-              context.read<TimeEntryProvider>().loadRecentEntries(date: date),
+          onDayTap: (date) {
+            final tappedDate = DateTime(date.year, date.month, date.day);
+            final selectedDate = DateTime(
+              provider.selectedDate.year,
+              provider.selectedDate.month,
+              provider.selectedDate.day,
+            );
+
+            if (provider.isLoading || tappedDate == selectedDate) {
+              return;
+            }
+
+            context.read<TimeEntryProvider>().loadRecentEntries(date: date);
+          },
         ),
         const Divider(height: 1),
 
