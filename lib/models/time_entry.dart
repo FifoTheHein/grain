@@ -75,6 +75,7 @@ class TimeEntry {
   final String taskName;
   final String? userName;
   final ExternalReference? externalReference;
+  final String? createdAt;
 
   const TimeEntry({
     required this.id,
@@ -87,6 +88,7 @@ class TimeEntry {
     required this.taskName,
     this.userName,
     this.externalReference,
+    this.createdAt,
   });
 
   factory TimeEntry.fromJson(Map<String, dynamic> json) {
@@ -110,6 +112,7 @@ class TimeEntry {
               id: ext['id'] as String,
               permalink: ext['permalink'] as String?,
             ),
+      createdAt: json['created_at'] as String?,
     );
   }
 }
