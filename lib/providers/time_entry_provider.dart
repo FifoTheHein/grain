@@ -21,6 +21,8 @@ class TimeEntryProvider extends ChangeNotifier {
 
   Timer? _refreshTimer;
   static const int _defaultRefreshIntervalMinutes = 15;
+  static const _exceptionToStringText = 'Exception';
+  static const _nullToStringText = 'null';
   int refreshIntervalMinutes = _defaultRefreshIntervalMinutes;
   static const _kRefreshKey = 'auto_refresh_interval_minutes';
 
@@ -33,6 +35,10 @@ class TimeEntryProvider extends ChangeNotifier {
 
   DateTime selectedDate = DateTime.now();
 
+  /// Maps non-HTTP failures to a stable, user-friendly message.
+  ///
+  /// Timeout and invalid-response failures get dedicated messages, while
+  /// unknown exceptions fall back to a safe generic message.
   String _errorMessageFrom(Object error) {
     if (error is TimeoutException) {
       return 'Request timed out. Please try again.';
@@ -41,19 +47,25 @@ class TimeEntryProvider extends ChangeNotifier {
       return 'Received an invalid response from the server.';
     }
     final message = error.toString().trim();
-    if (message.isEmpty || message == 'Exception' || message == 'null') {
+    if (message.isEmpty ||
+        message == _exceptionToStringText ||
+        message == _nullToStringText) {
       return 'An unexpected error occurred. Please try again.';
     }
     return message;
   }
 
-  Future<bool> _runMutation(Future<void> operation()) async {
+  /// Runs a submit/update/delete mutation with consistent state handling.
+  ///
+  /// [operation] must return a user-facing success message, which is assigned
+  /// to [successMessage] when the mutation succeeds.
+  Future<bool> _runMutation(Future<String> operation()) async {
     isSubmitting = true;
     error = null;
     successMessage = null;
     notifyListeners();
     try {
-      await operation();
+      successMessage = await operation();
       return true;
     } on HarvestApiException catch (e) {
       error = '${e.statusCode}: ${e.message}';
@@ -182,7 +194,7 @@ class TimeEntryProvider extends ChangeNotifier {
           entries.removeAt(idx);
         }
       }
-      successMessage = 'Updated ${updated.projectName}';
+      return 'Updated ${updated.projectName}';
     });
   }
 
@@ -347,7 +359,7 @@ class TimeEntryProvider extends ChangeNotifier {
                 .toDouble();
         entries.removeAt(removedIndex);
       }
-      successMessage = 'Entry deleted';
+      return 'Entry deleted';
     });
   }
 
@@ -364,8 +376,7 @@ class TimeEntryProvider extends ChangeNotifier {
           DateFormat('yyyy-MM-dd').format(selectedDate)) {
         entries.insert(0, entry);
       }
-      successMessage =
-          'Logged ${entry.hours}h on ${entry.projectName} (${entry.spentDate})';
+      return 'Logged ${entry.hours}h on ${entry.projectName} (${entry.spentDate})';
     });
   }
 }
