@@ -58,6 +58,8 @@ class TimeEntryProvider extends ChangeNotifier {
 
       if (requestId != _loadRecentEntriesRequestId) return;
 
+      error = null;
+
       // Compute weekly totals
       final totals = <String, double>{};
       for (final e in all) {
