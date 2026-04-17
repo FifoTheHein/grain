@@ -9,6 +9,8 @@ import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
+import '../theme/harvest_tokens.dart';
+import '../widgets/duration_pill.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/work_item_preview.dart';
@@ -291,7 +293,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Entry'),
-        backgroundColor: const Color(0xFFFA5D24),
+        backgroundColor: HarvestTokens.brand,
         foregroundColor: Colors.white,
         elevation: 2,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -313,6 +315,50 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Context banner
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: HarvestTokens.brandTint,
+                      border: Border.all(color: HarvestTokens.brandTint2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        DurationPill(hours: widget.entry.hours, size: 32),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'EDITING ENTRY',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.4,
+                                  color: HarvestTokens.brand600,
+                                ),
+                              ),
+                              Text(
+                                '#${widget.entry.id} · ${DateFormat('EEE d MMM yyyy').format(_selectedDate)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: HarvestTokens.text,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   if (assignments.error != null)
                     ErrorBanner(message: 'Projects: ${assignments.error!}'),
                   if (entryProvider.error != null)
@@ -421,27 +467,26 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
 
                   // Azure DevOps section
                   const Divider(),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _hasAdoRef,
-                        onChanged: (v) => setState(() {
-                          _hasAdoRef = v ?? false;
-                          if (!_hasAdoRef) {
-                            _workItemIdController.clear();
-                            _selectedAdoInstance = null;
-                          }
-                        }),
-                      ),
-                      const Text(
-                        'Link Azure DevOps Work Item',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                  CheckboxListTile(
+                    value: _hasAdoRef,
+                    onChanged: (v) => setState(() {
+                      _hasAdoRef = v ?? false;
+                      if (!_hasAdoRef) {
+                        _workItemIdController.clear();
+                        _selectedAdoInstance = null;
+                      }
+                    }),
+                    title: const Text(
+                      'Link Azure DevOps Work Item',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: HarvestTokens.brand,
                   ),
 
                   if (_hasAdoRef) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     // ADO instance selector
                     Builder(builder: (context) {
@@ -451,7 +496,23 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                         segments: adoInstances
                             .map((instance) => ButtonSegment<AdoInstance>(
                                   value: instance,
-                                  label: Text(instance.label),
+                                  label: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(instance.label),
+                                      if (instance.pat != null) ...[
+                                        const SizedBox(width: 5),
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: HarvestTokens.success,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ))
                             .toList(),
                         selected: _selectedAdoInstance != null

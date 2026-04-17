@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/project_assignment.dart';
 import '../providers/assignment_provider.dart';
+import '../theme/harvest_tokens.dart';
 
 class ProjectTaskSelector extends StatelessWidget {
   const ProjectTaskSelector({super.key});
@@ -21,30 +22,44 @@ class ProjectTaskSelector extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildDropdown<HarvestProject>(
-          context: context,
-          label: 'Project',
-          selected: provider.selectedProject,
-          items: provider.projects,
-          itemLabel: (p) =>
-              p.code.isNotEmpty ? '${p.code} — ${p.name}' : p.name,
-          onChanged: (p) =>
-              context.read<AssignmentProvider>().selectProject(p),
-        ),
-        const SizedBox(height: 16),
-        _buildDropdown<HarvestTask>(
-          context: context,
-          label: 'Task',
-          selected: provider.selectedTask,
-          items: provider.selectedProject?.tasks ?? [],
-          itemLabel: (t) => t.name,
-          onChanged: (t) =>
-              context.read<AssignmentProvider>().selectTask(t),
-        ),
-      ],
+    final projectField = _buildDropdown<HarvestProject>(
+      context: context,
+      label: 'Project',
+      selected: provider.selectedProject,
+      items: provider.projects,
+      itemLabel: (p) => p.code.isNotEmpty ? '${p.code} — ${p.name}' : p.name,
+      onChanged: (p) => context.read<AssignmentProvider>().selectProject(p),
+    );
+    final taskField = _buildDropdown<HarvestTask>(
+      context: context,
+      label: 'Task',
+      selected: provider.selectedTask,
+      items: provider.selectedProject?.tasks ?? [],
+      itemLabel: (t) => t.name,
+      onChanged: (t) => context.read<AssignmentProvider>().selectTask(t),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= HarvestTokens.kWideBreakpoint) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: projectField),
+              const SizedBox(width: 12),
+              Expanded(child: taskField),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            projectField,
+            const SizedBox(height: 16),
+            taskField,
+          ],
+        );
+      },
     );
   }
 

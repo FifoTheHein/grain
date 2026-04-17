@@ -9,6 +9,7 @@ import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
+import '../theme/harvest_tokens.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/work_item_preview.dart';
@@ -353,6 +354,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                 });
                 if (_useStartEndTime) _initStartEndDefaults();
               },
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: HarvestTokens.brandTint,
+                selectedForegroundColor: HarvestTokens.brand600,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -472,27 +477,26 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
             // Azure DevOps section
             const Divider(),
-            Row(
-              children: [
-                Checkbox(
-                  value: _hasAdoRef,
-                  onChanged: (v) => setState(() {
-                    _hasAdoRef = v ?? false;
-                    if (!_hasAdoRef) {
-                      _workItemIdController.clear();
-                      _selectedAdoInstance = null;
-                    }
-                  }),
-                ),
-                const Text(
-                  'Link Azure DevOps Work Item',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
+            CheckboxListTile(
+              value: _hasAdoRef,
+              onChanged: (v) => setState(() {
+                _hasAdoRef = v ?? false;
+                if (!_hasAdoRef) {
+                  _workItemIdController.clear();
+                  _selectedAdoInstance = null;
+                }
+              }),
+              title: const Text(
+                'Link Azure DevOps Work Item',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              activeColor: HarvestTokens.brand,
             ),
 
             if (_hasAdoRef) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               Builder(builder: (context) {
                 final adoInstances =
@@ -501,7 +505,23 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                   segments: adoInstances
                       .map((instance) => ButtonSegment<AdoInstance>(
                             value: instance,
-                            label: Text(instance.label),
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(instance.label),
+                                if (instance.pat != null) ...[
+                                  const SizedBox(width: 5),
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: HarvestTokens.success,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ))
                       .toList(),
                   selected: _selectedAdoInstance != null
