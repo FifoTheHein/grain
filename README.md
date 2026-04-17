@@ -26,7 +26,7 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - **Weekly summary strip** — compact Mon–Sun strip showing each day's total; tap any day to navigate; selected day is highlighted
   - **Compact mode** (narrow): day abbreviation + hours columns with a `WeeklyProgressRing` at the end
   - **Emphasized mode** (wide): full day-tile card grid with date number, hours, and a 3 px progress bar per day
-- **Weekly progress ring** — animated circular arc showing week total vs. goal; brand-orange fill, switches to amber when over goal; center label shows `Xh Ym / of 40h`
+- **Weekly progress ring** — animated circular arc showing week total vs. goal; brand-orange fill, switches to amber when over goal; center label shows `Xh Ym / of 40h`; "THIS WEEK" caption with contextual helper text (`Xh to go`, `Goal met`, `+Xh over`); over-goal state moves the label beside the ring for visual emphasis
 - **Group by project** — toggle to group entries under colour-coded project headers with per-group totals; preference persists across sessions
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
 - **8-hour progress bar** — visual indicator of daily progress toward the 8 h goal, with overflow tracking
