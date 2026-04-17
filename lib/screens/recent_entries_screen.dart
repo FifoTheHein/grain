@@ -123,6 +123,14 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
           ),
         ),
         const Divider(height: 1),
+        _WeekSummaryStrip(
+          selectedDate: provider.selectedDate,
+          weeklyTotals: provider.weeklyTotals,
+          isLoading: provider.isLoading,
+          onDayTap: (date) =>
+              context.read<TimeEntryProvider>().loadRecentEntries(date: date),
+        ),
+        const Divider(height: 1),
 
         // Entries list
         Expanded(
@@ -159,6 +167,124 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
         ),
         if (!provider.isLoading) _DailyProgressBar(entries: provider.entries),
       ],
+    );
+  }
+}
+
+class _WeekSummaryStrip extends StatelessWidget {
+  final DateTime selectedDate;
+  final Map<String, double> weeklyTotals;
+  final bool isLoading;
+  final void Function(DateTime) onDayTap;
+
+  const _WeekSummaryStrip({
+    required this.selectedDate,
+    required this.weeklyTotals,
+    required this.isLoading,
+    required this.onDayTap,
+  });
+
+  static const _dayAbbrs = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  String _fmt(double hours) {
+    final totalMinutes = (hours * 60).round();
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    if (h == 0 && m == 0) return '–';
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final fmt = DateFormat('yyyy-MM-dd');
+    final dayOfWeek = selectedDate.weekday; // 1=Mon, 7=Sun
+    final monday = selectedDate.subtract(Duration(days: dayOfWeek - 1));
+    final selectedStr = fmt.format(selectedDate);
+    final today = DateTime.now();
+    final todayStr = fmt.format(today);
+
+    double weekTotal = 0;
+    for (final v in weeklyTotals.values) {
+      weekTotal += v;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          // Seven day columns
+          ...List.generate(7, (i) {
+            final day = monday.add(Duration(days: i));
+            final dayStr = fmt.format(day);
+            final isSelected = dayStr == selectedStr;
+            final isFuture = day.isAfter(today) && dayStr != todayStr;
+            final hours = weeklyTotals[dayStr] ?? 0;
+            final label = isLoading ? '–' : _fmt(hours);
+
+            final textColor = isSelected
+                ? colorScheme.primary
+                : isFuture
+                    ? colorScheme.onSurface.withValues(alpha: 0.3)
+                    : colorScheme.onSurfaceVariant;
+
+            return Expanded(
+              child: InkWell(
+                onTap: isFuture ? null : () => onDayTap(day),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _dayAbbrs[i],
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: textColor,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: textColor,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          // Week total column
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Week',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isLoading ? '–' : _fmt(weekTotal),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
