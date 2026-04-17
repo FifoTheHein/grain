@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/project_assignment.dart';
+import '../models/project_category.dart';
+import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
+import '../providers/assignment_provider.dart';
+import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../widgets/time_entry_card.dart';
@@ -17,6 +23,29 @@ class RecentEntriesScreen extends StatefulWidget {
 
 class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
   TimeEntryProvider? _timeEntryProvider;
+  bool _groupByProject = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGroupPref();
+  }
+
+  Future<void> _loadGroupPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _groupByProject = prefs.getBool('group_by_project') ?? false;
+      });
+    }
+  }
+
+  Future<void> _toggleGrouping() async {
+    final next = !_groupByProject;
+    setState(() => _groupByProject = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('group_by_project', next);
+  }
 
   @override
   void didChangeDependencies() {
@@ -66,6 +95,66 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
     }
   }
 
+  Widget _buildGroupedList(BuildContext context, List<TimeEntry> entries) {
+    final catProvider = context.watch<ProjectCategoryProvider>();
+    final projects = context.watch<AssignmentProvider>().projects;
+
+    // Preserve first-occurrence order
+    final groupOrder = <int>[];
+    final groups = <int, List<TimeEntry>>{};
+    for (final e in entries) {
+      if (!groups.containsKey(e.projectId)) {
+        groups[e.projectId] = [];
+        groupOrder.add(e.projectId);
+      }
+      groups[e.projectId]!.add(e);
+    }
+
+    return Column(
+      children: [
+        for (final pid in groupOrder) ...[
+          const SizedBox(height: 8),
+          Builder(builder: (ctx) {
+            final proj = projects.firstWhere(
+              (p) => p.id == pid,
+              orElse: () => HarvestProject(
+                id: pid,
+                name: groups[pid]!.first.projectName,
+                code: '',
+                tasks: [],
+              ),
+            );
+            final fallback = proj.code.isNotEmpty
+                ? proj.code
+                : proj.name
+                    .split(' ')
+                    .where((w) => w.isNotEmpty)
+                    .take(3)
+                    .map((w) => w[0].toUpperCase())
+                    .join();
+            final cat = catProvider.categoryFor(pid, fallbackCode: fallback);
+            final groupEntries = groups[pid]!;
+            final total = groupEntries.fold<double>(0, (s, e) => s + e.hours);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ProjectGroupHeader(
+                  projectName: proj.name,
+                  category: cat,
+                  entryCount: groupEntries.length,
+                  totalHours: total,
+                ),
+                const Divider(height: 1),
+                const SizedBox(height: 6),
+                for (final e in groupEntries) TimeEntryCard(entry: e),
+              ],
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TimeEntryProvider>();
@@ -76,6 +165,27 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
 
     return Column(
       children: [
+        // Grouping toolbar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Tooltip(
+                message: _groupByProject ? 'Flat list' : 'Group by project',
+                child: IconButton(
+                  icon: Icon(
+                    Icons.filter_list,
+                    color: _groupByProject
+                        ? HarvestTokens.brand
+                        : HarvestTokens.text3,
+                  ),
+                  onPressed: _toggleGrouping,
+                ),
+              ),
+            ],
+          ),
+        ),
         // Date picker header
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -166,6 +276,10 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
                           child: Center(
                               child: Text('No entries for this day.')),
                         )
+                      else if (_groupByProject)
+                        SliverToBoxAdapter(
+                            child: _buildGroupedList(
+                                context, provider.entries))
                       else
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
@@ -391,6 +505,84 @@ class _DailyProgressBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProjectGroupHeader extends StatelessWidget {
+  final String projectName;
+  final ProjectCategory category;
+  final int entryCount;
+  final double totalHours;
+
+  const _ProjectGroupHeader({
+    required this.projectName,
+    required this.category,
+    required this.entryCount,
+    required this.totalHours,
+  });
+
+  String _fmt(double hours) {
+    final total = (hours * 60).round();
+    final h = total ~/ 60;
+    final m = total % 60;
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: category.tint,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              category.code,
+              style: TextStyle(
+                fontFamily: 'Courier New',
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: category.color,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              projectName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: HarvestTokens.text,
+              ),
+            ),
+          ),
+          Text(
+            _fmt(totalHours),
+            style: TextStyle(
+              fontFamily: 'Courier New',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: category.color,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '· $entryCount ${entryCount == 1 ? 'entry' : 'entries'}',
+            style: const TextStyle(fontSize: 11, color: HarvestTokens.text3),
+          ),
+        ],
+      ),
     );
   }
 }
