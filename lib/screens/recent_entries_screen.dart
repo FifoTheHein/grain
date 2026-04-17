@@ -110,51 +110,73 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
       groups[e.projectId]!.add(e);
     }
 
-    return Column(
-      children: [
-        for (final pid in groupOrder) ...[
-          const SizedBox(height: 8),
-          Builder(builder: (ctx) {
-            final proj = projects.firstWhere(
-              (p) => p.id == pid,
-              orElse: () => HarvestProject(
-                id: pid,
-                name: groups[pid]!.first.projectName,
-                code: '',
-                tasks: [],
+    final rows = <_GroupedListRow>[];
+    for (final pid in groupOrder) {
+      final proj = projects.firstWhere(
+        (p) => p.id == pid,
+        orElse: () => HarvestProject(
+          id: pid,
+          name: groups[pid]!.first.projectName,
+          code: '',
+          tasks: [],
+        ),
+      );
+      final fallback = proj.code.isNotEmpty
+          ? proj.code
+          : proj.name
+              .split(' ')
+              .where((w) => w.isNotEmpty)
+              .take(3)
+              .map((w) => w[0].toUpperCase())
+              .join();
+      final cat = catProvider.categoryFor(pid, fallbackCode: fallback);
+      final groupEntries = groups[pid]!;
+      final total = groupEntries.fold<double>(0, (s, e) => s + e.hours);
+
+      rows.add(
+        _GroupedListRow(
+          builder: (_) => const SizedBox(height: 8),
+        ),
+      );
+      rows.add(
+        _GroupedListRow(
+          builder: (_) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ProjectGroupHeader(
+                projectName: proj.name,
+                category: cat,
+                entryCount: groupEntries.length,
+                totalHours: total,
               ),
-            );
-            final fallback = proj.code.isNotEmpty
-                ? proj.code
-                : proj.name
-                    .split(' ')
-                    .where((w) => w.isNotEmpty)
-                    .take(3)
-                    .map((w) => w[0].toUpperCase())
-                    .join();
-            final cat = catProvider.categoryFor(pid, fallbackCode: fallback);
-            final groupEntries = groups[pid]!;
-            final total = groupEntries.fold<double>(0, (s, e) => s + e.hours);
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ProjectGroupHeader(
-                  projectName: proj.name,
-                  category: cat,
-                  entryCount: groupEntries.length,
-                  totalHours: total,
-                ),
-                const Divider(height: 1),
-                const SizedBox(height: 6),
-                for (final e in groupEntries) TimeEntryCard(entry: e),
-              ],
-            );
-          }),
-        ],
-      ],
+              const Divider(height: 1),
+              const SizedBox(height: 6),
+            ],
+          ),
+        ),
+      );
+      for (final entry in groupEntries) {
+        rows.add(
+          _GroupedListRow(
+            builder: (_) => TimeEntryCard(entry: entry),
+          ),
+        );
+      }
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => rows[index].builder(context),
+        childCount: rows.length,
+      ),
     );
   }
 
+class _GroupedListRow {
+  const _GroupedListRow({required this.builder});
+
+  final WidgetBuilder builder;
+}
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TimeEntryProvider>();
