@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui' show FontFeature;
 import 'package:collection/collection.dart';
 import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
