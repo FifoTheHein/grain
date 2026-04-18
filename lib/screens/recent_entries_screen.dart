@@ -128,8 +128,10 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
       children: [
         _ProjectGroupHeader(
           projectName: name,
+          projectCode: cat.code,
           clientName: clientName,
           color: cat.color,
+          tint: cat.tint,
           entryCount: groupEntries.length,
           totalHours: total,
         ),
@@ -653,15 +655,19 @@ class _DailyProgressBar extends StatelessWidget {
 
 class _ProjectGroupHeader extends StatelessWidget {
   final String projectName;
+  final String projectCode;
   final String? clientName;
   final Color color;
+  final Color tint;
   final int entryCount;
   final double totalHours;
 
   const _ProjectGroupHeader({
     required this.projectName,
+    required this.projectCode,
     this.clientName,
     required this.color,
+    required this.tint,
     required this.entryCount,
     required this.totalHours,
   });
@@ -684,50 +690,59 @@ class _ProjectGroupHeader extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(4, 10, 4, 7),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 10,
-              height: 10,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
+                color: tint,
+                borderRadius: BorderRadius.circular(4),
               ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
               child: Text(
-                projectName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: HarvestTokens.text,
+                projectCode,
+                style: TextStyle(
+                  fontFamily: 'Courier New',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: color,
                 ),
               ),
             ),
-            if (clientName != null) ...[
-              const SizedBox(width: 6),
-              const Text(
-                '·',
-                style: TextStyle(color: HarvestTokens.text4, fontSize: 11),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                flex: 2,
-                child: Text(
-                  clientName!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: HarvestTokens.text3,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                children: [
+                  Text(
+                    projectName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: HarvestTokens.text,
+                    ),
                   ),
-                ),
+                  if (clientName != null) ...[
+                    const Text(
+                      '·',
+                      style: TextStyle(
+                          color: HarvestTokens.text4, fontSize: 11),
+                    ),
+                    Text(
+                      clientName!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: HarvestTokens.text3,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-            const Spacer(),
+            ),
+            const SizedBox(width: 12),
             Text(
               '$entryCount ${entryCount == 1 ? 'entry' : 'entries'}',
               style: const TextStyle(
