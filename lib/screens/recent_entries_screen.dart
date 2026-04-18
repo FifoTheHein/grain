@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui' show FontFeature;
 import 'package:collection/collection.dart';
 import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
@@ -24,11 +25,6 @@ class RecentEntriesScreen extends StatefulWidget {
 class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
   TimeEntryProvider? _timeEntryProvider;
   bool _groupByProject = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void didChangeDependencies() {
