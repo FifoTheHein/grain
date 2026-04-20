@@ -76,6 +76,7 @@ class TimeEntry {
   final String? userName;
   final ExternalReference? externalReference;
   final String? createdAt;
+  final bool isRunning;
 
   const TimeEntry({
     required this.id,
@@ -89,6 +90,7 @@ class TimeEntry {
     this.userName,
     this.externalReference,
     this.createdAt,
+    this.isRunning = false,
   });
 
   factory TimeEntry.fromJson(Map<String, dynamic> json) {
@@ -113,6 +115,7 @@ class TimeEntry {
               permalink: ext['permalink'] as String?,
             ),
       createdAt: json['created_at'] as String?,
+      isRunning: json['is_running'] as bool? ?? false,
     );
   }
 }

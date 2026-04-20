@@ -67,7 +67,7 @@ class TimeEntryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Leading: duration pill
-            DurationPill(hours: entry.hours),
+            DurationPill(hours: entry.hours, running: entry.isRunning),
             const SizedBox(width: 12),
 
             // Body
