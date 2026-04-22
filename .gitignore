@@ -48,5 +48,3 @@ app.*.map.json
 lib/config/app_config.dart
 harvest_postman_collection_2.json
 .claude/
-# Added by code-review-graph
-.code-review-graph/
