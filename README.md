@@ -139,8 +139,8 @@ Then open `http://localhost:8080` in Chrome.
 ### 4. Build for production
 
 ```bash
-# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /Harvest/ to a Windows path
-MSYS_NO_PATHCONV=1 flutter build web --release --base-href /Harvest/ --pwa-strategy=none
+# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /grain/ to a Windows path
+MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strategy=none
 ```
 
 Serve the `build/web` directory from any static host.

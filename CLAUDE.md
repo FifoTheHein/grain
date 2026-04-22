@@ -12,10 +12,10 @@ flutter pub get
 flutter run -d web-server --web-port=8080
 
 # Build for production
-# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /Harvest/ to a Windows path
+# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /grain/ to a Windows path
 # --pwa-strategy=none disables the service worker — avoids a browser console error where the
 # SW intercepts background API fetches but closes the message channel before responding
-MSYS_NO_PATHCONV=1 flutter build web --release --base-href /Harvest/ --pwa-strategy=none
+MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strategy=none
 
 # Lint / static analysis
 flutter analyze
