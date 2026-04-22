@@ -792,6 +792,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildWorkDaySection(BuildContext context) {
+    final provider = context.watch<ProjectCategoryProvider>();
+    final start = provider.workDayStart;
+    final end = provider.workDayEnd;
+    final breakH = provider.breakHours;
+    final daily = provider.dailyGoalHours;
+    final dailyLabel = daily == daily.truncateToDouble()
+        ? '${daily.toInt()}h work day'
+        : '${daily.toStringAsFixed(1)}h work day';
+    final breakInitial = breakH == breakH.truncateToDouble()
+        ? breakH.toInt().toString()
+        : '$breakH';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Start time'),
+                trailing: Text(
+                  start.format(context),
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: start,
+                  );
+                  if (picked != null && context.mounted) {
+                    context.read<ProjectCategoryProvider>().setWorkDayStart(picked);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('End time'),
+                trailing: Text(
+                  end.format(context),
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: end,
+                  );
+                  if (picked != null && context.mounted) {
+                    context.read<ProjectCategoryProvider>().setWorkDayEnd(picked);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                key: ValueKey(breakInitial),
+                initialValue: breakInitial,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Break hours',
+                  border: OutlineInputBorder(),
+                  suffixText: 'h',
+                ),
+                onChanged: (v) {
+                  final hours = double.tryParse(v);
+                  if (hours != null && hours >= 0) {
+                    context.read<ProjectCategoryProvider>().setBreakHours(hours);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  '= $dailyLabel',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -899,6 +998,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SectionHeader(title: 'Weekly Goal'),
           const SizedBox(height: 12),
           _buildWeeklyGoalField(context),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          _SectionHeader(title: 'Work Day'),
+          const SizedBox(height: 4),
+          _buildWorkDaySection(context),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),

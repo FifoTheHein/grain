@@ -285,7 +285,8 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
                   ),
                 ),
         ),
-        if (!provider.isLoading) _DailyProgressBar(entries: provider.entries),
+        if (!provider.isLoading)
+          _DailyProgressBar(entries: provider.entries, isToday: isToday),
       ],
     );
   }
@@ -435,7 +436,9 @@ class _WeekSummaryStrip extends StatelessWidget {
 
   Widget _buildEmphasized(
       BuildContext context, List<_DayData> days, double weekTotal) {
-    const dailyGoal = 8.0;
+    final dailyGoal = context.select<ProjectCategoryProvider, double>(
+      (provider) => provider.dailyGoalHours,
+    );
     final weeklyGoal = context.select<ProjectCategoryProvider, double>(
       (provider) => provider.weeklyGoalHours,
     );
@@ -561,11 +564,10 @@ class _WeekSummaryStrip extends StatelessWidget {
 }
 
 class _DailyProgressBar extends StatelessWidget {
-  static const double _goal = 8.0;
-
   final List entries;
+  final bool isToday;
 
-  const _DailyProgressBar({required this.entries});
+  const _DailyProgressBar({required this.entries, required this.isToday});
 
   String _fmt(double hours) {
     final totalMinutes = (hours * 60).round();
@@ -578,11 +580,29 @@ class _DailyProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final catProvider = context.watch<ProjectCategoryProvider>();
+    final goal = catProvider.dailyGoalHours;
     final total =
         entries.fold<double>(0, (sum, e) => sum + (e.hours as double));
-    final isOver = total > _goal;
-    final progress = (total / _goal).clamp(0.0, 1.0);
-    final overflow = total - _goal;
+    final isOver = total > goal;
+    final progress = (total / goal).clamp(0.0, 1.0);
+    final overflow = total - goal;
+
+    double? expectedHours;
+    double? expectedRatio;
+    if (isToday) {
+      final now = DateTime.now();
+      final startMinutes =
+          catProvider.workDayStart.hour * 60 + catProvider.workDayStart.minute;
+      final endMinutes =
+          catProvider.workDayEnd.hour * 60 + catProvider.workDayEnd.minute;
+      final nowMinutes = now.hour * 60 + now.minute;
+      final elapsedRatio = ((nowMinutes - startMinutes) /
+              (endMinutes - startMinutes))
+          .clamp(0.0, 1.0);
+      expectedHours = elapsedRatio * goal;
+      expectedRatio = (expectedHours / goal).clamp(0.0, 1.0);
+    }
 
     final colorScheme = Theme.of(context).colorScheme;
     final barColor = isOver ? HarvestTokens.warn : HarvestTokens.brand;
@@ -603,10 +623,17 @@ class _DailyProgressBar extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
               ),
+              if (expectedHours != null)
+                Text(
+                  'Expected: ${_fmt(expectedHours)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
               Text(
                 isOver
                     ? '+${_fmt(overflow)} over goal'
-                    : '${_fmt(_goal - total)} remaining',
+                    : '${_fmt(goal - total)} remaining',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: isOver
                           ? HarvestTokens.warn
@@ -632,7 +659,7 @@ class _DailyProgressBar extends StatelessWidget {
                   widthFactor: progress,
                   child: Container(height: 8, color: barColor),
                 ),
-                // Overflow pulse marker at the 8h boundary
+                // Overflow marker at goal boundary
                 if (isOver)
                   Positioned.fill(
                     child: Align(
@@ -641,6 +668,19 @@ class _DailyProgressBar extends StatelessWidget {
                         width: 2,
                         height: 8,
                         color: HarvestTokens.brand600,
+                      ),
+                    ),
+                  ),
+                // Expected time tick marker
+                if (expectedRatio != null)
+                  FractionallySizedBox(
+                    widthFactor: expectedRatio,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        width: 2,
+                        height: 8,
+                        color: colorScheme.onSurface.withValues(alpha: 0.45),
                       ),
                     ),
                   ),

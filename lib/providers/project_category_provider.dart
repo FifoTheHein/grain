@@ -6,9 +6,15 @@ import '../models/project_category.dart';
 class ProjectCategoryProvider extends ChangeNotifier {
   static const _categoriesKey = 'project_categories_v1';
   static const _weeklyGoalKey = 'weekly_goal_hours';
+  static const _workDayStartKey = 'work_day_start';
+  static const _workDayEndKey = 'work_day_end';
+  static const _breakHoursKey = 'break_hours';
 
   final Map<int, ProjectCategory> _categories = {};
   double _weeklyGoalHours = 40.0;
+  TimeOfDay _workDayStart = const TimeOfDay(hour: 8, minute: 30);
+  TimeOfDay _workDayEnd = const TimeOfDay(hour: 17, minute: 0);
+  double _breakHours = 0.5;
 
   // 12-color fixed palette (Material 500-level, warm-to-cool spread)
   static const _palette = [
@@ -28,6 +34,15 @@ class ProjectCategoryProvider extends ChangeNotifier {
 
   Map<int, ProjectCategory> get categories => Map.unmodifiable(_categories);
   double get weeklyGoalHours => _weeklyGoalHours;
+  TimeOfDay get workDayStart => _workDayStart;
+  TimeOfDay get workDayEnd => _workDayEnd;
+  double get breakHours => _breakHours;
+
+  double get dailyGoalHours {
+    final startMinutes = _workDayStart.hour * 60 + _workDayStart.minute;
+    final endMinutes = _workDayEnd.hour * 60 + _workDayEnd.minute;
+    return ((endMinutes - startMinutes) / 60.0) - _breakHours;
+  }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -41,6 +56,9 @@ class ProjectCategoryProvider extends ChangeNotifier {
       });
     }
     _weeklyGoalHours = prefs.getDouble(_weeklyGoalKey) ?? 40.0;
+    _workDayStart = _parseTime(prefs.getString(_workDayStartKey), const TimeOfDay(hour: 8, minute: 30));
+    _workDayEnd = _parseTime(prefs.getString(_workDayEndKey), const TimeOfDay(hour: 17, minute: 0));
+    _breakHours = prefs.getDouble(_breakHoursKey) ?? 0.5;
     notifyListeners();
   }
 
@@ -67,6 +85,40 @@ class ProjectCategoryProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_weeklyGoalKey, _weeklyGoalHours);
+  }
+
+  Future<void> setWorkDayStart(TimeOfDay time) async {
+    _workDayStart = time;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_workDayStartKey, _formatTime(time));
+  }
+
+  Future<void> setWorkDayEnd(TimeOfDay time) async {
+    _workDayEnd = time;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_workDayEndKey, _formatTime(time));
+  }
+
+  Future<void> setBreakHours(double hours) async {
+    _breakHours = hours.clamp(0.0, 24.0);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_breakHoursKey, _breakHours);
+  }
+
+  static String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  static TimeOfDay _parseTime(String? s, TimeOfDay fallback) {
+    if (s == null) return fallback;
+    final parts = s.split(':');
+    if (parts.length != 2) return fallback;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return fallback;
+    return TimeOfDay(hour: h, minute: m);
   }
 
   Future<void> _persist() async {
