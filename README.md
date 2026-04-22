@@ -29,7 +29,7 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - **Weekly progress ring** — animated circular arc showing week total vs. goal; brand-orange fill, switches to amber when over goal; center label shows `Xh Ym / of 40h`; "THIS WEEK" caption with contextual helper text (`Xh to go`, `Goal met`, `+Xh over`); over-goal state moves the label beside the ring for visual emphasis
 - **Group by project** — toggle to group entries under colour-coded project headers with per-group totals; preference persists across sessions
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
-- **8-hour progress bar** — visual indicator of daily progress toward the 8 h goal, with overflow tracking
+- **Daily progress bar** — visual indicator of daily progress toward a configurable goal (derived from work day start/end/break settings); shows overflow in amber; when viewing today, displays an **expected hours** tick marker on the bar and an "Expected: Xh Ym" label based on how much of the work day has elapsed
 - **Edit entries** — tap the pencil icon to open a pre-filled edit form with an orange context banner showing the duration and entry ID; changes are saved via `PATCH` and reflected immediately
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
 
@@ -49,6 +49,7 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - All credentials and ADO instances persist in browser `localStorage` and take effect immediately without recompiling
 - **Project Categories** — view and customise the colour and short code assigned to each project; 12-colour palette with an edit dialog
 - **Weekly Goal** — set your target hours per week (used by the progress ring and emphasized strip)
+- **Work Day** — configure start time (default 08:30), end time (default 17:00), and break hours (default 0.5 h); the daily goal is derived automatically as `(end − start) − break`
 - **Background Refresh** — configure how often the app silently re-fetches the current week's entries
 - **Clear Cache & Refresh** — force-reloads time entries from the Harvest API
 - **Migrate ADO References** — upgrades current-week entries from plain numeric external reference IDs to the correct native composite format; also repairs entries saved with the wrong GUID or a corrupted ID; scans the past 28 days for native Harvest entries to learn the correct GUID
@@ -71,7 +72,7 @@ lib/
 ├── providers/
 │   ├── ado_instance_provider.dart        # ADO instances (localStorage)
 │   ├── assignment_provider.dart          # selected project/task & defaults
-│   ├── project_category_provider.dart    # 12-colour palette, weekly goal (localStorage)
+│   ├── project_category_provider.dart    # 12-colour palette, weekly goal, work day settings (localStorage)
 │   └── time_entry_provider.dart          # entry list, submit/update lifecycle
 ├── screens/
 │   ├── home_screen.dart                  # NavigationRail (wide) / NavigationBar (narrow)
@@ -154,6 +155,9 @@ All settings persist in browser `localStorage`:
 | Default Project          | Pre-selected project on the Log Time screen                                                      |
 | Default Task             | Pre-selected task for the default project                                                        |
 | Weekly Goal              | Target hours per week — used by the progress ring and emphasized week strip                      |
+| Work Day Start           | Start of your work day (default 08:30); used to derive the daily goal and expected hours         |
+| Work Day End             | End of your work day (default 17:00)                                                             |
+| Break Hours              | Total break time per day (default 0.5 h); subtracted from the work day span to get the daily goal |
 | Project Categories       | Customise the colour and short code badge for each project                                       |
 | Background Refresh       | How often the app silently re-fetches the current week (5 / 15 / 30 / 60 min; default 15 min)  |
 | ADO Instances            | Add, edit, or remove Azure DevOps project URLs                                                   |
