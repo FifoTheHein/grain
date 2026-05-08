@@ -60,7 +60,7 @@ class TimeEntryProvider extends ChangeNotifier {
   ///
   /// [operation] must return a user-facing success message, which is assigned
   /// to [successMessage] when the mutation succeeds.
-  Future<bool> _runMutation(Future<String> operation()) async {
+  Future<bool> _runMutation(Future<String> Function() operation) async {
     isSubmitting = true;
     error = null;
     successMessage = null;

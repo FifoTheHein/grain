@@ -67,7 +67,7 @@ class HarvestService {
 
   Future<List<TimeEntry>> fetchTimeEntries(
       {required String from, String? to}) async {
-    final query = <String, String>{'from': from, if (to != null) 'to': to};
+    final query = <String, String>{'from': from, 'to': ?to};
     final response = await _client.get(
       _uri('/time_entries', query),
       headers: await _headers(),
