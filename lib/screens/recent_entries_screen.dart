@@ -176,6 +176,11 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
             ],
           ),
         ),
+        if (provider.showNewDayBanner)
+          _NewDayBanner(
+            onGoToToday: () =>
+                provider.loadRecentEntries(date: DateTime.now()),
+          ),
         // Date picker header
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -803,6 +808,59 @@ class _ProjectGroupHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NewDayBanner extends StatelessWidget {
+  final VoidCallback onGoToToday;
+  const _NewDayBanner({required this.onGoToToday});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: HarvestTokens.warn.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: HarvestTokens.warn.withValues(alpha: 0.40)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.wb_sunny_outlined, size: 16, color: HarvestTokens.warn),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              children: [
+                const Text(
+                  "Hey, it's a new day!",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: HarvestTokens.warn,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onGoToToday,
+                  child: const Text(
+                    'Go to today\'s timesheet',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: HarvestTokens.brand,
+                      decoration: TextDecoration.underline,
+                      decorationColor: HarvestTokens.brand,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

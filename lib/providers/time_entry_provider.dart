@@ -18,6 +18,7 @@ class TimeEntryProvider extends ChangeNotifier {
   String? error;
   String? successMessage;
   int _loadRecentEntriesRequestId = 0;
+  bool showNewDayBanner = false;
 
   Timer? _refreshTimer;
   static const int _defaultRefreshIntervalMinutes = 15;
@@ -95,6 +96,7 @@ class TimeEntryProvider extends ChangeNotifier {
       error = null;
       entries = [];
       weeklyTotals = {};
+      showNewDayBanner = false;
       notifyListeners();
     }
 
@@ -133,6 +135,13 @@ class TimeEntryProvider extends ChangeNotifier {
     } finally {
       if (requestId == _loadRecentEntriesRequestId) {
         if (!silent) isLoading = false;
+        if (silent) {
+          final now = DateTime.now();
+          final isToday = selectedDate.year == now.year &&
+              selectedDate.month == now.month &&
+              selectedDate.day == now.day;
+          if (!isToday) showNewDayBanner = true;
+        }
         notifyListeners();
       }
     }
