@@ -533,6 +533,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int? _defaultProjectId;
   int? _defaultTaskId;
   int _autoRefreshIntervalMinutes = 15;
+  bool _adoUpdateCompletedWork = true;
 
   @override
   void initState() {
@@ -558,6 +559,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _defaultTaskId = prefs.getInt('default_task_id');
       _autoRefreshIntervalMinutes =
           prefs.getInt('auto_refresh_interval_minutes') ?? 15;
+      _adoUpdateCompletedWork =
+          prefs.getBool('ado_update_completed_work') ?? true;
     });
   }
 
@@ -576,6 +579,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       await prefs.remove('default_task_id');
     }
+    await prefs.setBool('ado_update_completed_work', _adoUpdateCompletedWork);
 
     if (!context.mounted) return;
 
@@ -708,6 +712,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.remove('default_project_id');
     await prefs.remove('default_task_id');
     await prefs.remove('auto_refresh_interval_minutes');
+    await prefs.remove('ado_update_completed_work');
     timeEntryProvider.setRefreshInterval(15);
     if (!mounted) return;
     setState(() {
@@ -716,6 +721,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _defaultProjectId = null;
       _defaultTaskId = null;
       _autoRefreshIntervalMinutes = 15;
+      _adoUpdateCompletedWork = true;
     });
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1019,6 +1025,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _AdoInstanceList(
               onEdit: (i, instance) =>
                   _showAdoDialog(context, index: i, existing: instance)),
+          const SizedBox(height: 4),
+          SwitchListTile(
+            value: _adoUpdateCompletedWork,
+            onChanged: (v) => setState(() => _adoUpdateCompletedWork = v),
+            title: const Text('Update Completed Work when logging time'),
+            subtitle: const Text(
+                'Adds logged hours to the work item\'s Completed Work field'),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            activeThumbColor: HarvestTokens.brand,
+          ),
           const SizedBox(height: 8),
           Text(
             'User ID: ${AppConfig.userId}',

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
@@ -256,13 +257,34 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       externalReference: extRef,
     );
 
+    // Capture before clearing state on success
+    final adoInstanceForUpdate = _selectedAdoInstance;
+    final workItemIdForUpdate = _workItemIdController.text.trim();
+    final shouldUpdateAdo = extRef != null && adoInstanceForUpdate != null;
+
     final success = await entryProvider.submit(request);
     if (success && context.mounted) {
+      String snackMessage = entryProvider.successMessage ?? 'Time logged!';
+      Color snackColor = Colors.green;
+
+      if (shouldUpdateAdo) {
+        final prefs = await SharedPreferences.getInstance();
+        final updateEnabled = prefs.getBool('ado_update_completed_work') ?? true;
+        if (updateEnabled && context.mounted) {
+          try {
+            await context
+                .read<AdoService>()
+                .addCompletedWork(adoInstanceForUpdate, workItemIdForUpdate, hours);
+          } catch (_) {
+            snackMessage = 'Time logged, but could not update ADO Completed Work';
+            snackColor = Colors.orange;
+          }
+        }
+      }
+
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(entryProvider.successMessage ?? 'Time logged!'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(content: Text(snackMessage), backgroundColor: snackColor),
       );
       _notesController.clear();
       _workItemIdController.clear();

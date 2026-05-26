@@ -210,6 +210,65 @@ class AdoService extends ChangeNotifier {
     return null;
   }
 
+  Future<double?> fetchCompletedWork(
+      AdoInstance instance, String workItemId) async {
+    final pat = instance.pat;
+    if (pat == null || pat.isEmpty) return null;
+    try {
+      final uri = Uri.parse(
+        '${instance.baseUrl}/_apis/wit/workitems/$workItemId'
+        '?fields=Microsoft.VSTS.Scheduling.CompletedWork&api-version=7.0',
+      );
+      final credentials = base64Encode(utf8.encode(':$pat'));
+      final response = await _client.get(uri, headers: {
+        'Authorization': 'Basic $credentials',
+        'Content-Type': 'application/json',
+      });
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final fields = json['fields'] as Map<String, dynamic>?;
+        final value = fields?['Microsoft.VSTS.Scheduling.CompletedWork'];
+        if (value is num) return value.toDouble();
+      }
+    } catch (_) {
+      // Silently ignore — caller treats null as 0
+    }
+    return null;
+  }
+
+  Future<void> patchCompletedWork(
+      AdoInstance instance, String workItemId, double newTotal) async {
+    final pat = instance.pat;
+    if (pat == null || pat.isEmpty) throw Exception('No PAT configured');
+    final uri = Uri.parse(
+      '${instance.baseUrl}/_apis/wit/workitems/$workItemId?api-version=7.0',
+    );
+    final credentials = base64Encode(utf8.encode(':$pat'));
+    final response = await _client.patch(uri,
+        headers: {
+          'Authorization': 'Basic $credentials',
+          'Content-Type': 'application/json-patch+json',
+        },
+        body: jsonEncode([
+          {
+            'op': 'add',
+            'path': '/fields/Microsoft.VSTS.Scheduling.CompletedWork',
+            'value': newTotal,
+          }
+        ]));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('ADO update failed: ${response.statusCode}');
+    }
+  }
+
+  /// Fetches the current Completed Work value and adds [hoursToAdd] to it.
+  Future<void> addCompletedWork(
+      AdoInstance instance, String workItemId, double hoursToAdd) async {
+    final current = await fetchCompletedWork(instance, workItemId) ?? 0;
+    final newTotal = (current + hoursToAdd).clamp(0.0, double.infinity);
+    await patchCompletedWork(instance, workItemId, newTotal);
+  }
+
   Future<void> prefetchForEntries(
     List<dynamic> entries,
     List<AdoInstance> instances,
