@@ -21,6 +21,7 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - **Native Harvest composite IDs** — entries are saved with the correct `AzureDevOps_{guid}_{type}_{id}` format that Harvest's own ADO integration uses, so time entries appear in the Harvest widget inside Azure DevOps
 - **Automatic GUID detection** — the Harvest connection GUID is learned automatically from any natively-created entry and persisted to `localStorage`; no manual configuration needed
 - **GUID visibility & manual override** — each ADO instance in Settings shows its current GUID (green when known, orange when not); a pencil icon lets you paste the correct GUID manually
+- **Completed Work sync** — when a time entry is saved against an ADO work item, the work item's **Completed Work** field is automatically updated: logging 1 h against a ticket that already has 0.5 h recorded results in 1.5 h; editing an entry applies only the hours delta so there's no double-counting; can be disabled per-instance in Settings
 
 ### Recent Entries
 - **Default landing screen** — the app opens directly on today's entries
@@ -164,5 +165,6 @@ All settings persist in browser `localStorage`:
 | ADO Instances            | Add, edit, or remove Azure DevOps project URLs                                                   |
 | PAT (per ADO)            | Personal Access Token for each ADO instance — enables work item fetch                            |
 | Harvest GUID (per ADO)   | The Harvest connection GUID shown per instance with green/orange status; editable manually       |
+| Update Completed Work    | When enabled (default on), automatically adds logged hours to the ADO work item's Completed Work field; edits apply only the delta |
 | Clear Cache & Refresh    | Discards cached time entries and reloads from the Harvest API                                    |
 | Migrate ADO References   | Upgrades current-week entries to the native composite ID format; corrects wrong-GUID and corrupted entries; learns from the past 28 days of entries |
