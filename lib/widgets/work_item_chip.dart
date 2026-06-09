@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:web/web.dart' as web;
 import '../models/ado_work_item.dart';
 import '../theme/harvest_tokens.dart';
+import '../utils/open_url.dart';
 
 class WorkItemChip extends StatelessWidget {
   final String workItemId;
@@ -37,7 +37,7 @@ class WorkItemChip extends StatelessWidget {
 
   void _open() {
     if (!_canOpen) return;
-    web.window.open(permalink!, '_blank');
+    openUrl(permalink!);
   }
 
   String? _initials(String? name) {

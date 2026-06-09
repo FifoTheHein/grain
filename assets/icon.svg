@@ -1,0 +1,26 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="120" fill="#241710"/>
+  <!-- Top bar -->
+  <rect x="26" y="16" width="68" height="8" rx="4" fill="#FA5D24"/>
+  <!-- Bottom bar -->
+  <rect x="26" y="96" width="68" height="8" rx="4" fill="#FA5D24"/>
+  <!-- Hourglass outline -->
+  <path d="M34 24 L86 24 L64 55 L64 65 L86 96 L34 96 L56 65 L56 55 Z"
+        fill="none" stroke="#FA5D24" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Waist grain -->
+  <circle cx="60" cy="60" r="3.5" fill="#FA5D24"/>
+  <!-- Bottom grain pool -->
+  <circle cx="44" cy="90" r="3.8" fill="#FB9A6E" opacity=".65"/>
+  <circle cx="54" cy="87" r="4.2" fill="#FB9A6E" opacity=".75"/>
+  <circle cx="65" cy="87" r="4.2" fill="#FB9A6E" opacity=".75"/>
+  <circle cx="76" cy="90" r="3.8" fill="#FB9A6E" opacity=".65"/>
+  <circle cx="49" cy="79" r="3.5" fill="#FB9A6E" opacity=".50"/>
+  <circle cx="60" cy="77" r="4"   fill="#FB9A6E" opacity=".55"/>
+  <circle cx="71" cy="79" r="3.5" fill="#FB9A6E" opacity=".50"/>
+  <!-- Top grain (fading) -->
+  <circle cx="46" cy="31" r="3.5" fill="#FA5D24" opacity=".28"/>
+  <circle cx="60" cy="28" r="4"   fill="#FA5D24" opacity=".28"/>
+  <circle cx="74" cy="31" r="3.5" fill="#FA5D24" opacity=".28"/>
+  <circle cx="52" cy="41" r="3"   fill="#FA5D24" opacity=".18"/>
+  <circle cx="68" cy="41" r="3"   fill="#FA5D24" opacity=".18"/>
+</svg>

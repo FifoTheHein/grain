@@ -1,7 +1,7 @@
 # Grain
 ### A better Harvest
 
-A personal Flutter web app for logging time entries to [Harvest](https://www.getharvest.com/) directly from the browser, with first-class Azure DevOps integration.
+A personal Flutter app for logging time entries to [Harvest](https://www.getharvest.com/) with first-class Azure DevOps integration. Runs as a **web app** and an **Android APK**.
 
 ## Features
 
@@ -36,6 +36,7 @@ A personal Flutter web app for logging time entries to [Harvest](https://www.get
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
 
 ### Visual Design (2.0)
+- **Grain logo** — custom SVG hourglass-and-grain icon; shown in the app bar header (rounded corners) and used as the Android launcher icon and web favicon
 - **Design token system** — `HarvestTokens` defines brand orange, warm-paper surface palette, border colours, and ADO state colours; all components reference tokens, not raw hex values
 - **Duration pill** — 44 px circular pill in the leading position of every entry card; tabular-mono hours label; brand tint background; turns solid orange with a small play-arrow badge (bottom-right) when the timer is actively running
 - **Project colour chips** — each project is auto-assigned one of 12 colours (persisted); shown as a short code badge on cards and group headers
@@ -98,9 +99,10 @@ lib/
 
 ### 1. Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (web support enabled)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (web + Android support enabled)
 - A [Harvest personal access token](https://id.getharvest.com/developers)
 - (Optional) Azure DevOps Personal Access Token with **Read** access to Work Items
+- (Android) Android SDK / Android Studio for the APK build
 
 ### 2. Configure credentials
 
@@ -139,12 +141,20 @@ Then open `http://localhost:8080` in Chrome.
 
 ### 4. Build for production
 
+Both targets should be built together:
+
 ```bash
+# Web
 # MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /grain/ to a Windows path
+# --pwa-strategy=none disables the service worker (avoids fetch/message-channel conflicts)
 MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strategy=none
+
+# Android APK
+# Output: build/app/outputs/flutter-apk/app-release.apk
+flutter build apk --release
 ```
 
-Serve the `build/web` directory from any static host.
+Serve the `build/web` directory from any static host. Side-load or distribute the APK directly.
 
 ## Settings Reference
 
