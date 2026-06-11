@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/ado_work_item.dart';
@@ -219,6 +220,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     }
 
     ExternalReference? extRef;
+    bool adoRefUnchanged = false;
     if (_hasAdoRef &&
         _workItemIdController.text.trim().isNotEmpty &&
         _selectedAdoInstance != null) {
@@ -239,6 +241,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
           originalWorkItemId == workItemId &&
           instanceUnchanged) {
         extRef = originalRef; // ADO ref unchanged — preserve as-is
+        adoRefUnchanged = true;
       } else {
         // ADO reference changed — build a fresh composite ID
         final adoService = context.read<AdoService>();
@@ -261,25 +264,50 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
       }
     }
 
+    final newHours = int.parse(_hoursController.text) +
+        int.parse(_minutesController.text) / 60.0;
     final request = UpdateTimeEntryRequest(
       projectId: project.id,
       taskId: task.id,
       spentDate: DateFormat('yyyy-MM-dd').format(_selectedDate),
-      hours: int.parse(_hoursController.text) +
-          int.parse(_minutesController.text) / 60.0,
+      hours: newHours,
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
       externalReference: extRef,
     );
 
+    // Capture before any async gap
+    final adoInstanceForUpdate = _selectedAdoInstance;
+    final workItemIdForUpdate = _workItemIdController.text.trim();
+
     final success = await entryProvider.update(widget.entry.id, request);
     if (success && context.mounted) {
+      String snackMessage = entryProvider.successMessage ?? 'Entry updated!';
+      Color snackColor = Colors.green;
+
+      // Apply hours delta to ADO Completed Work when the same ticket is linked
+      if (adoRefUnchanged && adoInstanceForUpdate != null) {
+        final hoursDelta = newHours - widget.entry.hours;
+        if (hoursDelta.abs() > 0.001) {
+          final prefs = await SharedPreferences.getInstance();
+          final updateEnabled = prefs.getBool('ado_update_completed_work') ?? true;
+          if (updateEnabled && context.mounted) {
+            try {
+              await context
+                  .read<AdoService>()
+                  .addCompletedWork(adoInstanceForUpdate, workItemIdForUpdate, hoursDelta);
+            } catch (_) {
+              snackMessage = 'Entry updated, but could not update ADO Completed Work';
+              snackColor = Colors.orange;
+            }
+          }
+        }
+      }
+
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(entryProvider.successMessage ?? 'Entry updated!'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(content: Text(snackMessage), backgroundColor: snackColor),
       );
       Navigator.of(context).pop();
     }
