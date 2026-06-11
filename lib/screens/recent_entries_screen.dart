@@ -1,7 +1,8 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:collection/collection.dart';
+
 import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
@@ -9,10 +10,10 @@ import '../providers/assignment_provider.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
+import '../theme/harvest_tokens.dart';
+import '../widgets/error_banner.dart';
 import '../widgets/time_entry_card.dart';
 import '../widgets/weekly_progress_ring.dart';
-import '../widgets/error_banner.dart';
-import '../theme/harvest_tokens.dart';
 
 class RecentEntriesScreen extends StatefulWidget {
   const RecentEntriesScreen({super.key});
@@ -84,8 +85,7 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
     }
 
     final groupList = grouped.entries.toList()
-      ..sort((a, b) => (b.value.first.createdAt ?? '')
-          .compareTo(a.value.first.createdAt ?? ''));
+      ..sort((a, b) => (b.value.first.createdAt ?? '').compareTo(a.value.first.createdAt ?? ''));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -114,12 +114,7 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
     final clientName = proj?.clientName;
     final fallbackCode = (proj != null && proj.code.isNotEmpty)
         ? proj.code
-        : name
-            .split(' ')
-            .where((w) => w.isNotEmpty)
-            .take(3)
-            .map((w) => w[0].toUpperCase())
-            .join();
+        : name.split(' ').where((w) => w.isNotEmpty).take(3).map((w) => w[0].toUpperCase()).join();
     final cat = catProvider.categoryFor(pid, fallbackCode: fallbackCode);
     final total = groupEntries.fold<double>(0, (s, e) => s + e.hours);
 
@@ -146,8 +141,7 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
     final provider = context.watch<TimeEntryProvider>();
     final isToday = provider.isSelectedDateToday;
 
-    final sortedEntries = [...provider.entries]
-      ..sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
+    final sortedEntries = [...provider.entries]..sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
 
     return Column(
       children: [
@@ -158,15 +152,8 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               FilterChip(
-                avatar: Icon(
-                  _groupByProject
-                      ? Icons.folder_open
-                      : Icons.folder_outlined,
-                  size: 16,
-                ),
-                label: Text(
-                  _groupByProject ? 'Grouped by project' : 'Group by project',
-                ),
+                avatar: Icon(_groupByProject ? Icons.folder_open : Icons.folder_outlined, size: 16),
+                label: Text(_groupByProject ? 'Grouped by project' : 'Group by project'),
                 selected: _groupByProject,
                 onSelected: (v) => setState(() => _groupByProject = v),
               ),
@@ -174,13 +161,10 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
           ),
         ),
         if (provider.showNewDayBanner)
-          _NewDayBanner(
-            onGoToToday: () =>
-                provider.loadRecentEntries(date: DateTime.now()),
-          ),
+          _NewDayBanner(onGoToToday: () => provider.loadRecentEntries(date: DateTime.now())),
         // Date picker header
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
           child: Row(
             children: [
               IconButton(
@@ -197,19 +181,13 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
                     child: Column(
                       children: [
                         Text(
-                          isToday
-                              ? 'Today'
-                              : DateFormat('EEEE').format(provider.selectedDate),
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                          isToday ? 'Today' : DateFormat('EEEE').format(provider.selectedDate),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
                         ),
                         Text(
-                          DateFormat('d MMM yyyy')
-                              .format(provider.selectedDate),
+                          DateFormat('d MMM yyyy').format(provider.selectedDate),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -248,15 +226,14 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
             },
           ),
         ),
-        const Divider(height: 1),
+        const SizedBox(height: 4),
 
         // Entries list
         Expanded(
           child: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
-                  onRefresh: () =>
-                      context.read<TimeEntryProvider>().loadRecentEntries(),
+                  onRefresh: () => context.read<TimeEntryProvider>().loadRecentEntries(),
                   child: CustomScrollView(
                     slivers: [
                       if (provider.error != null)
@@ -267,19 +244,13 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
                           ),
                         ),
                       if (provider.entries.isEmpty)
-                        const SliverFillRemaining(
-                          child: Center(
-                              child: Text('No entries for this day.')),
-                        )
+                        const SliverFillRemaining(child: Center(child: Text('No entries for this day.')))
                       else if (_groupByProject)
-                        SliverToBoxAdapter(
-                            child: _buildGroupedList(
-                                context, sortedEntries))
+                        SliverToBoxAdapter(child: _buildGroupedList(context, sortedEntries))
                       else
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
-                            (ctx, i) =>
-                                TimeEntryCard(entry: sortedEntries[i]),
+                            (ctx, i) => TimeEntryCard(entry: sortedEntries[i]),
                             childCount: sortedEntries.length,
                           ),
                         ),
@@ -287,8 +258,7 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
                   ),
                 ),
         ),
-        if (!provider.isLoading)
-          _DailyProgressBar(entries: provider.entries, isToday: isToday),
+        if (!provider.isLoading) _DailyProgressBar(entries: provider.entries, isToday: isToday),
       ],
     );
   }
@@ -369,23 +339,20 @@ class _WeekSummaryStrip extends StatelessWidget {
     return _buildCompact(context, days, weekTotal);
   }
 
-  Widget _buildCompact(
-      BuildContext context, List<_DayData> days, double weekTotal) {
+  Widget _buildCompact(BuildContext context, List<_DayData> days, double weekTotal) {
     final colorScheme = Theme.of(context).colorScheme;
-    final weeklyGoal = context.select<ProjectCategoryProvider, double>(
-      (p) => p.weeklyGoalHours,
-    );
+    final weeklyGoal = context.select<ProjectCategoryProvider, double>((p) => p.weeklyGoalHours);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           ...days.map((d) {
             final textColor = d.isSelected
                 ? colorScheme.primary
                 : d.isFuture
-                    ? colorScheme.onSurface.withValues(alpha: 0.3)
-                    : colorScheme.onSurfaceVariant;
+                ? colorScheme.onSurface.withValues(alpha: 0.3)
+                : colorScheme.onSurfaceVariant;
             return Expanded(
               child: InkWell(
                 onTap: d.isFuture ? null : () => onDayTap(d.date),
@@ -395,21 +362,17 @@ class _WeekSummaryStrip extends StatelessWidget {
                     Text(
                       d.abbr,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: textColor,
-                            fontWeight: d.isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
+                        color: textColor,
+                        fontWeight: d.isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       isLoading ? '–' : _fmt(d.hours),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: textColor,
-                            fontWeight: d.isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
+                        color: textColor,
+                        fontWeight: d.isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
                   ],
                 ),
@@ -418,17 +381,11 @@ class _WeekSummaryStrip extends StatelessWidget {
           }),
           Container(
             padding: const EdgeInsets.only(left: 8),
-            decoration: const BoxDecoration(
-              border: Border(
-                  left: BorderSide(color: Color(0xFFE8E1D4))),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: HarvestTokens.of(context).border)),
             ),
             child: Center(
-              child: WeeklyProgressRing(
-                hours: isLoading ? 0 : weekTotal,
-                goal: weeklyGoal,
-                size: 64,
-                stroke: 6,
-              ),
+              child: WeeklyProgressRing(hours: isLoading ? 0 : weekTotal, goal: weeklyGoal, size: 64, stroke: 6),
             ),
           ),
         ],
@@ -436,18 +393,13 @@ class _WeekSummaryStrip extends StatelessWidget {
     );
   }
 
-  Widget _buildEmphasized(
-      BuildContext context, List<_DayData> days, double weekTotal) {
+  Widget _buildEmphasized(BuildContext context, List<_DayData> days, double weekTotal) {
     final palette = HarvestTokens.of(context);
-    final dailyGoal = context.select<ProjectCategoryProvider, double>(
-      (provider) => provider.dailyGoalHours,
-    );
-    final weeklyGoal = context.select<ProjectCategoryProvider, double>(
-      (provider) => provider.weeklyGoalHours,
-    );
+    final dailyGoal = context.select<ProjectCategoryProvider, double>((provider) => provider.dailyGoalHours);
+    final weeklyGoal = context.select<ProjectCategoryProvider, double>((provider) => provider.weeklyGoalHours);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Container(
         decoration: BoxDecoration(
           color: palette.surface2,
@@ -461,13 +413,13 @@ class _WeekSummaryStrip extends StatelessWidget {
               final textColor = d.isSelected
                   ? HarvestTokens.brand600
                   : d.isFuture
-                      ? palette.text4
-                      : palette.text;
+                  ? palette.text4
+                  : palette.text;
               final labelColor = d.isSelected
                   ? HarvestTokens.brand
                   : d.isFuture
-                      ? palette.text4
-                      : palette.text3;
+                  ? palette.text4
+                  : palette.text3;
               final isOver = d.hours > dailyGoal;
               final progress = (d.hours / dailyGoal).clamp(0.0, 1.0);
 
@@ -476,18 +428,11 @@ class _WeekSummaryStrip extends StatelessWidget {
                   onTap: d.isFuture ? null : () => onDayTap(d.date),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 2),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                     decoration: BoxDecoration(
-                      color: d.isSelected
-                          ? palette.surface
-                          : Colors.transparent,
+                      color: d.isSelected ? palette.surface : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: d.isSelected
-                            ? palette.brandTint2
-                            : Colors.transparent,
-                      ),
+                      border: Border.all(color: d.isSelected ? palette.brandTint2 : Colors.transparent),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -517,9 +462,7 @@ class _WeekSummaryStrip extends StatelessWidget {
                           d.isFuture || isLoading ? '–' : _fmt(d.hours),
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: d.isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
+                            fontWeight: d.isSelected ? FontWeight.w600 : FontWeight.w500,
                             color: textColor,
                           ),
                         ),
@@ -531,9 +474,7 @@ class _WeekSummaryStrip extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: d.isFuture ? 0 : progress,
                               backgroundColor: palette.surface3,
-                              color: isOver
-                                  ? HarvestTokens.warn
-                                  : HarvestTokens.brand,
+                              color: isOver ? HarvestTokens.warn : HarvestTokens.brand,
                               minHeight: 3,
                             ),
                           ),
@@ -547,16 +488,10 @@ class _WeekSummaryStrip extends StatelessWidget {
             Container(
               padding: const EdgeInsets.only(left: 8),
               decoration: BoxDecoration(
-                border: Border(
-                    left: BorderSide(color: palette.border)),
+                border: Border(left: BorderSide(color: palette.border)),
               ),
               child: Center(
-                child: WeeklyProgressRing(
-                  hours: isLoading ? 0 : weekTotal,
-                  goal: weeklyGoal,
-                  size: 76,
-                  stroke: 7,
-                ),
+                child: WeeklyProgressRing(hours: isLoading ? 0 : weekTotal, goal: weeklyGoal, size: 76, stroke: 7),
               ),
             ),
           ],
@@ -585,8 +520,7 @@ class _DailyProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final catProvider = context.watch<ProjectCategoryProvider>();
     final goal = catProvider.dailyGoalHours;
-    final total =
-        entries.fold<double>(0, (sum, e) => sum + (e.hours as double));
+    final total = entries.fold<double>(0, (sum, e) => sum + (e.hours as double));
     final isOver = total > goal;
     final progress = (total / goal).clamp(0.0, 1.0);
     final overflow = total - goal;
@@ -595,14 +529,10 @@ class _DailyProgressBar extends StatelessWidget {
     double? expectedRatio;
     if (isToday) {
       final now = DateTime.now();
-      final startMinutes =
-          catProvider.workDayStart.hour * 60 + catProvider.workDayStart.minute;
-      final endMinutes =
-          catProvider.workDayEnd.hour * 60 + catProvider.workDayEnd.minute;
+      final startMinutes = catProvider.workDayStart.hour * 60 + catProvider.workDayStart.minute;
+      final endMinutes = catProvider.workDayEnd.hour * 60 + catProvider.workDayEnd.minute;
       final nowMinutes = now.hour * 60 + now.minute;
-      final elapsedRatio = ((nowMinutes - startMinutes) /
-              (endMinutes - startMinutes))
-          .clamp(0.0, 1.0);
+      final elapsedRatio = ((nowMinutes - startMinutes) / (endMinutes - startMinutes)).clamp(0.0, 1.0);
       expectedHours = elapsedRatio * goal;
       expectedRatio = (expectedHours / goal).clamp(0.0, 1.0);
     }
@@ -622,26 +552,20 @@ class _DailyProgressBar extends StatelessWidget {
               Text(
                 'Total: ${_fmt(total)}',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: isOver ? HarvestTokens.warn : colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: isOver ? HarvestTokens.warn : colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (expectedHours != null)
                 Text(
                   'Expected: ${_fmt(expectedHours)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
               Text(
-                isOver
-                    ? '+${_fmt(overflow)} over goal'
-                    : '${_fmt(goal - total)} remaining',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isOver
-                          ? HarvestTokens.warn
-                          : colorScheme.onSurfaceVariant,
-                    ),
+                isOver ? '+${_fmt(overflow)} over goal' : '${_fmt(goal - total)} remaining',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: isOver ? HarvestTokens.warn : colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -653,10 +577,7 @@ class _DailyProgressBar extends StatelessWidget {
             child: Stack(
               children: [
                 // Background track
-                Container(
-                  height: 8,
-                  color: colorScheme.surfaceContainerHighest,
-                ),
+                Container(height: 8, color: colorScheme.surfaceContainerHighest),
                 // Filled portion
                 FractionallySizedBox(
                   widthFactor: progress,
@@ -667,11 +588,7 @@ class _DailyProgressBar extends StatelessWidget {
                   Positioned.fill(
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: Container(
-                        width: 2,
-                        height: 8,
-                        color: HarvestTokens.brand600,
-                      ),
+                      child: Container(width: 2, height: 8, color: HarvestTokens.brand600),
                     ),
                   ),
                 // Expected time tick marker
@@ -680,11 +597,7 @@ class _DailyProgressBar extends StatelessWidget {
                     widthFactor: expectedRatio,
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: Container(
-                        width: 2,
-                        height: 8,
-                        color: colorScheme.onSurface.withValues(alpha: 0.45),
-                      ),
+                      child: Container(width: 2, height: 8, color: colorScheme.onSurface.withValues(alpha: 0.45)),
                     ),
                   ),
               ],
@@ -737,12 +650,8 @@ class _ProjectGroupHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: tint,
-                borderRadius: BorderRadius.circular(4),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(4)),
               child: Text(
                 projectCode,
                 style: TextStyle(
@@ -762,25 +671,13 @@ class _ProjectGroupHeader extends StatelessWidget {
                 children: [
                   Text(
                     projectName,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: palette.text,
-                    ),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: palette.text),
                   ),
                   if (clientName != null) ...[
-                    Text(
-                      '·',
-                      style: TextStyle(
-                          color: palette.text4, fontSize: 11),
-                    ),
+                    Text('·', style: TextStyle(color: palette.text4, fontSize: 11)),
                     Text(
                       clientName!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: palette.text3,
-                      ),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: palette.text3),
                     ),
                   ],
                 ],
@@ -789,11 +686,7 @@ class _ProjectGroupHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$entryCount ${entryCount == 1 ? 'entry' : 'entries'}',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: palette.text3,
-              ),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: palette.text3),
             ),
             const SizedBox(width: 10),
             Text(
@@ -837,11 +730,7 @@ class _NewDayBanner extends StatelessWidget {
               children: [
                 const Text(
                   "Hey, it's a new day!",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: HarvestTokens.warn,
-                  ),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: HarvestTokens.warn),
                 ),
                 GestureDetector(
                   onTap: onGoToToday,
