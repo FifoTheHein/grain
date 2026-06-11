@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'log_time_screen.dart';
 import 'recent_entries_screen.dart';
 import 'settings_screen.dart';
@@ -83,6 +84,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       AppBar(
+                        leading: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SvgPicture.asset('assets/icon.svg'),
+                          ),
+                        ),
                         title: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -118,18 +126,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           appBar: AppBar(
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SvgPicture.asset('assets/icon.svg'),
+              ),
+            ),
             title: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Grain',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 18)),
-                            Text('A better Harvest',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white.withValues(alpha: 0.8))),
-                          ],
-                        ),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Grain',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 18)),
+                Text('A better Harvest',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.8))),
+              ],
+            ),
             backgroundColor: HarvestTokens.brand,
             foregroundColor: Colors.white,
             elevation: 2,

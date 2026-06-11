@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/ado_work_item.dart';
 import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
@@ -36,7 +35,6 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
   AdoInstance? _selectedAdoInstance;
   bool _hasAdoRef = false;
   Timer? _debounce;
-  AdoWorkItem? _previewItem;
   bool _previewLoading = false;
 
   // Saved so we can restore AssignmentProvider on pop
@@ -102,7 +100,6 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
   @override
   void initState() {
     super.initState();
-    _workItemIdController.addListener(_onWorkItemChanged);
   }
 
   @override
@@ -124,38 +121,25 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     final text = _workItemIdController.text.trim();
     if (text.isEmpty || _selectedAdoInstance == null) {
       _debounce?.cancel();
-      setState(() {
-        _previewItem = null;
-        _previewLoading = false;
-      });
+      setState(() => _previewLoading = false);
       return;
     }
 
     final adoService = context.read<AdoService>();
-    final cached = adoService.getCached(_selectedAdoInstance!.label, text);
-    if (cached != null) {
-      setState(() {
-        _previewItem = cached;
-        _previewLoading = false;
-      });
+    if (adoService.getCached(_selectedAdoInstance!.label, text) != null) {
+      setState(() => _previewLoading = false);
       return;
     }
 
     _debounce?.cancel();
-    setState(() {
-      _previewItem = null;
-      _previewLoading = true;
-    });
+    setState(() => _previewLoading = true);
     _debounce = Timer(const Duration(milliseconds: 600), () async {
       if (!mounted) return;
       final instance = _selectedAdoInstance;
       if (instance == null) return;
       await adoService.fetchWorkItem(instance, text);
       if (!mounted) return;
-      setState(() {
-        _previewItem = adoService.getCached(instance.label, text);
-        _previewLoading = false;
-      });
+      setState(() => _previewLoading = false);
     });
   }
 
@@ -245,7 +229,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
       } else {
         // ADO reference changed — build a fresh composite ID
         final adoService = context.read<AdoService>();
-        var workItemType = _previewItem?.workItemType;
+        var workItemType = adoService.getCached(_selectedAdoInstance!.label, workItemId)?.workItemType;
         if (workItemType == null && originalRef != null) {
           workItemType = AdoService.parseWorkItemType(originalRef.id);
         }
@@ -318,6 +302,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     final palette = HarvestTokens.of(context);
     final assignments = context.watch<AssignmentProvider>();
     final entryProvider = context.watch<TimeEntryProvider>();
+    final adoService = context.watch<AdoService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -559,6 +544,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
 
                     TextFormField(
                       controller: _workItemIdController,
+                      onChanged: (_) => _onWorkItemChanged(),
                       decoration: const InputDecoration(
                         labelText: 'Work Item #',
                         border: OutlineInputBorder(),
@@ -579,17 +565,22 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                     ),
                     const SizedBox(height: 8),
                     if (_selectedAdoInstance != null)
-                      WorkItemPreview(
-                        isLoading: _previewLoading,
-                        workItem: _previewItem,
-                        hasPat: _selectedAdoInstance!.pat != null,
-                        workItemId: _workItemIdController.text.trim(),
-                        instance: _selectedAdoInstance!,
-                        permalink: _workItemIdController.text.trim().isNotEmpty
-                            ? _selectedAdoInstance!
-                                .permalinkFor(_workItemIdController.text.trim())
-                            : null,
-                      ),
+                      Builder(builder: (context) {
+                        final wid = _workItemIdController.text.trim();
+                        final cachedItem = wid.isNotEmpty
+                            ? adoService.getCached(_selectedAdoInstance!.label, wid)
+                            : null;
+                        return WorkItemPreview(
+                          isLoading: _previewLoading && cachedItem == null,
+                          workItem: cachedItem,
+                          hasPat: _selectedAdoInstance!.pat != null,
+                          workItemId: wid,
+                          instance: _selectedAdoInstance!,
+                          permalink: wid.isNotEmpty
+                              ? _selectedAdoInstance!.permalinkFor(wid)
+                              : null,
+                        );
+                      }),
                   ],
 
                   const SizedBox(height: 24),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:web/web.dart' as web;
 import '../models/time_entry.dart';
+import '../utils/open_url.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/project_category_provider.dart';
 import '../screens/edit_time_screen.dart';
@@ -146,8 +146,7 @@ class TimeEntryCard extends StatelessWidget {
                       GestureDetector(
                         onTap: (entry.externalReference!.permalink != null &&
                                 entry.externalReference!.permalink!.isNotEmpty)
-                            ? () => web.window
-                                .open(entry.externalReference!.permalink!, '_blank')
+                            ? () => openUrl(entry.externalReference!.permalink!)
                             : null,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
