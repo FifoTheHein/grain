@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../theme/harvest_tokens.dart';
+
 class WeeklyProgressRing extends StatelessWidget {
   final double hours;
   final double goal;
@@ -17,17 +19,12 @@ class WeeklyProgressRing extends StatelessWidget {
     this.showCaption = true,
   });
 
-  static const _orange = Color(0xFFFA5D24);
-  static const _warn = Color(0xFFD97706);
-  static const _textDark = Color(0xFF1A1814);
-  static const _text3 = Color(0xFF8A837A);
-  static const _track = Color(0xFFF1ECE3);
-
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final pct = (hours / goal).clamp(0.0, 1.0);
     final isOver = hours > goal;
-    final ringColor = isOver ? _warn : _orange;
+    final ringColor = isOver ? HarvestTokens.warn : HarvestTokens.brand;
     final goalLabel = 'of ${goal % 1 == 0 ? goal.toInt() : goal}h';
 
     return TweenAnimationBuilder<double>(
@@ -43,7 +40,7 @@ class WeeklyProgressRing extends StatelessWidget {
               pct: animPct,
               stroke: stroke,
               ringColor: ringColor,
-              trackColor: _track,
+              trackColor: palette.surface3,
             ),
             // Over-goal: center is empty — label shown beside the ring
             child: isOver
@@ -60,7 +57,7 @@ class WeeklyProgressRing extends StatelessWidget {
                             fontSize: _labelFontSize(_fmt(hours)),
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.6,
-                            color: _textDark,
+                            color: palette.text,
                             height: 1,
                           ),
                         ),
@@ -68,9 +65,9 @@ class WeeklyProgressRing extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             goalLabel,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: _text3,
+                              color: palette.text3,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -101,16 +98,16 @@ class WeeklyProgressRing extends StatelessWidget {
                           fontSize: _labelFontSize(_fmt(hours)),
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.6,
-                          color: _warn,
+                          color: HarvestTokens.warn,
                           height: 1,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         goalLabel,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: _text3,
+                          color: palette.text3,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -162,10 +159,6 @@ class _Caption extends StatelessWidget {
     required this.isOver,
   });
 
-  static const _warn = Color(0xFFD97706);
-  static const _text2 = Color(0xFF5C5650);
-  static const _text3 = Color(0xFF8A837A);
-
   String _fmt(double h) {
     final total = (h * 60).round();
     final hh = total ~/ 60;
@@ -178,6 +171,7 @@ class _Caption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final String helperText;
     if (isOver) {
       helperText = '+${_fmt(hours - goal)} over';
@@ -190,13 +184,13 @@ class _Caption extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'THIS WEEK',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.6,
-            color: _text3,
+            color: palette.text3,
           ),
         ),
         const SizedBox(height: 2),
@@ -205,7 +199,7 @@ class _Caption extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isOver ? _warn : _text2,
+            color: isOver ? HarvestTokens.warn : palette.text2,
           ),
         ),
       ],
