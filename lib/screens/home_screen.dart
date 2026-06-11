@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'log_time_screen.dart';
 import 'recent_entries_screen.dart';
 import 'settings_screen.dart';
@@ -88,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.all(8.0),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: SvgPicture.asset('assets/icon.svg'),
+                            child: Image.asset('assets/icon.png'),
                           ),
                         ),
                         title: Column(
@@ -130,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(8.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: SvgPicture.asset('assets/icon.svg'),
+                child: Image.asset('assets/icon.png'),
               ),
             ),
             title: Column(
