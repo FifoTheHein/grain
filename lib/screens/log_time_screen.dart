@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
-import '../models/ado_work_item.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
@@ -33,7 +32,6 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   AdoInstance? _selectedAdoInstance;
   bool _hasAdoRef = false;
   Timer? _debounce;
-  AdoWorkItem? _previewItem;
   bool _previewLoading = false;
 
   bool _useStartEndTime = false;
@@ -44,7 +42,6 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   @override
   void initState() {
     super.initState();
-    _workItemIdController.addListener(_onWorkItemChanged);
   }
 
   @override
@@ -135,38 +132,25 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     final text = _workItemIdController.text.trim();
     if (text.isEmpty || _selectedAdoInstance == null) {
       _debounce?.cancel();
-      setState(() {
-        _previewItem = null;
-        _previewLoading = false;
-      });
+      setState(() => _previewLoading = false);
       return;
     }
 
     final adoService = context.read<AdoService>();
-    final cached = adoService.getCached(_selectedAdoInstance!.label, text);
-    if (cached != null) {
-      setState(() {
-        _previewItem = cached;
-        _previewLoading = false;
-      });
+    if (adoService.getCached(_selectedAdoInstance!.label, text) != null) {
+      setState(() => _previewLoading = false);
       return;
     }
 
     _debounce?.cancel();
-    setState(() {
-      _previewItem = null;
-      _previewLoading = true;
-    });
+    setState(() => _previewLoading = true);
     _debounce = Timer(const Duration(milliseconds: 600), () async {
       if (!mounted) return;
       final instance = _selectedAdoInstance;
       if (instance == null) return;
       await adoService.fetchWorkItem(instance, text);
       if (!mounted) return;
-      setState(() {
-        _previewItem = adoService.getCached(instance.label, text);
-        _previewLoading = false;
-      });
+      setState(() => _previewLoading = false);
     });
   }
 
@@ -215,15 +199,17 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       return;
     }
 
+    final adoService = context.read<AdoService>();
+
     ExternalReference? extRef;
     if (_hasAdoRef &&
         _workItemIdController.text.trim().isNotEmpty &&
         _selectedAdoInstance != null) {
       final workItemId = _workItemIdController.text.trim();
-      final adoService = context.read<AdoService>();
       final projectGuid =
           await adoService.getHarvestConnectionGuid(_selectedAdoInstance!);
-      final workItemType = _previewItem?.workItemType ?? 'Work Item';
+      final workItemType =
+          adoService.getCached(_selectedAdoInstance!.label, workItemId)?.workItemType ?? 'Work Item';
 
       final refId = projectGuid != null
           ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
@@ -239,7 +225,8 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     String? notes;
     if (extRef != null) {
       final workItemId = _workItemIdController.text.trim();
-      final workItemType = _previewItem?.workItemType ?? 'Work Item';
+      final workItemType =
+          adoService.getCached(_selectedAdoInstance!.label, workItemId)?.workItemType ?? 'Work Item';
       final prefix =
           '${_selectedAdoInstance!.label} Azure DevOps $workItemType #$workItemId';
       notes = userNotes.isEmpty ? prefix : '$prefix - $userNotes';
@@ -321,6 +308,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   Widget build(BuildContext context) {
     final assignments = context.watch<AssignmentProvider>();
     final entryProvider = context.watch<TimeEntryProvider>();
+    final adoService = context.watch<AdoService>();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -567,6 +555,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
               TextFormField(
                 controller: _workItemIdController,
+                onChanged: (_) => _onWorkItemChanged(),
                 decoration: const InputDecoration(
                   labelText: 'Work Item #',
                   border: OutlineInputBorder(),
@@ -587,17 +576,22 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               ),
               const SizedBox(height: 8),
               if (_selectedAdoInstance != null)
-                WorkItemPreview(
-                  isLoading: _previewLoading,
-                  workItem: _previewItem,
-                  hasPat: _selectedAdoInstance!.pat != null,
-                  workItemId: _workItemIdController.text.trim(),
-                  instance: _selectedAdoInstance!,
-                  permalink: _workItemIdController.text.trim().isNotEmpty
-                      ? _selectedAdoInstance!
-                          .permalinkFor(_workItemIdController.text.trim())
-                      : null,
-                ),
+                Builder(builder: (context) {
+                  final wid = _workItemIdController.text.trim();
+                  final cachedItem = wid.isNotEmpty
+                      ? adoService.getCached(_selectedAdoInstance!.label, wid)
+                      : null;
+                  return WorkItemPreview(
+                    isLoading: _previewLoading && cachedItem == null,
+                    workItem: cachedItem,
+                    hasPat: _selectedAdoInstance!.pat != null,
+                    workItemId: wid,
+                    instance: _selectedAdoInstance!,
+                    permalink: wid.isNotEmpty
+                        ? _selectedAdoInstance!.permalinkFor(wid)
+                        : null,
+                  );
+                }),
             ],
 
             const SizedBox(height: 24),

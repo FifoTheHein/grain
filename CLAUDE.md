@@ -11,11 +11,17 @@ flutter pub get
 # Run development server
 flutter run -d web-server --web-port=8080
 
-# Build for production
+# Build for production — always build BOTH web and Android when asked for a production build
+
+# 1. Web
 # MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from expanding /grain/ to a Windows path
 # --pwa-strategy=none disables the service worker — avoids a browser console error where the
 # SW intercepts background API fetches but closes the message channel before responding
 MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strategy=none
+
+# 2. Android APK
+# Output: build\app\outputs\flutter-apk\app-release.apk
+flutter build apk --release
 
 # Lint / static analysis
 flutter analyze

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:web/web.dart' as web;
 
 import '../models/ado_work_item.dart';
 import '../models/time_entry.dart';
+import '../utils/open_url.dart';
 
 class WorkItemPreview extends StatelessWidget {
   final bool isLoading;
@@ -65,7 +65,7 @@ class WorkItemPreview extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(6),
           child: InkWell(
-            onTap: () => web.window.open(url, '_blank'),
+            onTap: () => openUrl(url),
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -135,7 +135,7 @@ class WorkItemPreview extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
-        onTap: () => web.window.open(url, '_blank'),
+        onTap: () => openUrl(url),
         child: Text(
           'ADO #$workItemId',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
