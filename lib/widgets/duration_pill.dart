@@ -25,6 +25,7 @@ class DurationPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final label = _label();
     final raw = label.replaceAll('\n', '');
     final fontSize = raw.length > 4 ? 11.0 : raw.length > 2 ? 12.0 : 13.0;
@@ -34,7 +35,7 @@ class DurationPill extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: running ? HarvestTokens.brand : HarvestTokens.brandTint,
+        color: running ? HarvestTokens.brand : palette.brandTint,
       ),
       alignment: Alignment.center,
       child: Text(

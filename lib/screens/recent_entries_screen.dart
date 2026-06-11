@@ -438,6 +438,7 @@ class _WeekSummaryStrip extends StatelessWidget {
 
   Widget _buildEmphasized(
       BuildContext context, List<_DayData> days, double weekTotal) {
+    final palette = HarvestTokens.of(context);
     final dailyGoal = context.select<ProjectCategoryProvider, double>(
       (provider) => provider.dailyGoalHours,
     );
@@ -449,9 +450,9 @@ class _WeekSummaryStrip extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
       child: Container(
         decoration: BoxDecoration(
-          color: HarvestTokens.surface2,
+          color: palette.surface2,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: HarvestTokens.border),
+          border: Border.all(color: palette.border),
         ),
         padding: const EdgeInsets.fromLTRB(10, 14, 10, 14),
         child: Row(
@@ -460,13 +461,13 @@ class _WeekSummaryStrip extends StatelessWidget {
               final textColor = d.isSelected
                   ? HarvestTokens.brand600
                   : d.isFuture
-                      ? HarvestTokens.text4
-                      : HarvestTokens.text;
+                      ? palette.text4
+                      : palette.text;
               final labelColor = d.isSelected
                   ? HarvestTokens.brand
                   : d.isFuture
-                      ? HarvestTokens.text4
-                      : HarvestTokens.text3;
+                      ? palette.text4
+                      : palette.text3;
               final isOver = d.hours > dailyGoal;
               final progress = (d.hours / dailyGoal).clamp(0.0, 1.0);
 
@@ -479,12 +480,12 @@ class _WeekSummaryStrip extends StatelessWidget {
                         horizontal: 4, vertical: 8),
                     decoration: BoxDecoration(
                       color: d.isSelected
-                          ? HarvestTokens.surface
+                          ? palette.surface
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: d.isSelected
-                            ? HarvestTokens.brandTint2
+                            ? palette.brandTint2
                             : Colors.transparent,
                       ),
                     ),
@@ -529,7 +530,7 @@ class _WeekSummaryStrip extends StatelessWidget {
                             height: 3,
                             child: LinearProgressIndicator(
                               value: d.isFuture ? 0 : progress,
-                              backgroundColor: HarvestTokens.surface3,
+                              backgroundColor: palette.surface3,
                               color: isOver
                                   ? HarvestTokens.warn
                                   : HarvestTokens.brand,
@@ -545,9 +546,9 @@ class _WeekSummaryStrip extends StatelessWidget {
             }),
             Container(
               padding: const EdgeInsets.only(left: 8),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                    left: BorderSide(color: Color(0xFFE8E1D4))),
+                    left: BorderSide(color: palette.border)),
               ),
               child: Center(
                 child: WeeklyProgressRing(
@@ -725,9 +726,10 @@ class _ProjectGroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: HarvestTokens.divider)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: palette.divider)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(4, 10, 4, 7),
@@ -760,24 +762,24 @@ class _ProjectGroupHeader extends StatelessWidget {
                 children: [
                   Text(
                     projectName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: HarvestTokens.text,
+                      color: palette.text,
                     ),
                   ),
                   if (clientName != null) ...[
-                    const Text(
+                    Text(
                       '·',
                       style: TextStyle(
-                          color: HarvestTokens.text4, fontSize: 11),
+                          color: palette.text4, fontSize: 11),
                     ),
                     Text(
                       clientName!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: HarvestTokens.text3,
+                        color: palette.text3,
                       ),
                     ),
                   ],
@@ -787,10 +789,10 @@ class _ProjectGroupHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$entryCount ${entryCount == 1 ? 'entry' : 'entries'}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: HarvestTokens.text3,
+                color: palette.text3,
               ),
             ),
             const SizedBox(width: 10),

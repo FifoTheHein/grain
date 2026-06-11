@@ -5,9 +5,10 @@ import 'providers/assignment_provider.dart';
 import 'services/ado_service.dart';
 import 'providers/time_entry_provider.dart';
 import 'providers/project_category_provider.dart';
+import 'providers/theme_mode_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/harvest_service.dart';
-import 'theme/harvest_tokens.dart';
+import 'theme/grain_theme.dart';
 
 void main() {
   runApp(const HarvestApp());
@@ -40,28 +41,19 @@ class HarvestApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ProjectCategoryProvider()..load(),
         ),
-      ],
-      child: MaterialApp(
-        title: 'Grain',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: HarvestTokens.brand,
-          ),
-          scaffoldBackgroundColor: HarvestTokens.bg,
-          cardTheme: const CardThemeData(
-            color: HarvestTokens.surface,
-            elevation: 0,
-            margin: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(10)),
-              side: BorderSide(color: HarvestTokens.border),
-            ),
-          ),
-          dividerColor: HarvestTokens.divider,
-          useMaterial3: true,
+        ChangeNotifierProvider(
+          create: (_) => ThemeModeProvider()..load(),
         ),
-        home: const HomeScreen(),
-        debugShowCheckedModeBanner: false,
+      ],
+      child: Consumer<ThemeModeProvider>(
+        builder: (context, themeMode, _) => MaterialApp(
+          title: 'Grain',
+          theme: buildGrainTheme(Brightness.light),
+          darkTheme: buildGrainTheme(Brightness.dark),
+          themeMode: themeMode.mode,
+          home: const HomeScreen(),
+          debugShowCheckedModeBanner: false,
+        ),
       ),
     );
   }

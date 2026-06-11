@@ -8,9 +8,39 @@ import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/project_category_provider.dart';
+import '../providers/theme_mode_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
+
+class _ThemeModeSelector extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<ThemeModeProvider>();
+    return SegmentedButton<ThemeMode>(
+      segments: const [
+        ButtonSegment(
+          value: ThemeMode.system,
+          label: Text('System'),
+          icon: Icon(Icons.brightness_auto),
+        ),
+        ButtonSegment(
+          value: ThemeMode.light,
+          label: Text('Light'),
+          icon: Icon(Icons.light_mode_outlined),
+        ),
+        ButtonSegment(
+          value: ThemeMode.dark,
+          label: Text('Dark'),
+          icon: Icon(Icons.dark_mode_outlined),
+        ),
+      ],
+      selected: {provider.mode},
+      onSelectionChanged: (s) =>
+          context.read<ThemeModeProvider>().setMode(s.first),
+    );
+  }
+}
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -19,15 +49,16 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     return Row(
       children: [
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: HarvestTokens.text,
+              color: palette.text,
             ),
           ),
         ),
@@ -100,6 +131,7 @@ class _AdoInstanceList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final provider = context.watch<AdoInstanceProvider>();
     final adoService = context.watch<AdoService>();
 
@@ -128,11 +160,11 @@ class _AdoInstanceList extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: HarvestTokens.surface3,
+                      color: palette.surface3,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.link,
-                        size: 16, color: HarvestTokens.text2),
+                    child: Icon(Icons.link,
+                        size: 16, color: palette.text2),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -151,8 +183,8 @@ class _AdoInstanceList extends StatelessWidget {
                                 instance.baseUrl,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontSize: 11, color: HarvestTokens.text3),
+                                style: TextStyle(
+                                    fontSize: 11, color: palette.text3),
                               ),
                             ),
                             if (instance.pat != null) ...[
@@ -173,7 +205,7 @@ class _AdoInstanceList extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 15),
-                    color: HarvestTokens.text2,
+                    color: palette.text2,
                     tooltip: 'Edit',
                     onPressed: () => onEdit(i, instance),
                   ),
@@ -210,7 +242,7 @@ class _AdoInstanceList extends StatelessWidget {
                           fontFamily: guid != null ? 'monospace' : null,
                           fontSize: 11,
                           color: guid != null
-                              ? HarvestTokens.text3
+                              ? palette.text3
                               : HarvestTokens.warn,
                         ),
                       ),
@@ -368,6 +400,7 @@ class _ProjectCategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final cat = catProvider.categoryFor(
       project.id,
       fallbackCode: project.code.isNotEmpty ? project.code : '?',
@@ -407,12 +440,12 @@ class _ProjectCategoryRow extends StatelessWidget {
               project.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: HarvestTokens.text),
+              style: TextStyle(fontSize: 13, color: palette.text),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 16),
-            color: HarvestTokens.text3,
+            color: palette.text3,
             tooltip: 'Edit category',
             onPressed: () =>
                 _showEditCategoryDialog(context, project, cat, catProvider),
@@ -760,9 +793,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final catProvider = context.watch<ProjectCategoryProvider>();
 
     if (projects.isEmpty) {
-      return const Text(
+      return Text(
         'No projects loaded.',
-        style: TextStyle(fontSize: 12, color: HarvestTokens.text3),
+        style: TextStyle(fontSize: 12, color: HarvestTokens.of(context).text3),
       );
     }
 
@@ -995,6 +1028,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),
+          _SectionHeader(title: 'Appearance'),
+          const SizedBox(height: 12),
+          _ThemeModeSelector(),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
           _SectionHeader(title: 'Project Categories'),
           const SizedBox(height: 12),
           _buildProjectCategoriesSection(context),
@@ -1081,10 +1120,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Settings are stored in browser localStorage.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: HarvestTokens.text3),
+            style: TextStyle(fontSize: 11, color: HarvestTokens.of(context).text3),
           ),
         ],
       ),

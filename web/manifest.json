@@ -1,12 +1,12 @@
 {
     "name": "Grain",
     "short_name": "Grain",
-    "start_url": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "background_color": "#F6F3EE",
+    "theme_color": "#FA5D24",
     "description": "A better Harvest — time tracking built on harvestapp.com",
-    "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {

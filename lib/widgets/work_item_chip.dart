@@ -47,12 +47,13 @@ class WorkItemChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     if (isLoading) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: HarvestTokens.surface2,
-          border: Border.all(color: HarvestTokens.border),
+          color: palette.surface2,
+          border: Border.all(color: palette.border),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -63,13 +64,13 @@ class WorkItemChip extends StatelessWidget {
               height: 10,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
-                color: HarvestTokens.text4,
+                color: palette.text4,
               ),
             ),
             const SizedBox(width: 8),
             Text(
               'Looking up work item…',
-              style: TextStyle(fontSize: 12, color: HarvestTokens.text3),
+              style: TextStyle(fontSize: 12, color: palette.text3),
             ),
           ],
         ),
@@ -108,8 +109,8 @@ class WorkItemChip extends StatelessWidget {
         onTap: _canOpen ? _open : null,
         child: Container(
           decoration: BoxDecoration(
-            color: HarvestTokens.surface2,
-            border: Border.all(color: HarvestTokens.border),
+            color: palette.surface2,
+            border: Border.all(color: palette.border),
             borderRadius: BorderRadius.circular(8),
           ),
           clipBehavior: Clip.hardEdge,
@@ -151,7 +152,7 @@ class WorkItemChip extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text('·',
                               style: TextStyle(
-                                  fontSize: 11, color: HarvestTokens.text4)),
+                                  fontSize: 11, color: palette.text4)),
                           const SizedBox(width: 4),
                           Text(
                             cached!.state,
@@ -165,19 +166,19 @@ class WorkItemChip extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text('·',
                                 style: TextStyle(
-                                    fontSize: 11, color: HarvestTokens.text4)),
+                                    fontSize: 11, color: palette.text4)),
                             const SizedBox(width: 4),
                             Text(
                               cached!.workItemType!,
                               style: TextStyle(
-                                  fontSize: 11, color: HarvestTokens.text3),
+                                  fontSize: 11, color: palette.text3),
                             ),
                           ],
                           const Spacer(),
                           if (cached!.createdByAvatarUrl != null || initials != null) ...[
                             CircleAvatar(
                               radius: 11,
-                              backgroundColor: HarvestTokens.brandTint,
+                              backgroundColor: palette.brandTint,
                               backgroundImage: cached!.createdByAvatarUrl != null
                                   ? NetworkImage(cached!.createdByAvatarUrl!)
                                   : null,
@@ -195,7 +196,7 @@ class WorkItemChip extends StatelessWidget {
                             const SizedBox(width: 4),
                           ],
                           Icon(Icons.open_in_new,
-                              size: 12, color: HarvestTokens.text3),
+                              size: 12, color: palette.text3),
                         ],
                       ),
                     ],

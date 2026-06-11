@@ -17,6 +17,7 @@ class TimeEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final hasAdoRef = entry.externalReference != null;
 
     // Resolve ADO instance for this entry
@@ -104,10 +105,10 @@ class TimeEntryCard extends StatelessWidget {
                           entry.taskName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: HarvestTokens.text,
+                            color: palette.text,
                           ),
                         ),
                       ),
@@ -121,9 +122,9 @@ class TimeEntryCard extends StatelessWidget {
                       entry.notes!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: HarvestTokens.text2,
+                        color: palette.text2,
                         height: 1.45,
                       ),
                     ),
@@ -176,7 +177,7 @@ class TimeEntryCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit_outlined, size: 16),
               tooltip: 'Edit entry',
-              color: HarvestTokens.text3,
+              color: palette.text3,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => EditTimeScreen(entry: entry),

@@ -299,6 +299,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     final assignments = context.watch<AssignmentProvider>();
     final entryProvider = context.watch<TimeEntryProvider>();
     final adoService = context.watch<AdoService>();
@@ -334,8 +335,8 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: HarvestTokens.brandTint,
-                      border: Border.all(color: HarvestTokens.brandTint2),
+                      color: palette.brandTint,
+                      border: Border.all(color: palette.brandTint2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -359,10 +360,10 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                                 '#${widget.entry.id} · ${DateFormat('EEE d MMM yyyy').format(_selectedDate)}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: HarvestTokens.text,
+                                  color: palette.text,
                                 ),
                               ),
                             ],
