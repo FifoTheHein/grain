@@ -3,6 +3,10 @@
 
 A personal Flutter app for logging time entries to [Harvest](https://www.getharvest.com/) with first-class Azure DevOps integration. Runs as a **web app** and an **Android APK**.
 
+| Light                                            | Dark                                           |
+| ------------------------------------------------ | ---------------------------------------------- |
+| ![Recent — light](docs/screenshots/recent-light.png) | ![Recent — dark](docs/screenshots/recent-dark.png) |
+
 ## Features
 
 ### Log Time
@@ -22,9 +26,11 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Automatic GUID detection** — the Harvest connection GUID is learned automatically from any natively-created entry and persisted to `localStorage`; no manual configuration needed
 - **GUID visibility & manual override** — each ADO instance in Settings shows its current GUID (green when known, orange when not); a pencil icon lets you paste the correct GUID manually
 - **Completed Work sync** — when a time entry is saved against an ADO work item, the work item's **Completed Work** field is automatically updated: logging 1 h against a ticket that already has 0.5 h recorded results in 1.5 h; editing an entry applies only the hours delta so there's no double-counting; can be disabled per-instance in Settings
+- **Single-instance auto-select** — when only one ADO instance is configured, it is selected automatically on the Log Time and Edit screens
 
 ### Recent Entries
 - **Default landing screen** — the app opens directly on today's entries
+- **New day banner** — if a background refresh detects the date has rolled over while you were viewing "today", a banner appears offering a one-tap jump to the new day
 - **Weekly summary strip** — compact Mon–Sun strip showing each day's total; tap any day to navigate; selected day is highlighted
   - **Compact mode** (narrow): day abbreviation + hours columns with a `WeeklyProgressRing` at the end
   - **Emphasized mode** (wide): full day-tile card grid with date number, hours, and a 3 px progress bar per day
@@ -35,9 +41,10 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Edit entries** — tap the pencil icon to open a pre-filled edit form with an orange context banner showing the duration and entry ID; changes are saved via `PATCH` and reflected immediately
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
 
-### Visual Design (2.0)
+### Visual Design
 - **Grain logo** — custom SVG hourglass-and-grain icon; shown in the app bar header (rounded corners) and used as the Android launcher icon and web favicon
-- **Design token system** — `HarvestTokens` defines brand orange, warm-paper surface palette, border colours, and ADO state colours; all components reference tokens, not raw hex values
+- **Light & dark themes** — full dark palette (neutral gray with a faint cool tint) alongside the warm-paper light palette; switch between **System / Light / Dark** in Settings, persisted across sessions
+- **Design token system** — `HarvestTokens` defines brand orange and ADO state colours; surfaces, borders, and text inks come from `HarvestPalette` (a `ThemeExtension` with light and dark variants), so every component is theme-aware — no raw hex values in widgets
 - **Duration pill** — 44 px circular pill in the leading position of every entry card; tabular-mono hours label; brand tint background; turns solid orange with a small play-arrow badge (bottom-right) when the timer is actively running
 - **Project colour chips** — each project is auto-assigned one of 12 colours (persisted); shown as a short code badge on cards and group headers
 - **Responsive shell** — wide screens (≥ 720 dp) use a `NavigationRail` sidebar; narrow screens use a `NavigationBar`; content is max-width constrained at 760 dp
@@ -50,6 +57,7 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 
 ### Settings
 - All credentials and ADO instances persist in browser `localStorage` and take effect immediately without recompiling
+- **Theme** — System / Light / Dark segmented toggle (default System)
 - **Project Categories** — view and customise the colour and short code assigned to each project; 12-colour palette with an edit dialog
 - **Weekly Goal** — set your target hours per week (used by the progress ring and emphasized strip)
 - **Work Day** — configure start time (default 08:30), end time (default 17:00), and break hours (default 0.5 h); the daily goal is derived automatically as `(end − start) − break`
@@ -63,7 +71,8 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 lib/
 ├── main.dart
 ├── config/
-│   └── app_config.dart                   # credentials & default ADO instances (gitignored)
+│   ├── app_config.dart                   # credentials & default ADO instances (gitignored)
+│   └── app_config.example.dart           # template — copy to app_config.dart and fill in
 ├── models/
 │   ├── ado_work_item.dart
 │   ├── project_assignment.dart
@@ -76,6 +85,7 @@ lib/
 │   ├── ado_instance_provider.dart        # ADO instances (localStorage)
 │   ├── assignment_provider.dart          # selected project/task & defaults
 │   ├── project_category_provider.dart    # 12-colour palette, weekly goal, work day settings (localStorage)
+│   ├── theme_mode_provider.dart          # System / Light / Dark preference (localStorage)
 │   └── time_entry_provider.dart          # entry list, submit/update lifecycle
 ├── screens/
 │   ├── home_screen.dart                  # NavigationRail (wide) / NavigationBar (narrow)
@@ -84,7 +94,13 @@ lib/
 │   ├── recent_entries_screen.dart        # day picker, week strip, grouped list
 │   └── settings_screen.dart             # credentials, categories, ADO instances
 ├── theme/
-│   └── harvest_tokens.dart              # design tokens — colours, breakpoints
+│   ├── grain_theme.dart                 # builds light/dark ThemeData from a palette
+│   ├── harvest_palette.dart             # surfaces, borders, text inks — light & dark ThemeExtension
+│   └── harvest_tokens.dart              # stable tokens — brand, semantic & ADO state colours, breakpoints
+├── utils/
+│   ├── open_url.dart                    # cross-platform URL opener (conditional import)
+│   ├── open_url_stub.dart
+│   └── open_url_web.dart
 └── widgets/
     ├── duration_pill.dart               # circular hours pill (leading slot of entry card)
     ├── error_banner.dart
@@ -106,29 +122,22 @@ lib/
 
 ### 2. Configure credentials
 
-Create `lib/config/app_config.dart` (gitignored — never commit this file):
+The app will not compile without `lib/config/app_config.dart`. It is gitignored — never commit it. Copy the template and fill in your own values:
 
-```dart
-import '../models/time_entry.dart';
-
-class AppConfig {
-  static const String defaultToken = 'YOUR_HARVEST_TOKEN';
-  static const String defaultAccountId = 'YOUR_ACCOUNT_ID';
-  static const int userId = YOUR_USER_ID;
-  static const String userAgent = 'YourName (your@email.com)';
-  static const String baseUrl = 'https://api.harvestapp.com/v2';
-
-  // Default ADO instances — can be overridden at runtime in Settings
-  static const List<AdoInstance> defaultAdoInstances = [
-    AdoInstance(
-      label: 'My Project',
-      baseUrl: 'https://dev.azure.com/my-org/My-Project',
-    ),
-  ];
-}
+```bash
+cp lib/config/app_config.example.dart lib/config/app_config.dart
 ```
 
-> **Note:** `/_workitems/edit/{id}` is appended automatically — only provide the project base URL.
+| Field                 | Required | Where to get it                                                                 |
+| --------------------- | -------- | ------------------------------------------------------------------------------- |
+| `defaultToken`        | Yes      | Harvest personal access token — <https://id.getharvest.com/developers>          |
+| `defaultAccountId`    | Yes      | Shown next to the token on the same developers page                             |
+| `userId`              | Yes      | Your numeric Harvest user ID — `GET https://api.harvestapp.com/v2/users/me`     |
+| `userAgent`           | Yes      | Any `Name (email)` string identifying you to the Harvest API                    |
+| `baseUrl`             | Yes      | Leave as `https://api.harvestapp.com/v2`                                        |
+| `defaultAdoInstances` | No       | Azure DevOps project URLs to pre-load; leave empty and add via Settings instead |
+
+> **Note:** for ADO instances, `/_workitems/edit/{id}` is appended automatically — only provide the project base URL.
 
 ### 3. Install dependencies & run
 
@@ -154,7 +163,9 @@ MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strateg
 flutter build apk --release
 ```
 
-Serve the `build/web` directory from any static host. Side-load or distribute the APK directly.
+Serve the `build/web` directory from any static host.
+
+The APK is debug-signed for side-loading — there is no Play Store signing config. Install it directly on a device (`adb install build/app/outputs/flutter-apk/app-release.apk`, or copy the file over and open it).
 
 ## Settings Reference
 
@@ -162,6 +173,7 @@ All settings persist in browser `localStorage`:
 
 | Setting                  | Description                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------ |
+| Theme                    | System / Light / Dark (default System)                                                           |
 | API Token                | Harvest personal access token                                                                    |
 | Account ID               | Harvest account ID                                                                               |
 | Default Project          | Pre-selected project on the Log Time screen                                                      |
