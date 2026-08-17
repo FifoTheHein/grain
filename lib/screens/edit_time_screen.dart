@@ -323,7 +323,16 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            // A pushed route gets no inset from the Scaffold, so the Update
+            // button would otherwise sit under the Android gesture bar.
+            // Padding rather than SafeArea, so the list still scrolls
+            // edge to edge.
+            padding: EdgeInsets.fromLTRB(
+              16 + MediaQuery.paddingOf(context).left,
+              16,
+              16 + MediaQuery.paddingOf(context).right,
+              16 + MediaQuery.paddingOf(context).bottom,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
