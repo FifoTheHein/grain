@@ -46,6 +46,20 @@ for the running card.
   is disabled while something else is running, since Harvest's one-timer rule
   means resuming would silently stop it.
 
-**Known gap** — ADO Completed Work is not synced when a timer stops. The
-duration path syncs on submit and the edit path syncs the delta, but a timed
-entry never passes through either. Editing the entry afterwards syncs it.
+**ADO Completed Work is pushed explicitly, not automatically.** The automatic
+paths can send a delta because they know what they already sent: create pushes
+the full hours, edit pushes `newHours - entry.hours`, which create had already
+sent. A timed entry has no such history — nothing was pushed when it started,
+and hours accrued on Harvest's side — so an automatic push would have to
+remember what it had sent to survive a Continue/Stop cycle or a mid-run
+reload.
+
+Rather than keep that bookkeeping, `showCompletedWorkSync`
+(`lib/widgets/completed_work_sync.dart`) asks. It resolves the instance from
+the entry's permalink, reads the current Completed Work, and confirms with the
+before and after before writing. Two ways in: the **Sync to ADO** action on the
+snackbar when a timer stops, and a button on Edit Time for any entry linked to
+a work item — the recoverable path when the snackbar is gone.
+
+Note that editing a timed entry does **not** fix it up: the delta is measured
+from hours that were never pushed, so it sends only the difference.

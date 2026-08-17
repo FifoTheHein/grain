@@ -10,6 +10,7 @@ import '../providers/assignment_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
+import '../widgets/completed_work_sync.dart';
 import '../widgets/duration_pill.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/error_banner.dart';
@@ -637,6 +638,22 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
+
+                  // Manual Completed Work push, for an entry whose hours were
+                  // never sent — a timed one, or one whose automatic sync
+                  // failed. Confirms with the before and after first.
+                  if (widget.entry.externalReference != null) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          showCompletedWorkSync(context, widget.entry),
+                      icon: const Icon(Icons.sync, size: 18),
+                      label: const Text('Add hours to ADO Completed Work'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
