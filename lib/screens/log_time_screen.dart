@@ -20,6 +20,7 @@ import '../theme/harvest_tokens.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/quick_template_bar.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/work_item_picker.dart';
 import '../widgets/work_item_preview.dart';
 
 class LogTimeScreen extends StatefulWidget {
@@ -181,6 +182,22 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       final item = adoService.getCached(instance.label, text);
       if (item != null) _maybeApplyMapping(item);
     });
+  }
+
+  /// Opens the work item picker and drops the chosen id into the field, then
+  /// runs the same path as typing it — preview, then mapping rules.
+  Future<void> _openWorkItemPicker() async {
+    final instance = _selectedAdoInstance;
+    if (instance == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select an ADO instance first')),
+      );
+      return;
+    }
+    final picked = await showWorkItemPicker(context, instance: instance);
+    if (picked == null || !mounted) return;
+    _workItemIdController.text = picked;
+    _onWorkItemChanged();
   }
 
   /// Applies the first matching mapping rule to the project/task selection —
@@ -700,11 +717,16 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               TextFormField(
                 controller: _workItemIdController,
                 onChanged: (_) => _onWorkItemChanged(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Work Item #',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   hintText: '13483',
-                  prefixIcon: Icon(Icons.tag),
+                  prefixIcon: const Icon(Icons.tag),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.search),
+                    tooltip: 'Search your work items',
+                    onPressed: _openWorkItemPicker,
+                  ),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (v) {

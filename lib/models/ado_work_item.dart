@@ -13,6 +13,10 @@ class AdoWorkItem {
   final String? assignedToName;
   final List<String> tags;
 
+  /// Parent work item id, when the item has one — used to nest a Task under
+  /// its User Story in the picker.
+  final String? parentId;
+
   const AdoWorkItem({
     required this.id,
     required this.title,
@@ -25,6 +29,7 @@ class AdoWorkItem {
     this.iterationPath,
     this.assignedToName,
     this.tags = const [],
+    this.parentId,
   });
 
   factory AdoWorkItem.fromJson(String id, Map<String, dynamic> json) {
@@ -43,6 +48,7 @@ class AdoWorkItem {
       iterationPath: fields['System.IterationPath'] as String?,
       assignedToName: assignedTo?['displayName'] as String?,
       tags: _parseTags(fields['System.Tags'] as String?),
+      parentId: (fields['System.Parent'] as num?)?.toInt().toString(),
     );
   }
 
