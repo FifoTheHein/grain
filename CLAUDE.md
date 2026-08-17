@@ -31,7 +31,9 @@ Run tests with `flutter test`. Coverage is limited to the pure logic —
 mapping rules (`test/mapping_rule_test.dart`), day analytics
 (`test/day_insights_test.dart`), quick templates
 (`test/quick_template_test.dart`) and work item search
-(`test/work_item_search_test.dart`) — plus a placeholder in
+(`test/work_item_search_test.dart`) and timers
+(`test/timer_test.dart`, which also covers the Harvest timer endpoints with a
+mock client) — plus a placeholder in
 `test/widget_test.dart`.
 
 ## Setup Requirement
@@ -46,10 +48,10 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 
 - **`lib/models/`** — Pure data classes: `TimeEntry` + request DTOs, `HarvestProject`/`HarvestTask`, `AdoWorkItem`, `AdoInstance`, `ExternalReference`, `MappingRule` + its matcher, `QuickTemplate`
 - **`lib/services/`** — HTTP clients with no Flutter dependencies:
-  - `HarvestService` — Harvest API v2 (assignments, create/update time entries). Reads credentials from SharedPreferences.
+  - `HarvestService` — Harvest API v2 (assignments, create/update time entries, start/stop/restart timers). Reads credentials from SharedPreferences.
   - `AdoService` (`ChangeNotifier`) — ADO REST API v7, in-memory work item cache, deduplication via a pending-request set, and a WIQL-backed "assigned to me" fetch for the search picker.
 - **`lib/providers/`** — App state via `ChangeNotifier`:
-  - `TimeEntryProvider` — time entry list, submit/update lifecycle
+  - `TimeEntryProvider` — time entry list, submit/update lifecycle, start/stop/continue timers
   - `AssignmentProvider` — selected project/task and defaults
   - `AdoInstanceProvider` — CRUD for ADO configurations
   - `ProjectCategoryProvider` — project color/code categories, `weeklyGoalHours`, and work day settings (`workDayStart`, `workDayEnd`, `breakHours`, `minGapMinutes`); exposes `dailyGoalHours` computed getter = `(end − start) − breakHours`
@@ -70,5 +72,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 @.claude/docs/mapping-rules.md
 
 @.claude/docs/quick-templates.md
+
+@.claude/docs/timers.md
 
 **State setup** — `main.dart` wires all providers with `MultiProvider` and injects `AdoService` into both `AdoInstanceProvider` and `TimeEntryProvider`.

@@ -85,6 +85,10 @@ class TimeEntry {
   final String? startedTime;
   final String? endedTime;
 
+  /// When the current run began, for an entry whose timer is going. Harvest
+  /// clears it on stop, so it describes the run in progress and not history.
+  final String? timerStartedAt;
+
   const TimeEntry({
     required this.id,
     required this.spentDate,
@@ -100,7 +104,22 @@ class TimeEntry {
     this.isRunning = false,
     this.startedTime,
     this.endedTime,
+    this.timerStartedAt,
   });
+
+  /// Hours to display for a running entry, counting on from the total Harvest
+  /// reported when [fetchedAt] was captured.
+  ///
+  /// Harvest's `hours` is the accumulated total as of the response, so the
+  /// live figure counts from the fetch rather than from [timerStartedAt] —
+  /// adding the whole run to a total that already contains it would
+  /// double-count.
+  double liveHours(DateTime fetchedAt, DateTime now) {
+    if (!isRunning) return hours;
+    final elapsed = now.difference(fetchedAt);
+    if (elapsed.isNegative) return hours;
+    return hours + elapsed.inSeconds / 3600.0;
+  }
 
   /// True when this entry knows when it happened, not just how long it took.
   bool get hasClockTimes =>
@@ -142,6 +161,7 @@ class TimeEntry {
       isRunning: json['is_running'] as bool? ?? false,
       startedTime: json['started_time'] as String?,
       endedTime: json['ended_time'] as String?,
+      timerStartedAt: json['timer_started_at'] as String?,
     );
   }
 }
@@ -151,7 +171,9 @@ class CreateTimeEntryRequest {
   final int projectId;
   final int taskId;
   final String spentDate;
-  final double hours;
+  /// Omitted entirely to start the entry with a running timer — Harvest reads
+  /// a create with no hours as "start timing this now".
+  final double? hours;
   final String? notes;
   final ExternalReference? externalReference;
 
@@ -165,7 +187,7 @@ class CreateTimeEntryRequest {
     required this.projectId,
     required this.taskId,
     required this.spentDate,
-    required this.hours,
+    this.hours,
     this.notes,
     this.externalReference,
     this.startedTime,
@@ -177,7 +199,7 @@ class CreateTimeEntryRequest {
         'project_id': projectId,
         'task_id': taskId,
         'spent_date': spentDate,
-        'hours': hours,
+        if (hours != null) 'hours': hours,
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
         if (externalReference != null)
           'external_reference': externalReference!.toJson(),

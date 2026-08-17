@@ -103,6 +103,30 @@ class HarvestService {
         jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  /// Stops the running timer on [id]. Harvest rejects this when the entry is
+  /// not running.
+  Future<TimeEntry> stopTimeEntry(int id) async {
+    final response = await _client.patch(
+      _uri('/time_entries/$id/stop'),
+      headers: await _headers(),
+    );
+    _assertOk(response);
+    return TimeEntry.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  /// Restarts [id], picking up where it left off. Harvest rejects this when
+  /// the entry is already running.
+  Future<TimeEntry> restartTimeEntry(int id) async {
+    final response = await _client.patch(
+      _uri('/time_entries/$id/restart'),
+      headers: await _headers(),
+    );
+    _assertOk(response);
+    return TimeEntry.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   Future<void> deleteTimeEntry(int id) async {
     final response = await _client.delete(
       _uri('/time_entries/$id'),

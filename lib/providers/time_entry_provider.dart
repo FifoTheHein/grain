@@ -18,6 +18,12 @@ class TimeEntryProvider extends ChangeNotifier {
   /// from the fetched week rather than configured — an account tracking by
   /// duration returns null times, and Grain then never sends them.
   bool tracksByStartEnd = false;
+
+  /// When the visible entries were last read from Harvest. A running entry's
+  /// `hours` is accurate as of this moment, so the live counter counts on from
+  /// here rather than from the timer's own start.
+  DateTime _fetchedAt = DateTime.now();
+  DateTime get fetchedAt => _fetchedAt;
   bool isLoading = false;
   bool isSubmitting = false;
   String? error;
@@ -138,6 +144,8 @@ class TimeEntryProvider extends ChangeNotifier {
         totals[e.spentDate] = (totals[e.spentDate] ?? 0) + e.hours;
       }
       weeklyTotals = totals;
+
+      _fetchedAt = DateTime.now();
 
       // Filter to selected day only
       entries = all.where((e) => e.spentDate == selectedStr).toList();
@@ -397,5 +405,56 @@ class TimeEntryProvider extends ChangeNotifier {
       }
       return 'Logged ${entry.hours}h on ${entry.projectName} (${entry.spentDate})';
     });
+  }
+
+  /// The entry whose timer is currently running, if any. Harvest allows one
+  /// per user, so this is the whole story for the fetched week.
+  TimeEntry? get runningEntry =>
+      entries.where((e) => e.isRunning).firstOrNull;
+
+  /// Creates an entry with no hours, which starts it running.
+  Future<bool> startTimer(CreateTimeEntryRequest request) async {
+    return _runMutation(() async {
+      final entry = await _service.createTimeEntry(request);
+      _loadRecentEntriesRequestId++;
+      if (entry.spentDate == DateFormat('yyyy-MM-dd').format(selectedDate)) {
+        entries.insert(0, entry);
+      }
+      _fetchedAt = DateTime.now();
+      return 'Timer started on ${entry.projectName}';
+    });
+  }
+
+  Future<bool> stopTimer(int entryId) async {
+    return _runMutation(() async {
+      final stopped = await _service.stopTimeEntry(entryId);
+      _loadRecentEntriesRequestId++;
+      _replaceEntry(entryId, stopped);
+      _fetchedAt = DateTime.now();
+      return 'Timer stopped — ${stopped.hours}h on ${stopped.projectName}';
+    });
+  }
+
+  Future<bool> restartTimer(int entryId) async {
+    return _runMutation(() async {
+      final restarted = await _service.restartTimeEntry(entryId);
+      _loadRecentEntriesRequestId++;
+      _replaceEntry(entryId, restarted);
+      _fetchedAt = DateTime.now();
+      return 'Timer resumed on ${restarted.projectName}';
+    });
+  }
+
+  /// Swaps an entry for the server's version, keeping the weekly total in step
+  /// with whatever hours came back.
+  void _replaceEntry(int entryId, TimeEntry updated) {
+    final idx = entries.indexWhere((e) => e.id == entryId);
+    if (idx == -1) return;
+    final old = entries[idx];
+    weeklyTotals[old.spentDate] =
+        ((weeklyTotals[old.spentDate] ?? 0) - old.hours + updated.hours)
+            .clamp(0.0, double.infinity)
+            .toDouble();
+    entries[idx] = updated;
   }
 }

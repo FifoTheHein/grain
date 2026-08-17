@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/time_entry.dart';
 import '../utils/open_url.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/project_category_provider.dart';
+import '../providers/time_entry_provider.dart';
 import '../screens/edit_time_screen.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
@@ -67,8 +69,17 @@ class TimeEntryCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Leading: duration pill
-            DurationPill(hours: entry.hours, running: entry.isRunning),
+            // Leading: duration pill, counting up while the timer runs
+            Builder(builder: (context) {
+              if (!entry.isRunning) {
+                return DurationPill(hours: entry.hours);
+              }
+              final provider = context.watch<TimeEntryProvider>();
+              return _LiveDurationPill(
+                entry: entry,
+                fetchedAt: provider.fetchedAt,
+              );
+            }),
             const SizedBox(width: 12),
 
             // Body
@@ -173,20 +184,119 @@ class TimeEntryCard extends StatelessWidget {
               ),
             ),
 
-            // Trailing: edit button
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 16),
-              tooltip: 'Edit entry',
-              color: palette.text3,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => EditTimeScreen(entry: entry),
+            // Trailing: timer control + edit button
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TimerButton(entry: entry),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  tooltip: 'Edit entry',
+                  color: palette.text3,
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => EditTimeScreen(entry: entry),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Duration pill that ticks while the entry's timer runs. Rebuilds once a
+/// second rather than watching a global ticker, so only the running card
+/// repaints.
+class _LiveDurationPill extends StatefulWidget {
+  final TimeEntry entry;
+  final DateTime fetchedAt;
+
+  const _LiveDurationPill({required this.entry, required this.fetchedAt});
+
+  @override
+  State<_LiveDurationPill> createState() => _LiveDurationPillState();
+}
+
+class _LiveDurationPillState extends State<_LiveDurationPill> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DurationPill(
+      hours: widget.entry.liveHours(widget.fetchedAt, DateTime.now()),
+      running: true,
+    );
+  }
+}
+
+/// Stop for a running entry, Continue for a stopped one.
+class _TimerButton extends StatelessWidget {
+  final TimeEntry entry;
+
+  const _TimerButton({required this.entry});
+
+  Future<void> _run(BuildContext context, Future<bool> Function() action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final provider = context.read<TimeEntryProvider>();
+    final ok = await action();
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(ok
+            ? (provider.successMessage ?? 'Done')
+            : (provider.error ?? 'Could not reach Harvest')),
+        backgroundColor: ok ? HarvestTokens.success : HarvestTokens.error,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final provider = context.watch<TimeEntryProvider>();
+    final busy = provider.isSubmitting;
+
+    if (entry.isRunning) {
+      return IconButton(
+        icon: const Icon(Icons.stop_circle_outlined, size: 18),
+        tooltip: 'Stop timer',
+        color: HarvestTokens.brand,
+        onPressed: busy
+            ? null
+            : () => _run(context, () => provider.stopTimer(entry.id)),
+      );
+    }
+
+    // Harvest runs one timer per user, so resuming while another is going
+    // would silently stop that one.
+    final another = provider.runningEntry;
+    return IconButton(
+      icon: const Icon(Icons.play_circle_outline, size: 18),
+      tooltip: another == null
+          ? 'Continue timing this entry'
+          : 'Stop the running timer first',
+      color: palette.text3,
+      onPressed: busy || another != null
+          ? null
+          : () => _run(context, () => provider.restartTimer(entry.id)),
     );
   }
 }
