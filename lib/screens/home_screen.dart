@@ -118,12 +118,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         foregroundColor: Colors.white,
                         elevation: 2,
                       ),
+                      // NavigationRail insets itself and the in-column AppBar
+                      // pads for the status bar, so this covers the right
+                      // edge and the gesture bar.
                       Expanded(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(maxWidth: 760),
-                            child: _screens[_tab],
+                        child: SafeArea(
+                          top: false,
+                          left: false,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints:
+                                  const BoxConstraints(maxWidth: 760),
+                              child: _screens[_tab],
+                            ),
                           ),
                         ),
                       ),
@@ -160,10 +167,17 @@ class _HomeScreenState extends State<HomeScreen> {
             foregroundColor: Colors.white,
             elevation: 2,
           ),
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: _screens[_tab],
+          // AppBar and NavigationBar consume the top and bottom insets between
+          // them; this covers the sides, for a landscape notch or rounded
+          // corners.
+          body: SafeArea(
+            top: false,
+            bottom: false,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: _screens[_tab],
+              ),
             ),
           ),
           bottomNavigationBar: NavigationBar(
