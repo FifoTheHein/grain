@@ -243,6 +243,48 @@ void main() {
     });
   });
 
+  group('applyStateFilter', () {
+    List<AdoWorkItem> sample() => [
+          item('1', state: 'In Progress'),
+          item('2', state: 'Design'),
+          item('3', state: 'Design'),
+          item('4', state: 'Awaiting PR'),
+          item('5', state: 'Blocked'),
+        ];
+
+    test('holds Design back when no chip is selected', () {
+      expect(idsOf(applyStateFilter(sample(), null)), ['1', '4', '5']);
+    });
+
+    test('selecting the Design chip is how you reach those items', () {
+      expect(idsOf(applyStateFilter(sample(), 'Design')), ['2', '3']);
+    });
+
+    test('the exclusion is case-insensitive both ways', () {
+      final items = [item('1', state: 'design'), item('2', state: 'DESIGN')];
+      expect(applyStateFilter(items, null), isEmpty);
+      expect(idsOf(applyStateFilter(items, 'Design')), ['1', '2']);
+    });
+
+    test('other states are unaffected by the default exclusion', () {
+      expect(idsOf(applyStateFilter(sample(), 'In Progress')), ['1']);
+    });
+
+    test('Blocked is held back from the chips but not from the list', () {
+      expect(idsOf(applyStateFilter(sample(), null)), contains('5'));
+      expect(availableStates(sample()), isNot(contains('Blocked')));
+    });
+
+    test('Design keeps its chip, unlike Blocked', () {
+      expect(availableStates(sample()), contains('Design'));
+    });
+
+    test('filterByState still means literally that state', () {
+      expect(idsOf(filterByState(sample(), null)).length, 5,
+          reason: 'the raw helper does not apply the default exclusion');
+    });
+  });
+
   group('excludeCompleted', () {
     test('drops finished work whatever its casing', () {
       final items = [

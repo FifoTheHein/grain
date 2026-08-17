@@ -38,6 +38,12 @@ per state, each with its count, tapping the active chip clearing it.
 - `kHiddenFilterStates` (currently `blocked`) suppresses a chip without hiding
   the work: Blocked items are still listed under "All statuses" and still
   reachable by search.
+- `kDefaultExcludedStates` (currently `design`) is the opposite trade — the
+  state keeps its chip but drops out of "All statuses", for a bucket big enough
+  to bury the rest of the backlog. `applyStateFilter` is what the picker calls:
+  a selected chip means literally that state, including an excluded one, while
+  no selection means everything except them. The count line names whatever was
+  held back, so a missing work item is explained rather than mysterious.
 - `kCompletedStates` / `excludeCompleted` drop finished work client-side. The
   WIQL already excludes Done, Closed and Removed server-side; this is the guard
   for a process that names finished work differently.

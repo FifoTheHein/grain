@@ -70,7 +70,7 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
 
     // State first, then text — so the tree nests only what survived the state
     // filter, and a task whose parent is in another state reads as a root.
-    final inState = filterByState(all, _state);
+    final inState = applyStateFilter(all, _state);
     final rows = _asTree
         ? flattenWithDepth(
             filterWorkItemTree(buildWorkItemTree(inState), _query))
@@ -136,11 +136,21 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Text(
-                  loading && all.isEmpty
-                      ? 'Loading…'
-                      : '${rows.length} of ${all.length} assigned to you',
-                  style: TextStyle(fontSize: 11, color: palette.text3),
+                Flexible(
+                  child: Text(
+                    loading && all.isEmpty
+                        ? 'Loading…'
+                        : _countLabel(
+                            shown: rows.length,
+                            inView: inState.length,
+                            hidden: _state == null
+                                ? all.length - inState.length
+                                : 0,
+                          ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: palette.text3),
+                  ),
                 ),
                 const Spacer(),
                 SegmentedButton<bool>(
@@ -186,6 +196,21 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
         ),
       ],
     );
+  }
+
+  /// Says what is on screen, and owns up to anything held back by default so
+  /// a missing work item is explained rather than mysterious.
+  static String _countLabel({
+    required int shown,
+    required int inView,
+    required int hidden,
+  }) {
+    final base = '$shown of $inView assigned to you';
+    if (hidden == 0) return base;
+    final states = kDefaultExcludedStates
+        .map((s) => s[0].toUpperCase() + s.substring(1))
+        .join(', ');
+    return '$base · $hidden in $states hidden';
   }
 
   Widget _buildBody(
@@ -257,7 +282,12 @@ class _StateFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = counts.values.fold<int>(0, (a, b) => a + b);
+    // "All statuses" counts what it actually shows, so it does not advertise a
+    // number that includes the states held back from the default view.
+    final total = counts.entries
+        .where((e) =>
+            !kDefaultExcludedStates.contains(e.key.trim().toLowerCase()))
+        .fold<int>(0, (sum, e) => sum + e.value);
     // Chips wrap onto as many rows as they need, capped at roughly three so a
     // process with a lot of states cannot crowd out the list; past that the
     // block scrolls.
