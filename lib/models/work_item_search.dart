@@ -67,13 +67,22 @@ Map<String, int> stateCounts(List<AdoWorkItem> items) {
 ///
 /// Derived from the data rather than hard-coded, so it follows each project's
 /// process. Alphabetical rather than by count so a chip does not jump position
-/// when the counts change under a refresh.
+/// when the counts change under a refresh — except that any
+/// [kDefaultExcludedStates] chip sorts last, since it opts back into something
+/// the default view holds back rather than narrowing what is on screen.
 List<String> availableStates(List<AdoWorkItem> items) {
+  int rank(String s) =>
+      kDefaultExcludedStates.contains(s.toLowerCase()) ? 1 : 0;
+
   final states = stateCounts(items)
       .keys
       .where((s) => !kHiddenFilterStates.contains(s.toLowerCase()))
       .toList()
-    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    ..sort((a, b) {
+      final byRank = rank(a).compareTo(rank(b));
+      if (byRank != 0) return byRank;
+      return a.toLowerCase().compareTo(b.toLowerCase());
+    });
   return states;
 }
 
