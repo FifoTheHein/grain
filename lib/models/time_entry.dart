@@ -212,7 +212,10 @@ class UpdateTimeEntryRequest {
   final int projectId;
   final int taskId;
   final String spentDate;
-  final double hours;
+
+  /// Omitted when null, which is how a running entry is edited without
+  /// touching the duration its timer is still accruing.
+  final double? hours;
   final String? notes;
   final ExternalReference? externalReference;
 
@@ -220,7 +223,7 @@ class UpdateTimeEntryRequest {
     required this.projectId,
     required this.taskId,
     required this.spentDate,
-    required this.hours,
+    this.hours,
     this.notes,
     this.externalReference,
   });
@@ -229,7 +232,7 @@ class UpdateTimeEntryRequest {
         'project_id': projectId,
         'task_id': taskId,
         'spent_date': spentDate,
-        'hours': hours,
+        if (hours != null) 'hours': hours,
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
         if (externalReference != null)
           'external_reference': externalReference!.toJson(),

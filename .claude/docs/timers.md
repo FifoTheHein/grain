@@ -45,6 +45,13 @@ for the running card.
 - `TimeEntryCard` — Stop on the running entry, Continue on any other. Continue
   is disabled while something else is running, since Harvest's one-timer rule
   means resuming would silently stop it.
+- `EditTimeScreen` — reads the entry from the provider rather than trusting the
+  snapshot it was pushed with, so it sees the timer state. While one runs the
+  banner reads TIMER RUNNING, a `_RunningPanel` replaces the hours/minutes
+  inputs with the live total and a Stop, and `UpdateTimeEntryRequest.hours` is
+  left null so a save keeps whatever the timer has accrued. Project, task,
+  notes, date and the ADO link stay editable throughout. Stopping from here
+  refills the inputs with the settled total.
 
 **ADO Completed Work is pushed explicitly, not automatically.** The automatic
 paths can send a delta because they know what they already sent: create pushes

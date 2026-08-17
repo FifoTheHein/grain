@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -99,13 +100,24 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     }
   }
 
+  /// Repaints the live total while a timer runs on this entry.
+  Timer? _ticker;
+
   @override
   void initState() {
     super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (context.read<TimeEntryProvider>().runningEntry?.id ==
+          widget.entry.id) {
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
+    _ticker?.cancel();
     _debounce?.cancel();
     _hoursController.dispose();
     _minutesController.dispose();
@@ -201,9 +213,47 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     }
   }
 
+  /// Stops the timer from here, then refills the duration inputs with the
+  /// total Harvest settled on, so the form is immediately editable.
+  Future<void> _stopTimer(BuildContext context) async {
+    final entryProvider = context.read<TimeEntryProvider>();
+    final ok = await entryProvider.stopTimer(widget.entry.id);
+    if (!context.mounted) return;
+
+    final stopped = entryProvider.entries
+        .firstWhereOrNull((e) => e.id == widget.entry.id);
+    if (ok && stopped != null) {
+      final totalMinutes = (stopped.hours * 60).round();
+      setState(() {
+        _hoursController.text = '${totalMinutes ~/ 60}';
+        _minutesController.text = '${((totalMinutes % 60) / 5).round() * 5 % 60}';
+      });
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok
+            ? (entryProvider.successMessage ?? 'Timer stopped')
+            : (entryProvider.error ?? 'Could not stop the timer')),
+        backgroundColor: ok ? HarvestTokens.success : HarvestTokens.error,
+      ),
+    );
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
-    if (int.parse(_hoursController.text) == 0 &&
+
+    // A running entry keeps whatever the timer has accrued — the duration is
+    // not the user's to set while it counts, so it is left out of the PATCH.
+    final isRunning = context
+            .read<TimeEntryProvider>()
+            .entries
+            .firstWhereOrNull((e) => e.id == widget.entry.id)
+            ?.isRunning ??
+        false;
+
+    if (!isRunning &&
+        int.parse(_hoursController.text) == 0 &&
         int.parse(_minutesController.text) == 0) {
       setState(() {});
       return;
@@ -266,8 +316,10 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
       }
     }
 
-    final newHours = int.parse(_hoursController.text) +
-        int.parse(_minutesController.text) / 60.0;
+    final newHours = isRunning
+        ? null
+        : int.parse(_hoursController.text) +
+            int.parse(_minutesController.text) / 60.0;
     final request = UpdateTimeEntryRequest(
       projectId: project.id,
       taskId: task.id,
@@ -289,7 +341,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
       Color snackColor = Colors.green;
 
       // Apply hours delta to ADO Completed Work when the same ticket is linked
-      if (adoRefUnchanged && adoInstanceForUpdate != null) {
+      if (adoRefUnchanged && adoInstanceForUpdate != null && newHours != null) {
         final hoursDelta = newHours - widget.entry.hours;
         if (hoursDelta.abs() > 0.001) {
           final prefs = await SharedPreferences.getInstance();
@@ -321,6 +373,14 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     final assignments = context.watch<AssignmentProvider>();
     final entryProvider = context.watch<TimeEntryProvider>();
     final adoService = context.watch<AdoService>();
+
+    // The entry as the provider currently holds it — the one passed in is a
+    // snapshot from when the card was tapped, so it never learns that the
+    // timer stopped or that the hours moved on.
+    final live = entryProvider.entries
+            .firstWhereOrNull((e) => e.id == widget.entry.id) ??
+        widget.entry;
+    final isRunning = live.isRunning;
 
     return Scaffold(
       appBar: AppBar(
@@ -368,15 +428,22 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                     ),
                     child: Row(
                       children: [
-                        DurationPill(hours: widget.entry.hours, size: 32),
+                        DurationPill(
+                          hours: isRunning
+                              ? live.liveHours(
+                                  entryProvider.fetchedAt, DateTime.now())
+                              : live.hours,
+                          size: 32,
+                          running: isRunning,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'EDITING ENTRY',
-                                style: TextStyle(
+                              Text(
+                                isRunning ? 'TIMER RUNNING' : 'EDITING ENTRY',
+                                style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.4,
@@ -425,6 +492,17 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  // A running entry has no fixed duration to edit — Harvest is
+                  // still accruing it — so the inputs are replaced by the live
+                  // total and a way to stop.
+                  if (isRunning)
+                    _RunningPanel(
+                      hours:
+                          live.liveHours(entryProvider.fetchedAt, DateTime.now()),
+                      busy: entryProvider.isSubmitting,
+                      onStop: () => _stopTimer(context),
+                    )
+                  else
                   // Hours + Minutes
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,7 +558,8 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                       ),
                     ],
                   ),
-                  if (int.parse(_hoursController.text) == 0 &&
+                  if (!isRunning &&
+                      int.parse(_hoursController.text) == 0 &&
                       int.parse(_minutesController.text) == 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 6, left: 12),
@@ -659,6 +738,83 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Stands in for the duration inputs while a timer runs on this entry: there
+/// is no fixed duration to edit yet, so it shows the live total and offers the
+/// one action that makes it editable.
+class _RunningPanel extends StatelessWidget {
+  final double hours;
+  final bool busy;
+  final VoidCallback onStop;
+
+  const _RunningPanel({
+    required this.hours,
+    required this.busy,
+    required this.onStop,
+  });
+
+  String _clock(double hours) {
+    final total = (hours * 3600).round();
+    final h = total ~/ 3600;
+    final m = (total % 3600) ~/ 60;
+    final s = total % 60;
+    return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: palette.surface2,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: HarvestTokens.brand.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Timing now',
+                  style: TextStyle(fontSize: 11, color: palette.text3),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _clock(hours),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: HarvestTokens.brand,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Stop the timer to edit the duration. Everything else can be '
+                  'changed while it runs.',
+                  style: TextStyle(
+                      fontSize: 11, color: palette.text3, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: busy ? null : onStop,
+            icon: const Icon(Icons.stop, size: 18),
+            label: const Text('Stop'),
+            style: FilledButton.styleFrom(
+              backgroundColor: HarvestTokens.brand,
+            ),
+          ),
+        ],
       ),
     );
   }
