@@ -44,6 +44,13 @@ List<AdoWorkItem> excludeCompleted(List<AdoWorkItem> items) => items
 /// suppresses the shortcut.
 const kHiddenFilterStates = <String>{'blocked'};
 
+/// States held back from "All statuses", matched case-insensitively.
+///
+/// The opposite trade to [kHiddenFilterStates]: these keep their chip but drop
+/// out of the default view, for a state that carries so much of the backlog
+/// that it buries everything else. Selecting the chip still shows them.
+const kDefaultExcludedStates = <String>{'design'};
+
 /// How many items sit in each state, keyed by the state as ADO spelled it.
 Map<String, int> stateCounts(List<AdoWorkItem> items) {
   final counts = <String, int>{};
@@ -70,11 +77,29 @@ List<String> availableStates(List<AdoWorkItem> items) {
   return states;
 }
 
-/// Narrows to a single state. A null or empty [state] means "all statuses".
+/// Narrows to a single state. A null or empty [state] means "all statuses",
+/// which here really is every state — see [applyStateFilter] for the version
+/// the picker uses.
 List<AdoWorkItem> filterByState(List<AdoWorkItem> items, String? state) {
   if (state == null || state.trim().isEmpty) return List.of(items);
   final target = state.trim().toLowerCase();
   return items.where((i) => i.state.trim().toLowerCase() == target).toList();
+}
+
+/// What the picker lists for the selected chip.
+///
+/// With a chip selected this is just that state — including a
+/// [kDefaultExcludedStates] one, so selecting it is how you reach those items.
+/// With no chip selected it is everything except those states, so one enormous
+/// bucket cannot bury the rest of the backlog.
+List<AdoWorkItem> applyStateFilter(List<AdoWorkItem> items, String? state) {
+  if (state != null && state.trim().isNotEmpty) {
+    return filterByState(items, state);
+  }
+  return items
+      .where((i) =>
+          !kDefaultExcludedStates.contains(i.state.trim().toLowerCase()))
+      .toList();
 }
 
 /// A work item with whichever of its children were also fetched.
