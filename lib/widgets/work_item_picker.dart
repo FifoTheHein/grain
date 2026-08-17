@@ -136,24 +136,38 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Flexible(
-                  child: Text(
-                    loading && all.isEmpty
-                        ? 'Loading…'
-                        : _countLabel(
+                // Expanded, not Flexible + Spacer: a Spacer is flex: 1 too, so
+                // the two split the free space evenly and the text wrapped
+                // with half the row sitting empty beside it.
+                Expanded(
+                  child: Tooltip(
+                    // Only reachable when the row is too narrow even for this.
+                    message: loading && all.isEmpty
+                        ? 'Loading work items'
+                        : _countTooltip(
                             shown: rows.length,
                             inView: inState.length,
                             hidden: _state == null
                                 ? all.length - inState.length
                                 : 0,
                           ),
-                    // Wraps rather than truncating: the note about what is
-                    // hidden is the half that was being cut off.
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 11, color: palette.text3),
+                    child: Text(
+                      loading && all.isEmpty
+                          ? 'Loading…'
+                          : _countLabel(
+                              shown: rows.length,
+                              inView: inState.length,
+                              hidden: _state == null
+                                  ? all.length - inState.length
+                                  : 0,
+                            ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, color: palette.text3),
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 12),
                 SegmentedButton<bool>(
                   segments: const [
                     ButtonSegment(
@@ -199,8 +213,12 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
     );
   }
 
-  /// Says what is on screen, and owns up to anything held back by default so
-  /// a missing work item is explained rather than mysterious.
+  static String _excludedStateNames() => kDefaultExcludedStates
+      .map((s) => s[0].toUpperCase() + s.substring(1))
+      .join(', ');
+
+  /// Says what is on screen, and owns up to anything held back by default so a
+  /// missing work item is explained rather than mysterious.
   static String _countLabel({
     required int shown,
     required int inView,
@@ -208,10 +226,19 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
   }) {
     final base = '$shown of $inView assigned to you';
     if (hidden == 0) return base;
-    final states = kDefaultExcludedStates
-        .map((s) => s[0].toUpperCase() + s.substring(1))
-        .join(', ');
-    return '$base · $hidden $states hidden';
+    return '$base · $hidden ${_excludedStateNames()} hidden';
+  }
+
+  /// The unabbreviated version, shown on hover or long press.
+  static String _countTooltip({
+    required int shown,
+    required int inView,
+    required int hidden,
+  }) {
+    final base = '$shown of $inView work items assigned to you';
+    if (hidden == 0) return base;
+    return '$base · $hidden more in ${_excludedStateNames()}, '
+        'hidden until you select that status';
   }
 
   Widget _buildBody(
