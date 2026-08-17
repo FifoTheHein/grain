@@ -10,7 +10,8 @@ State: token + accountId `TextEditingController`s, `_obscureToken`, `_defaultPro
 5. **Weekly Goal** — free-text hours field; calls `ProjectCategoryProvider.setWeeklyGoal` on every keystroke
 6. **Work Day** — start time + end time (tappable, `showTimePicker`) and break hours field; calls `setWorkDayStart` / `setWorkDayEnd` / `setBreakHours`; derived label shows "= Xh work day" live
 7. **Azure DevOps Instances** — `_AdoInstanceList`; add/edit via `_showAdoDialog`; each row shows label, baseUrl, PAT presence dot, and Harvest GUID status (check/warn icon); GUID editable via `_showEditGuidDialog` → `AdoService.setHarvestGuid`
-8. **Action buttons** — Save & Reload, Clear Cache & Refresh, Migrate ADO References (streams progress via `_MigrationProgressDialog`), Reset to Defaults
+8. **Work Item Mapping Rules** — `MappingRuleList` (`lib/widgets/mapping_rule_editor.dart`): auto-apply switch, drag-to-reorder rule rows, add/edit via `showMappingRuleDialog`; see `mapping-rules.md`
+9. **Action buttons** — Save & Reload, Clear Cache & Refresh, Migrate ADO References (streams progress via `_MigrationProgressDialog`), Reset to Defaults
 
 **Private widgets (all in this file):**
 - `_SectionHeader` — title + optional trailing action widget
