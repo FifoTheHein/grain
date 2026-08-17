@@ -272,13 +272,18 @@ class _TimerButton extends StatelessWidget {
         ok && offerAdoSync && stopped != null && await canSyncCompletedWork(context, stopped);
     if (!context.mounted) return;
 
-    messenger.showSnackBar(
+    const visibleFor = Duration(seconds: 15);
+    final controller = messenger.showSnackBar(
       SnackBar(
         content: Text(ok
             ? (provider.successMessage ?? 'Done')
             : (provider.error ?? 'Could not reach Harvest')),
         backgroundColor: ok ? HarvestTokens.success : HarvestTokens.error,
-        duration: canSync ? const Duration(seconds: 8) : const Duration(seconds: 4),
+        duration: canSync ? visibleFor : const Duration(seconds: 4),
+        // Dismissable by hand as well as by timeout, since the action version
+        // sits over the content for a while.
+        showCloseIcon: canSync,
+        closeIconColor: Colors.white,
         action: canSync
             ? SnackBarAction(
                 label: 'Sync to ADO',
@@ -288,6 +293,18 @@ class _TimerButton extends StatelessWidget {
             : null,
       ),
     );
+
+    if (!canSync) return;
+
+    // A SnackBar carrying an action does not time out on its own — Flutter's
+    // `SnackBar.persist` defaults to `action != null`, so `duration` is
+    // ignored and it waits for a tap. Close it here instead, and only while it
+    // is still the one on screen: `close` asserts that it is.
+    var open = true;
+    unawaited(controller.closed.then((_) => open = false));
+    Timer(visibleFor, () {
+      if (open) controller.close();
+    });
   }
 
   @override
