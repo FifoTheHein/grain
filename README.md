@@ -13,11 +13,16 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Project & task selection** — loads your assigned projects and tasks from the Harvest API; responsive layout places the two dropdowns side-by-side on wide screens
 - **Default project & task** — configure defaults in Settings so the form is pre-filled on load
 - **Hours & minutes input** — pick hours (0–24) and minutes in 5-minute intervals
+- **Duration or Start & End** — log a plain duration, or pick start and end times; when your Harvest account tracks time by clock times, those are sent through and power the Insights gap analysis
 - **Date picker** — log time against any past date, defaulting to today
+- **Quick templates** — one-tap chips for the work you log most often ("PR Reviews", "Standup"), each with a preset project, task and default notes; tapping one fills the form without submitting anything
+- **Work item mapping rules** — when a linked ADO work item resolves, the first matching rule selects the Harvest project and task for you, with a banner naming the rule and an Undo
 
 ### Azure DevOps Integration
 - **Configurable ADO instances** — add any number of Azure DevOps project URLs in Settings; select the active instance via a styled segmented button with PAT-status dots
 - **PAT authentication** — store a Personal Access Token per instance (stored in `localStorage`, never committed); instances with a configured PAT show a green dot
+- **Work item search** — the search icon on the Work Item # field opens a picker over everything assigned to you, so you no longer need to know the number. Matches id, title, type, state, project or tag (`#123` and `123` both work, and `483` finds `13483`); **Tree** view nests Tasks under their User Story and keeps a matched Task's parent for context, **Flat** lists them plainly
+- **Status filter** — board-style chips with per-state counts, derived from your project's own process rather than a fixed list; finished work never appears, and a state that dominates the backlog is held back from the default view but stays one tap away
 - **Live work item preview** — type a work item number and see title + state fetched from ADO in real time (debounced 600 ms)
 - **Work item chip** — ADO-linked entries display a compact inline card with a 3 px colour-coded state stripe, `#id · state · type`, and the creator's avatar (photo when available, initials fallback)
 - **Auto-prefixed notes** — notes are automatically prefixed, e.g. `Transport Azure DevOps User Story #13483 - your notes`
@@ -35,19 +40,28 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
   - **Compact mode** (narrow): day abbreviation + hours columns with a `WeeklyProgressRing` at the end
   - **Emphasized mode** (wide): full day-tile card grid with date number, hours, and a 3 px progress bar per day
 - **Weekly progress ring** — animated circular arc showing week total vs. goal; brand-orange fill, switches to amber when over goal; center label shows `Xh Ym / of 40h`; "THIS WEEK" caption with contextual helper text (`Xh to go`, `Goal met`, `+Xh over`); over-goal state moves the label beside the ring for visual emphasis
-- **Group by project** — toggle to group entries under colour-coded project headers with per-group totals; preference persists across sessions
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
 - **Daily progress bar** — visual indicator of daily progress toward a configurable goal (derived from work day start/end/break settings); shows overflow in amber; when viewing today, displays an **expected hours** tick marker on the bar and an "Expected: Xh Ym" label based on how much of the work day has elapsed
 - **Edit entries** — tap the pencil icon to open a pre-filled edit form with an orange context banner showing the duration and entry ID; changes are saved via `PATCH` and reflected immediately
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
+
+### Insights
+Day analytics for whichever date is selected on Recent — navigating the date on either screen moves the other.
+
+- **Stat tiles** — hours logged against the daily goal, coverage as a percentage, and how much of the day is still unaccounted for (or how far past the goal you are)
+- **Where it went** — per project · task totals, largest first, with bars in each project's colour
+- **Gap analysis** — when your entries carry clock times, a timeline of the work day plus every uncovered stretch at or above a configurable threshold, with the longest called out. Overlapping entries are merged so double-logged time counts once, and on today the window stops at *now*, so an afternoon that hasn't happened yet isn't counted as dead time
+- **Context switches** — how many times you changed project or task, counted from actual changes rather than from simply logging twice
+- **Degrades honestly** — a Harvest account that tracks by duration records how long you worked but not when, so the totals, coverage and breakdown still work and the screen explains why the gap list is unavailable
 
 ### Visual Design
 - **Grain logo** — custom SVG hourglass-and-grain icon; shown in the app bar header (rounded corners) and used as the Android launcher icon and web favicon
 - **Light & dark themes** — full dark palette (neutral gray with a faint cool tint) alongside the warm-paper light palette; switch between **System / Light / Dark** in Settings, persisted across sessions
 - **Design token system** — `HarvestTokens` defines brand orange and ADO state colours; surfaces, borders, and text inks come from `HarvestPalette` (a `ThemeExtension` with light and dark variants), so every component is theme-aware — no raw hex values in widgets
 - **Duration pill** — 44 px circular pill in the leading position of every entry card; tabular-mono hours label; brand tint background; turns solid orange with a small play-arrow badge (bottom-right) when the timer is actively running
-- **Project colour chips** — each project is auto-assigned one of 12 colours (persisted); shown as a short code badge on cards and group headers
+- **Project colour chips** — each project is auto-assigned one of 12 colours (persisted); shown as a short code badge on entry cards and used for the Insights breakdown bars
 - **Responsive shell** — wide screens (≥ 720 dp) use a `NavigationRail` sidebar; narrow screens use a `NavigationBar`; content is max-width constrained at 760 dp
+- **System insets** — content clears the Android gesture bar and a landscape notch, so nothing hides under the system chrome
 
 ### Background Auto-refresh
 - Entries logged externally appear automatically without a manual refresh
@@ -60,7 +74,9 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Theme** — System / Light / Dark segmented toggle (default System)
 - **Project Categories** — view and customise the colour and short code assigned to each project; 12-colour palette with an edit dialog
 - **Weekly Goal** — set your target hours per week (used by the progress ring and emphasized strip)
-- **Work Day** — configure start time (default 08:30), end time (default 17:00), and break hours (default 0.5 h); the daily goal is derived automatically as `(end − start) − break`
+- **Work Day** — configure start time (default 08:30), end time (default 17:00), and break hours (default 0.5 h); the daily goal is derived automatically as `(end − start) − break`; also sets the gap threshold Insights reports against (default 15 min)
+- **Work Item Mapping Rules** — named, prioritised rules that pick the Harvest project and task from a linked work item. Conditions match on project, area or iteration path, type, state, tags, title, assignee or id, with `equals` / `contains` / `starts with` / `regex` / `is one of` / `is under path` operators, each negatable; conditions are ANDed and the first matching enabled rule wins. An optional note template prefills the notes field, expanding `{id} {title} {type} {state}` and friends. Drag to reorder, toggle rules individually, or switch auto-apply off entirely
+- **Quick Templates** — manage the Log Time chips: label, project, task, default notes, icon and colour, with a live preview and drag-to-reorder
 - **Background Refresh** — configure how often the app silently re-fetches the current week's entries
 - **Clear Cache & Refresh** — force-reloads time entries from the Harvest API
 - **Migrate ADO References** — upgrades current-week entries from plain numeric external reference IDs to the correct native composite format; also repairs entries saved with the wrong GUID or a corrupted ID; scans the past 28 days for native Harvest entries to learn the correct GUID
@@ -75,40 +91,58 @@ lib/
 │   └── app_config.example.dart           # template — copy to app_config.dart and fill in
 ├── models/
 │   ├── ado_work_item.dart
+│   ├── day_insights.dart                 # pure day analytics — gaps, coverage, context switches
+│   ├── mapping_rule.dart                 # work item → project/task rules + matcher (pure)
 │   ├── project_assignment.dart
 │   ├── project_category.dart             # colour/code model for project chips
-│   └── time_entry.dart
+│   ├── quick_template.dart               # one-tap Log Time presets
+│   ├── time_entry.dart
+│   └── work_item_search.dart             # work item search, parent/child tree, state filters (pure)
 ├── services/
-│   ├── ado_service.dart                  # ADO REST API — work item fetch & in-memory cache
+│   ├── ado_service.dart                  # ADO REST API — work item fetch, WIQL search, cache
 │   └── harvest_service.dart              # Harvest API v2
 ├── providers/
 │   ├── ado_instance_provider.dart        # ADO instances (localStorage)
 │   ├── assignment_provider.dart          # selected project/task & defaults
+│   ├── mapping_rule_provider.dart        # mapping rules + auto-apply toggle (localStorage)
 │   ├── project_category_provider.dart    # 12-colour palette, weekly goal, work day settings (localStorage)
+│   ├── quick_template_provider.dart      # quick templates (localStorage)
 │   ├── theme_mode_provider.dart          # System / Light / Dark preference (localStorage)
 │   └── time_entry_provider.dart          # entry list, submit/update lifecycle
 ├── screens/
 │   ├── home_screen.dart                  # NavigationRail (wide) / NavigationBar (narrow)
 │   ├── edit_time_screen.dart             # pre-filled edit form with orange context banner
+│   ├── insights_screen.dart              # day analytics — stat tiles, breakdown, gaps
 │   ├── log_time_screen.dart
-│   ├── recent_entries_screen.dart        # day picker, week strip, grouped list
-│   └── settings_screen.dart             # credentials, categories, ADO instances
+│   ├── recent_entries_screen.dart        # day picker, week strip, entry list
+│   └── settings_screen.dart              # credentials, categories, ADO instances, rules, templates
 ├── theme/
-│   ├── grain_theme.dart                 # builds light/dark ThemeData from a palette
-│   ├── harvest_palette.dart             # surfaces, borders, text inks — light & dark ThemeExtension
-│   └── harvest_tokens.dart              # stable tokens — brand, semantic & ADO state colours, breakpoints
+│   ├── grain_theme.dart                  # builds light/dark ThemeData from a palette
+│   ├── harvest_palette.dart              # surfaces, borders, text inks — light & dark ThemeExtension
+│   └── harvest_tokens.dart               # stable tokens — brand, semantic & ADO state colours, breakpoints
 ├── utils/
-│   ├── open_url.dart                    # cross-platform URL opener (conditional import)
+│   ├── open_url.dart                     # cross-platform URL opener (conditional import)
 │   ├── open_url_stub.dart
 │   └── open_url_web.dart
 └── widgets/
-    ├── duration_pill.dart               # circular hours pill (leading slot of entry card)
+    ├── duration_pill.dart                # circular hours pill (leading slot of entry card)
     ├── error_banner.dart
+    ├── mapping_rule_editor.dart          # settings rule list + add/edit dialog
     ├── project_task_selector.dart        # responsive project + task dropdowns
-    ├── time_entry_card.dart             # entry card — DurationPill + project chip + WorkItemChip
-    ├── weekly_progress_ring.dart        # animated circular week-progress arc
-    ├── work_item_chip.dart              # compact inline ADO card (state stripe, avatar)
-    └── work_item_preview.dart           # full-size ADO work item preview card
+    ├── quick_template_bar.dart           # Log Time chip row
+    ├── quick_template_editor.dart        # settings template list + add/edit dialog
+    ├── time_entry_card.dart              # entry card — DurationPill + project chip + WorkItemChip
+    ├── weekly_progress_ring.dart         # animated circular week-progress arc
+    ├── work_item_chip.dart               # compact inline ADO card (state stripe, avatar)
+    ├── work_item_picker.dart             # searchable work item dialog (tree/flat, status chips)
+    └── work_item_preview.dart            # full-size ADO work item preview card
+
+test/                                     # pure logic only — no widget tests beyond a placeholder
+├── day_insights_test.dart
+├── mapping_rule_test.dart
+├── quick_template_test.dart
+├── widget_test.dart
+└── work_item_search_test.dart
 ```
 
 ## Setup
@@ -117,7 +151,7 @@ lib/
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (web + Android support enabled)
 - A [Harvest personal access token](https://id.getharvest.com/developers)
-- (Optional) Azure DevOps Personal Access Token with **Read** access to Work Items
+- (Optional) Azure DevOps Personal Access Token with **Read** access to Work Items — add **Write** if you want Completed Work sync
 - (Android) Android SDK / Android Studio for the APK build
 
 ### 2. Configure credentials
@@ -148,7 +182,16 @@ flutter run -d web-server --web-port=8080
 
 Then open `http://localhost:8080` in Chrome.
 
-### 4. Build for production
+### 4. Run the tests
+
+```bash
+flutter test
+flutter analyze
+```
+
+Coverage is deliberately limited to the pure logic — mapping rules, day analytics, quick templates and work item search — which is where the behaviour worth pinning lives. The UI has no widget tests beyond a placeholder.
+
+### 5. Build for production
 
 Both targets should be built together:
 
@@ -182,7 +225,10 @@ All settings persist in browser `localStorage`:
 | Work Day Start           | Start of your work day (default 08:30); used to derive the daily goal and expected hours         |
 | Work Day End             | End of your work day (default 17:00)                                                             |
 | Break Hours              | Total break time per day (default 0.5 h); subtracted from the work day span to get the daily goal |
+| Report Gaps Of At Least  | Smallest uncovered stretch Insights lists as a gap (5 / 10 / 15 / 30 / 60 min; default 15 min)   |
 | Project Categories       | Customise the colour and short code badge for each project                                       |
+| Work Item Mapping Rules  | Rules that pick the Harvest project/task from a linked ADO work item; drag to reorder, toggle individually, or switch auto-apply off |
+| Quick Templates          | One-tap Log Time presets — label, project, task, notes, icon and colour; drag to reorder          |
 | Background Refresh       | How often the app silently re-fetches the current week (5 / 15 / 30 / 60 min; default 15 min)  |
 | ADO Instances            | Add, edit, or remove Azure DevOps project URLs                                                   |
 | PAT (per ADO)            | Personal Access Token for each ADO instance — enables work item fetch                            |
