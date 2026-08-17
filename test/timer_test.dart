@@ -65,6 +65,32 @@ void main() {
     });
   });
 
+  group('update request', () {
+    test('omits hours when none is given, so editing a running entry leaves '
+        'the duration the timer is still accruing alone', () {
+      const request = UpdateTimeEntryRequest(
+        projectId: 7,
+        taskId: 9,
+        spentDate: '2026-08-17',
+        notes: 'Renamed while running',
+      );
+      final json = request.toJson();
+      expect(json.containsKey('hours'), isFalse);
+      expect(json['notes'], 'Renamed while running');
+      expect(json['project_id'], 7);
+    });
+
+    test('sends hours for a normal edit', () {
+      const request = UpdateTimeEntryRequest(
+        projectId: 7,
+        taskId: 9,
+        spentDate: '2026-08-17',
+        hours: 2.5,
+      );
+      expect(request.toJson()['hours'], 2.5);
+    });
+  });
+
   group('HarvestService timer endpoints', () {
     test('stop PATCHes /time_entries/{id}/stop', () async {
       late http.Request captured;
