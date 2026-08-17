@@ -13,6 +13,7 @@ import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
 import '../widgets/mapping_rule_editor.dart';
+import '../widgets/quick_template_editor.dart';
 
 class _ThemeModeSelector extends StatelessWidget {
   @override
@@ -1111,6 +1112,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           const MappingRuleList(),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          _SectionHeader(
+            title: 'Quick Templates',
+            action: TextButton.icon(
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+              onPressed: () => showQuickTemplateDialog(context),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const QuickTemplateList(),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),

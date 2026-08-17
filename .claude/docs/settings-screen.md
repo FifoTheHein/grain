@@ -11,7 +11,8 @@ State: token + accountId `TextEditingController`s, `_obscureToken`, `_defaultPro
 6. **Work Day** — start time + end time (tappable, `showTimePicker`), break hours field, and the Insights gap threshold dropdown; calls `setWorkDayStart` / `setWorkDayEnd` / `setBreakHours` / `setMinGapMinutes`; derived label shows "= Xh work day" live
 7. **Azure DevOps Instances** — `_AdoInstanceList`; add/edit via `_showAdoDialog`; each row shows label, baseUrl, PAT presence dot, and Harvest GUID status (check/warn icon); GUID editable via `_showEditGuidDialog` → `AdoService.setHarvestGuid`
 8. **Work Item Mapping Rules** — `MappingRuleList` (`lib/widgets/mapping_rule_editor.dart`): auto-apply switch, drag-to-reorder rule rows, add/edit via `showMappingRuleDialog`; see `mapping-rules.md`
-9. **Action buttons** — Save & Reload, Clear Cache & Refresh, Migrate ADO References (streams progress via `_MigrationProgressDialog`), Reset to Defaults
+9. **Quick Templates** — `QuickTemplateList` (`lib/widgets/quick_template_editor.dart`): drag-to-reorder template rows, add/edit via `showQuickTemplateDialog`; see `quick-templates.md`
+10. **Action buttons** — Save & Reload, Clear Cache & Refresh, Migrate ADO References (streams progress via `_MigrationProgressDialog`), Reset to Defaults
 
 **Private widgets (all in this file):**
 - `_SectionHeader` — title + optional trailing action widget

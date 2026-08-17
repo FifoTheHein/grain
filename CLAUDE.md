@@ -28,8 +28,9 @@ flutter analyze
 ```
 
 Run tests with `flutter test`. Coverage is limited to the pure logic —
-mapping rules (`test/mapping_rule_test.dart`) and day analytics
-(`test/day_insights_test.dart`) — plus a placeholder in
+mapping rules (`test/mapping_rule_test.dart`), day analytics
+(`test/day_insights_test.dart`) and quick templates
+(`test/quick_template_test.dart`) — plus a placeholder in
 `test/widget_test.dart`.
 
 ## Setup Requirement
@@ -42,7 +43,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 
 **Layers:**
 
-- **`lib/models/`** — Pure data classes: `TimeEntry` + request DTOs, `HarvestProject`/`HarvestTask`, `AdoWorkItem`, `AdoInstance`, `ExternalReference`, `MappingRule` + its matcher
+- **`lib/models/`** — Pure data classes: `TimeEntry` + request DTOs, `HarvestProject`/`HarvestTask`, `AdoWorkItem`, `AdoInstance`, `ExternalReference`, `MappingRule` + its matcher, `QuickTemplate`
 - **`lib/services/`** — HTTP clients with no Flutter dependencies:
   - `HarvestService` — Harvest API v2 (assignments, create/update time entries). Reads credentials from SharedPreferences.
   - `AdoService` (`ChangeNotifier`) — ADO REST API v7, in-memory work item cache, deduplication via a pending-request set.
@@ -52,6 +53,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
   - `AdoInstanceProvider` — CRUD for ADO configurations
   - `ProjectCategoryProvider` — project color/code categories, `weeklyGoalHours`, and work day settings (`workDayStart`, `workDayEnd`, `breakHours`, `minGapMinutes`); exposes `dailyGoalHours` computed getter = `(end − start) − breakHours`
   - `MappingRuleProvider` — work item → project/task mapping rules and the auto-apply toggle
+  - `QuickTemplateProvider` — one-tap Log Time templates (project/task/notes presets)
 - **`lib/screens/`** — Five screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries; `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker; `InsightsScreen` analyses the selected day; `SettingsScreen` manages credentials and ADO instances.
 
 @.claude/docs/recent-entries-screen.md
@@ -63,5 +65,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 @.claude/docs/ado-integration.md
 
 @.claude/docs/mapping-rules.md
+
+@.claude/docs/quick-templates.md
 
 **State setup** — `main.dart` wires all providers with `MultiProvider` and injects `AdoService` into both `AdoInstanceProvider` and `TimeEntryProvider`.
