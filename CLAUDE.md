@@ -75,3 +75,11 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 @.claude/docs/timers.md
 
 **State setup** — `main.dart` wires all providers with `MultiProvider` and injects `AdoService` into both `AdoInstanceProvider` and `TimeEntryProvider`.
+
+## Commit & PR Conventions
+
+Do **not** add `Co-authored-by: Claude <noreply@anthropic.com>`,
+`Claude-Session:` links, or "Generated with Claude Code" footers to commit
+messages or pull request descriptions. Write the message as the change itself
+warrants and stop there — no tooling reads those trailers, and this repo does
+not want them in its history.
