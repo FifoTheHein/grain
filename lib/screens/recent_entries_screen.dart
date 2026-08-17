@@ -1,12 +1,8 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../models/project_assignment.dart';
-import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
-import '../providers/assignment_provider.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
@@ -24,7 +20,6 @@ class RecentEntriesScreen extends StatefulWidget {
 
 class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
   TimeEntryProvider? _timeEntryProvider;
-  bool _groupByProject = false;
 
   @override
   void didChangeDependencies() {
@@ -74,68 +69,6 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
     }
   }
 
-  Widget _buildGroupedList(BuildContext context, List<TimeEntry> entries) {
-    final catProvider = context.watch<ProjectCategoryProvider>();
-    final projects = context.watch<AssignmentProvider>().projects;
-
-    final grouped = groupBy<TimeEntry, int>(entries, (e) => e.projectId);
-
-    for (final es in grouped.values) {
-      es.sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
-    }
-
-    final groupList = grouped.entries.toList()
-      ..sort((a, b) => (b.value.first.createdAt ?? '').compareTo(a.value.first.createdAt ?? ''));
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < groupList.length; i++) ...[
-            if (i > 0) const SizedBox(height: 16),
-            _buildProjectGroup(context, groupList[i], catProvider, projects),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProjectGroup(
-    BuildContext context,
-    MapEntry<int, List<TimeEntry>> group,
-    ProjectCategoryProvider catProvider,
-    List<HarvestProject> projects,
-  ) {
-    final pid = group.key;
-    final groupEntries = group.value;
-    final proj = projects.firstWhereOrNull((p) => p.id == pid);
-    final name = proj?.name ?? groupEntries.first.projectName;
-    final clientName = proj?.clientName;
-    final fallbackCode = (proj != null && proj.code.isNotEmpty)
-        ? proj.code
-        : name.split(' ').where((w) => w.isNotEmpty).take(3).map((w) => w[0].toUpperCase()).join();
-    final cat = catProvider.categoryFor(pid, fallbackCode: fallbackCode);
-    final total = groupEntries.fold<double>(0, (s, e) => s + e.hours);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ProjectGroupHeader(
-          projectName: name,
-          projectCode: cat.code,
-          clientName: clientName,
-          color: cat.color,
-          tint: cat.tint,
-          entryCount: groupEntries.length,
-          totalHours: total,
-        ),
-        const SizedBox(height: 8),
-        ...groupEntries.map((e) => TimeEntryCard(entry: e)),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TimeEntryProvider>();
@@ -145,21 +78,6 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
 
     return Column(
       children: [
-        // Grouping toolbar
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilterChip(
-                avatar: Icon(_groupByProject ? Icons.folder_open : Icons.folder_outlined, size: 16),
-                label: Text(_groupByProject ? 'Grouped by project' : 'Group by project'),
-                selected: _groupByProject,
-                onSelected: (v) => setState(() => _groupByProject = v),
-              ),
-            ],
-          ),
-        ),
         if (provider.showNewDayBanner)
           _NewDayBanner(onGoToToday: () => provider.loadRecentEntries(date: DateTime.now())),
         // Date picker header
@@ -245,8 +163,6 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
                         ),
                       if (provider.entries.isEmpty)
                         const SliverFillRemaining(child: Center(child: Text('No entries for this day.')))
-                      else if (_groupByProject)
-                        SliverToBoxAdapter(child: _buildGroupedList(context, sortedEntries))
                       else
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
@@ -605,102 +521,6 @@ class _DailyProgressBar extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ProjectGroupHeader extends StatelessWidget {
-  final String projectName;
-  final String projectCode;
-  final String? clientName;
-  final Color color;
-  final Color tint;
-  final int entryCount;
-  final double totalHours;
-
-  const _ProjectGroupHeader({
-    required this.projectName,
-    required this.projectCode,
-    this.clientName,
-    required this.color,
-    required this.tint,
-    required this.entryCount,
-    required this.totalHours,
-  });
-
-  String _fmt(double hours) {
-    final total = (hours * 60).round();
-    final h = total ~/ 60;
-    final m = total % 60;
-    if (h == 0) return '${m}m';
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: palette.divider)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 10, 4, 7),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(4)),
-              child: Text(
-                projectCode,
-                style: TextStyle(
-                  fontFamily: 'Courier New',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                  color: color,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 6,
-                children: [
-                  Text(
-                    projectName,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: palette.text),
-                  ),
-                  if (clientName != null) ...[
-                    Text('·', style: TextStyle(color: palette.text4, fontSize: 11)),
-                    Text(
-                      clientName!,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: palette.text3),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '$entryCount ${entryCount == 1 ? 'entry' : 'entries'}',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: palette.text3),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              _fmt(totalHours),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: color,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
