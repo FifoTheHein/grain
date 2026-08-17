@@ -27,14 +27,13 @@ flutter build apk --release
 flutter analyze
 ```
 
-Run tests with `flutter test`. Coverage is limited to the pure logic —
-mapping rules (`test/mapping_rule_test.dart`), day analytics
-(`test/day_insights_test.dart`), quick templates
-(`test/quick_template_test.dart`) and work item search
-(`test/work_item_search_test.dart`) and timers
-(`test/timer_test.dart`, which also covers the Harvest timer endpoints with a
-mock client) — plus a placeholder in
-`test/widget_test.dart`.
+Run tests with `flutter test`. Coverage is the pure logic — mapping rules
+(`test/mapping_rule_test.dart`), day analytics (`test/day_insights_test.dart`),
+quick templates (`test/quick_template_test.dart`) and work item search
+(`test/work_item_search_test.dart`) — plus the timer endpoints
+(`test/timer_test.dart`) and the ADO Completed Work push
+(`test/completed_work_test.dart`), which drive the HTTP clients with a
+`MockClient`. `test/widget_test.dart` is still a placeholder.
 
 ## Setup Requirement
 

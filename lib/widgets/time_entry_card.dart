@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/time_entry.dart';
@@ -9,6 +10,7 @@ import '../providers/time_entry_provider.dart';
 import '../screens/edit_time_screen.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
+import 'completed_work_sync.dart';
 import 'duration_pill.dart';
 import 'work_item_chip.dart';
 
@@ -253,17 +255,37 @@ class _TimerButton extends StatelessWidget {
 
   const _TimerButton({required this.entry});
 
-  Future<void> _run(BuildContext context, Future<bool> Function() action) async {
+  Future<void> _run(
+    BuildContext context,
+    Future<bool> Function() action, {
+    bool offerAdoSync = false,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
     final provider = context.read<TimeEntryProvider>();
     final ok = await action();
     if (!context.mounted) return;
+
+    // A stopped timer never pushed its hours to ADO, so this is the moment to
+    // offer it — with the entry as the provider now has it, hours included.
+    final stopped = provider.entries.firstWhereOrNull((e) => e.id == entry.id);
+    final canSync =
+        ok && offerAdoSync && stopped != null && await canSyncCompletedWork(context, stopped);
+    if (!context.mounted) return;
+
     messenger.showSnackBar(
       SnackBar(
         content: Text(ok
             ? (provider.successMessage ?? 'Done')
             : (provider.error ?? 'Could not reach Harvest')),
         backgroundColor: ok ? HarvestTokens.success : HarvestTokens.error,
+        duration: canSync ? const Duration(seconds: 8) : const Duration(seconds: 4),
+        action: canSync
+            ? SnackBarAction(
+                label: 'Sync to ADO',
+                textColor: Colors.white,
+                onPressed: () => showCompletedWorkSync(context, stopped),
+              )
+            : null,
       ),
     );
   }
@@ -281,7 +303,8 @@ class _TimerButton extends StatelessWidget {
         color: HarvestTokens.brand,
         onPressed: busy
             ? null
-            : () => _run(context, () => provider.stopTimer(entry.id)),
+            : () => _run(context, () => provider.stopTimer(entry.id),
+                offerAdoSync: true),
       );
     }
 
