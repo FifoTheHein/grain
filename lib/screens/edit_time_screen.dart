@@ -385,7 +385,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Entry'),
-        backgroundColor: HarvestTokens.brand,
+        backgroundColor: palette.brand,
         foregroundColor: Colors.white,
         elevation: 2,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -443,11 +443,11 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                             children: [
                               Text(
                                 isRunning ? 'TIMER RUNNING' : 'EDITING ENTRY',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.4,
-                                  color: HarvestTokens.brand600,
+                                  color: palette.brand600,
                                 ),
                               ),
                               Text(
@@ -602,7 +602,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
-                    activeColor: HarvestTokens.brand,
+                    activeColor: palette.brand,
                   ),
 
                   if (_hasAdoRef) ...[
@@ -773,7 +773,7 @@ class _RunningPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.surface2,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: HarvestTokens.brand.withValues(alpha: 0.4)),
+        border: Border.all(color: palette.brand.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
@@ -788,10 +788,10 @@ class _RunningPanel extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   _clock(hours),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: HarvestTokens.brand,
+                    color: palette.brand,
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -811,7 +811,7 @@ class _RunningPanel extends StatelessWidget {
             icon: const Icon(Icons.stop, size: 18),
             label: const Text('Stop'),
             style: FilledButton.styleFrom(
-              backgroundColor: HarvestTokens.brand,
+              backgroundColor: palette.brand,
             ),
           ),
         ],

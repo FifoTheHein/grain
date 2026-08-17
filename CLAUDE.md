@@ -33,7 +33,8 @@ quick templates (`test/quick_template_test.dart`) and work item search
 (`test/work_item_search_test.dart`) — plus the timer endpoints
 (`test/timer_test.dart`) and the ADO Completed Work push
 (`test/completed_work_test.dart`), which drive the HTTP clients with a
-`MockClient`. `test/widget_test.dart` is still a placeholder.
+`MockClient`, and the theme palettes (`test/theme_palette_test.dart`), which
+assert contrast ratios. `test/widget_test.dart` is still a placeholder.
 
 ## Setup Requirement
 
@@ -56,6 +57,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
   - `ProjectCategoryProvider` — project color/code categories, `weeklyGoalHours`, and work day settings (`workDayStart`, `workDayEnd`, `breakHours`, `minGapMinutes`); exposes `dailyGoalHours` computed getter = `(end − start) − breakHours`
   - `MappingRuleProvider` — work item → project/task mapping rules and the auto-apply toggle
   - `QuickTemplateProvider` — one-tap Log Time templates (project/task/notes presets)
+  - `ThemeModeProvider` / `ThemePaletteProvider` — System/Light/Dark, and which colour palette the interface uses
 - **`lib/screens/`** — Five screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries; `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker; `InsightsScreen` analyses the selected day; `SettingsScreen` manages credentials and ADO instances.
 
 @.claude/docs/recent-entries-screen.md
@@ -73,6 +75,8 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 @.claude/docs/quick-templates.md
 
 @.claude/docs/timers.md
+
+@.claude/docs/theming.md
 
 **State setup** — `main.dart` wires all providers with `MultiProvider` and injects `AdoService` into both `AdoInstanceProvider` and `TimeEntryProvider`.
 

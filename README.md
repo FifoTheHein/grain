@@ -59,7 +59,8 @@ Day analytics for whichever date is selected on Recent — navigating the date o
 
 ### Visual Design
 - **Grain logo** — custom SVG hourglass-and-grain icon; shown in the app bar header (rounded corners) and used as the Android launcher icon and web favicon
-- **Light & dark themes** — full dark palette (neutral gray with a faint cool tint) alongside the warm-paper light palette; switch between **System / Light / Dark** in Settings, persisted across sessions
+- **Light & dark themes** — every palette ships both; switch between **System / Light / Dark** in Settings, persisted across sessions
+- **Colour palettes** — pick the look of the whole interface in Settings → Appearance: **Grain** (warm paper, brand orange), **Modern Slate** (cool neutrals), **Deep Indigo**, **Emerald Earth** or **Warm Sand**. Each card previews the palette in the mode you're currently in. Contrast ratios for every palette are asserted by tests, not eyeballed
 - **Design token system** — `HarvestTokens` defines brand orange and ADO state colours; surfaces, borders, and text inks come from `HarvestPalette` (a `ThemeExtension` with light and dark variants), so every component is theme-aware — no raw hex values in widgets
 - **Duration pill** — 44 px circular pill in the leading position of every entry card; tabular-mono hours label; brand tint background; turns solid orange with a small play-arrow badge (bottom-right) when the timer is actively running
 - **Project colour chips** — each project is auto-assigned one of 12 colours (persisted); shown as a short code badge on entry cards and used for the Insights breakdown bars
@@ -120,9 +121,10 @@ lib/
 │   ├── recent_entries_screen.dart        # day picker, week strip, entry list
 │   └── settings_screen.dart              # credentials, categories, ADO instances, rules, templates
 ├── theme/
-│   ├── grain_theme.dart                  # builds light/dark ThemeData from a palette
-│   ├── harvest_palette.dart              # surfaces, borders, text inks — light & dark ThemeExtension
-│   └── harvest_tokens.dart               # stable tokens — brand, semantic & ADO state colours, breakpoints
+│   ├── grain_theme.dart                  # builds light/dark ThemeData from the chosen palette
+│   ├── harvest_palette.dart              # surfaces, borders, inks and the accent — ThemeExtension
+│   ├── harvest_tokens.dart               # tokens stable across palettes — semantic & ADO state colours, breakpoints
+│   └── theme_palettes.dart               # the five selectable palettes, light + dark
 ├── utils/
 │   ├── open_url.dart                     # cross-platform URL opener (conditional import)
 │   ├── open_url_stub.dart
@@ -220,6 +222,7 @@ All settings persist in browser `localStorage`:
 | Setting                  | Description                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------ |
 | Theme                    | System / Light / Dark (default System)                                                           |
+| Colour Palette           | Grain / Modern Slate / Deep Indigo / Emerald Earth / Warm Sand (default Grain)                   |
 | API Token                | Harvest personal access token                                                                    |
 | Account ID               | Harvest account ID                                                                               |
 | Default Project          | Pre-selected project on the Log Time screen                                                      |

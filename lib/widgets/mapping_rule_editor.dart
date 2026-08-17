@@ -31,7 +31,7 @@ class MappingRuleList extends StatelessWidget {
               'Applies the first matching rule when a work item loads'),
           contentPadding: EdgeInsets.zero,
           dense: true,
-          activeThumbColor: HarvestTokens.brand,
+          activeThumbColor: palette.brand,
         ),
         if (rules.isEmpty)
           Padding(
@@ -167,7 +167,7 @@ class _MappingRuleRow extends StatelessWidget {
             value: rule.enabled,
             onChanged: (v) =>
                 context.read<MappingRuleProvider>().setEnabled(rule.id, v),
-            activeThumbColor: HarvestTokens.brand,
+            activeThumbColor: palette.brand,
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),

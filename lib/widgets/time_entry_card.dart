@@ -167,14 +167,14 @@ class TimeEntryCard extends StatelessWidget {
                             Icon(
                               Icons.open_in_new,
                               size: 13,
-                              color: HarvestTokens.brand600,
+                              color: palette.brand600,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               'ADO #$workItemId',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: HarvestTokens.brand600,
+                                color: palette.brand600,
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -317,7 +317,7 @@ class _TimerButton extends StatelessWidget {
       return IconButton(
         icon: const Icon(Icons.stop_circle_outlined, size: 18),
         tooltip: 'Stop timer',
-        color: HarvestTokens.brand,
+        color: palette.brand,
         onPressed: busy
             ? null
             : () => _run(context, () => provider.stopTimer(entry.id),

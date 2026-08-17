@@ -8,6 +8,7 @@ import 'providers/mapping_rule_provider.dart';
 import 'providers/project_category_provider.dart';
 import 'providers/quick_template_provider.dart';
 import 'providers/theme_mode_provider.dart';
+import 'providers/theme_palette_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/harvest_service.dart';
 import 'theme/grain_theme.dart';
@@ -52,12 +53,15 @@ class HarvestApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ThemeModeProvider()..load(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => ThemePaletteProvider()..load(),
+        ),
       ],
-      child: Consumer<ThemeModeProvider>(
-        builder: (context, themeMode, _) => MaterialApp(
+      child: Consumer2<ThemeModeProvider, ThemePaletteProvider>(
+        builder: (context, themeMode, themePalette, _) => MaterialApp(
           title: 'Grain',
-          theme: buildGrainTheme(Brightness.light),
-          darkTheme: buildGrainTheme(Brightness.dark),
+          theme: buildGrainTheme(Brightness.light, themePalette.palette),
+          darkTheme: buildGrainTheme(Brightness.dark, themePalette.palette),
           themeMode: themeMode.mode,
           home: const HomeScreen(),
           debugShowCheckedModeBanner: false,

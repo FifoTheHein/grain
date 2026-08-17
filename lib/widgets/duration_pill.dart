@@ -35,7 +35,7 @@ class DurationPill extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: running ? HarvestTokens.brand : palette.brandTint,
+        color: running ? palette.brand : palette.brandTint,
       ),
       alignment: Alignment.center,
       child: Text(
@@ -45,7 +45,7 @@ class DurationPill extends StatelessWidget {
           fontFamily: 'Courier New',
           fontSize: fontSize,
           fontWeight: FontWeight.w600,
-          color: running ? Colors.white : HarvestTokens.brand600,
+          color: running ? Colors.white : palette.brand600,
           height: 1.1,
         ),
       ),
@@ -66,7 +66,7 @@ class DurationPill extends StatelessWidget {
             height: 14,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: HarvestTokens.brand,
+              color: palette.brand,
               border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: const Icon(

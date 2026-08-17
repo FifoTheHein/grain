@@ -16,6 +16,11 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
   final Color brandTint;
   final Color brandTint2;
 
+  /// The accent, and its pressed/emphasised variant. Part of the palette
+  /// rather than a static token, since choosing a theme changes it.
+  final Color brand;
+  final Color brand600;
+
   const HarvestPalette({
     required this.bg,
     required this.surface,
@@ -30,6 +35,8 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     required this.text4,
     required this.brandTint,
     required this.brandTint2,
+    required this.brand,
+    required this.brand600,
   });
 
   static const light = HarvestPalette(
@@ -46,6 +53,8 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     text4: Color(0xFFB4AEA4),
     brandTint: Color(0xFFFEE6DA),
     brandTint2: Color(0xFFFDD3BD),
+    brand: Color(0xFFFA5D24),
+    brand600: Color(0xFFE54714),
   );
 
   // Dark palette: neutral gray with a faint cool tint (Fork / VS Code vibe).
@@ -67,6 +76,8 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     text4: Color(0xFF55585D),       // disabled / icon faint
     brandTint: Color(0xFF42261A),   // brand-tinted bg pill
     brandTint2: Color(0xFF5E3826),  // brand-tinted bg pill — stronger
+    brand: Color(0xFFFA5D24),
+    brand600: Color(0xFFE54714),
   );
 
   @override
@@ -84,6 +95,8 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     Color? text4,
     Color? brandTint,
     Color? brandTint2,
+    Color? brand,
+    Color? brand600,
   }) =>
       HarvestPalette(
         bg: bg ?? this.bg,
@@ -99,6 +112,8 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
         text4: text4 ?? this.text4,
         brandTint: brandTint ?? this.brandTint,
         brandTint2: brandTint2 ?? this.brandTint2,
+        brand: brand ?? this.brand,
+        brand600: brand600 ?? this.brand600,
       );
 
   @override
@@ -118,6 +133,8 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
       text4: Color.lerp(text4, other.text4, t)!,
       brandTint: Color.lerp(brandTint, other.brandTint, t)!,
       brandTint2: Color.lerp(brandTint2, other.brandTint2, t)!,
+      brand: Color.lerp(brand, other.brand, t)!,
+      brand600: Color.lerp(brand600, other.brand600, t)!,
     );
   }
 }
