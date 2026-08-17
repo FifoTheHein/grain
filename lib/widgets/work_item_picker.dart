@@ -34,6 +34,9 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
   String _query = '';
   bool _asTree = true;
 
+  /// Null means "all statuses".
+  String? _state;
+
   @override
   void initState() {
     super.initState();
@@ -58,16 +61,23 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
     final adoService = context.watch<AdoService>();
     final label = widget.instance.label;
 
-    final all = adoService.getCachedAssigned(label) ?? const <AdoWorkItem>[];
+    // Belt and braces: the WIQL already excludes finished work, but a process
+    // with its own naming should not be able to leak a Done item in here.
+    final all = excludeCompleted(
+        adoService.getCachedAssigned(label) ?? const <AdoWorkItem>[]);
     final loading = adoService.isLoadingAssigned(label);
     final error = adoService.assignedError(label);
 
+    // State first, then text — so the tree nests only what survived the state
+    // filter, and a task whose parent is in another state reads as a root.
+    final inState = filterByState(all, _state);
     final rows = _asTree
         ? flattenWithDepth(
-            filterWorkItemTree(buildWorkItemTree(all), _query))
-        : filterWorkItems(all, _query)
+            filterWorkItemTree(buildWorkItemTree(inState), _query))
+        : filterWorkItems(inState, _query)
             .map((i) => (item: i, depth: 0))
             .toList();
+    final counts = stateCounts(all);
 
     return AlertDialog(
       title: Row(
@@ -114,6 +124,15 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
                 if (rows.length == 1) Navigator.pop(context, rows.first.item.id);
               },
             ),
+            if (availableStates(all).isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _StateFilterBar(
+                states: availableStates(all),
+                counts: counts,
+                selected: _state,
+                onSelected: (s) => setState(() => _state = s),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
@@ -216,6 +235,111 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
             palette: palette,
           );
         },
+      ),
+    );
+  }
+}
+
+/// Board-style status chips: "All statuses" plus one per state present in the
+/// fetched items, each with its count.
+class _StateFilterBar extends StatelessWidget {
+  final List<String> states;
+  final Map<String, int> counts;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  const _StateFilterBar({
+    required this.states,
+    required this.counts,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = counts.values.fold<int>(0, (a, b) => a + b);
+    return SizedBox(
+      height: 34,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _StateChip(
+            label: 'All statuses',
+            count: total,
+            selected: selected == null,
+            onTap: () => onSelected(null),
+          ),
+          for (final state in states)
+            _StateChip(
+              label: state,
+              count: counts[state] ?? 0,
+              selected: selected?.toLowerCase() == state.toLowerCase(),
+              // Tapping the active chip clears it, back to all statuses.
+              onTap: () => onSelected(
+                  selected?.toLowerCase() == state.toLowerCase() ? null : state),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StateChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _StateChip({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: Material(
+        color: selected ? palette.brandTint : palette.surface2,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected ? HarvestTokens.brand : palette.border,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? HarvestTokens.brand600 : palette.text,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? HarvestTokens.brand600 : palette.text3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

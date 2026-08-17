@@ -196,6 +196,80 @@ void main() {
     });
   });
 
+  group('state filtering', () {
+    List<AdoWorkItem> sample() => [
+          item('1', state: 'In Progress'),
+          item('2', state: 'Ready for Development'),
+          item('3', state: 'In Progress'),
+          item('4', state: 'Awaiting PR'),
+          item('5', state: 'Blocked'),
+        ];
+
+    test('stateCounts buckets by state as ADO spelled it', () {
+      expect(stateCounts(sample()), {
+        'In Progress': 2,
+        'Ready for Development': 1,
+        'Awaiting PR': 1,
+        'Blocked': 1,
+      });
+    });
+
+    test('availableStates is alphabetical, so chips do not jump on refresh',
+        () {
+      expect(availableStates(sample()),
+          ['Awaiting PR', 'In Progress', 'Ready for Development']);
+    });
+
+    test('availableStates omits Blocked', () {
+      expect(availableStates(sample()), isNot(contains('Blocked')));
+    });
+
+    test('filterByState narrows to one state, case-insensitively', () {
+      expect(idsOf(filterByState(sample(), 'in progress')), ['1', '3']);
+    });
+
+    test('a null or blank state means all statuses', () {
+      expect(filterByState(sample(), null).length, 5);
+      expect(filterByState(sample(), '   ').length, 5);
+    });
+
+    test('Blocked items are still reachable without a chip', () {
+      expect(idsOf(filterByState(sample(), 'Blocked')), ['5']);
+      expect(idsOf(filterByState(sample(), null)), contains('5'));
+    });
+
+    test('an unknown state matches nothing', () {
+      expect(filterByState(sample(), 'On Hold'), isEmpty);
+    });
+  });
+
+  group('excludeCompleted', () {
+    test('drops finished work whatever its casing', () {
+      final items = [
+        item('1', state: 'In Progress'),
+        item('2', state: 'Done'),
+        item('3', state: 'closed'),
+        item('4', state: 'Removed'),
+        item('5', state: 'Completed'),
+      ];
+      expect(idsOf(excludeCompleted(items)), ['1']);
+    });
+
+    test('keeps everything still in flight', () {
+      final items = [
+        item('1', state: 'Ready for Development'),
+        item('2', state: 'Awaiting PR'),
+        item('3', state: 'Blocked'),
+      ];
+      expect(idsOf(excludeCompleted(items)), ['1', '2', '3']);
+    });
+
+    test('finished states never become filter chips', () {
+      final items = [item('1', state: 'In Progress'), item('2', state: 'Done')];
+      expect(availableStates(excludeCompleted(items)), ['In Progress']);
+    });
+  });
+
   group('AdoWorkItem.parentId', () {
     test('is read from System.Parent as a string', () {
       final parsed = AdoWorkItem.fromJson('42', const {

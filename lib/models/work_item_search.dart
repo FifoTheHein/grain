@@ -29,6 +29,54 @@ bool matchesWorkItem(AdoWorkItem item, String query) {
 List<AdoWorkItem> filterWorkItems(List<AdoWorkItem> items, String query) =>
     items.where((i) => matchesWorkItem(i, query)).toList();
 
+/// Finished states. The WIQL query already excludes these server-side; this is
+/// the client-side guard, so a process that reports a finished item some other
+/// way still never reaches the picker.
+const kCompletedStates = <String>{'done', 'closed', 'removed', 'completed'};
+
+/// Drops anything in a [kCompletedStates] state.
+List<AdoWorkItem> excludeCompleted(List<AdoWorkItem> items) => items
+    .where((i) => !kCompletedStates.contains(i.state.trim().toLowerCase()))
+    .toList();
+
+/// States the picker never offers as a filter chip, matched case-insensitively.
+/// Items in these states are still listed under "All statuses" — this only
+/// suppresses the shortcut.
+const kHiddenFilterStates = <String>{'blocked'};
+
+/// How many items sit in each state, keyed by the state as ADO spelled it.
+Map<String, int> stateCounts(List<AdoWorkItem> items) {
+  final counts = <String, int>{};
+  for (final item in items) {
+    final state = item.state.trim();
+    if (state.isEmpty) continue;
+    counts[state] = (counts[state] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/// The states offered as filter chips: whatever the fetched items are actually
+/// in, minus [kHiddenFilterStates], sorted alphabetically.
+///
+/// Derived from the data rather than hard-coded, so it follows each project's
+/// process. Alphabetical rather than by count so a chip does not jump position
+/// when the counts change under a refresh.
+List<String> availableStates(List<AdoWorkItem> items) {
+  final states = stateCounts(items)
+      .keys
+      .where((s) => !kHiddenFilterStates.contains(s.toLowerCase()))
+      .toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  return states;
+}
+
+/// Narrows to a single state. A null or empty [state] means "all statuses".
+List<AdoWorkItem> filterByState(List<AdoWorkItem> items, String? state) {
+  if (state == null || state.trim().isEmpty) return List.of(items);
+  final target = state.trim().toLowerCase();
+  return items.where((i) => i.state.trim().toLowerCase() == target).toList();
+}
+
 /// A work item with whichever of its children were also fetched.
 class WorkItemNode {
   final AdoWorkItem item;
