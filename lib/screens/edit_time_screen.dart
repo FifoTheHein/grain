@@ -13,6 +13,7 @@ import '../theme/harvest_tokens.dart';
 import '../widgets/duration_pill.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/work_item_picker.dart';
 import '../widgets/work_item_preview.dart';
 
 class EditTimeScreen extends StatefulWidget {
@@ -115,6 +116,22 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     assignments.restoreSelection(_savedProject, _savedTask);
 
     super.dispose();
+  }
+
+  /// Opens the work item picker and drops the chosen id into the field, then
+  /// refreshes the preview as if it had been typed.
+  Future<void> _openWorkItemPicker() async {
+    final instance = _selectedAdoInstance;
+    if (instance == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select an ADO instance first')),
+      );
+      return;
+    }
+    final picked = await showWorkItemPicker(context, instance: instance);
+    if (picked == null || !mounted) return;
+    _workItemIdController.text = picked;
+    _onWorkItemChanged();
   }
 
   void _onWorkItemChanged() {
@@ -554,11 +571,16 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                     TextFormField(
                       controller: _workItemIdController,
                       onChanged: (_) => _onWorkItemChanged(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Work Item #',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         hintText: '13483',
-                        prefixIcon: Icon(Icons.tag),
+                        prefixIcon: const Icon(Icons.tag),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search),
+                          tooltip: 'Search your work items',
+                          onPressed: _openWorkItemPicker,
+                        ),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (v) {

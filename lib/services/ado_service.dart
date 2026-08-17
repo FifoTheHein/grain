@@ -51,8 +51,7 @@ class AdoService extends ChangeNotifier {
     try {
       final uri = Uri.parse(
         '${instance.baseUrl}/_apis/wit/workitems/$trimmed'
-        r'?api-version=7.0&$select=System.Title,System.State,System.CreatedBy,System.WorkItemType'
-        r',System.TeamProject,System.AreaPath,System.IterationPath,System.AssignedTo,System.Tags',
+        '?api-version=7.0&\$select=$_workItemFields',
       );
       final credentials = base64Encode(utf8.encode(':$pat'));
       final response = await _client.get(uri, headers: {
@@ -68,6 +67,123 @@ class AdoService extends ChangeNotifier {
       // Silently ignore network errors — caller falls back to permalink display
     } finally {
       _pending.remove(cacheKey);
+    }
+  }
+
+  /// Fields requested for every work item, single or batched.
+  static const _workItemFields =
+      'System.Title,System.State,System.CreatedBy,System.WorkItemType,'
+      'System.TeamProject,System.AreaPath,System.IterationPath,'
+      'System.AssignedTo,System.Tags,System.Parent';
+
+  /// ADO refuses more than 200 ids in one batch read.
+  static const _batchSize = 200;
+
+  final Map<String, List<AdoWorkItem>> _assignedCache = {}; // label -> items
+  final Set<String> _assignedLoading = {};
+  final Map<String, String> _assignedErrors = {};
+
+  List<AdoWorkItem>? getCachedAssigned(String instanceLabel) =>
+      _assignedCache[instanceLabel];
+
+  bool isLoadingAssigned(String instanceLabel) =>
+      _assignedLoading.contains(instanceLabel);
+
+  String? assignedError(String instanceLabel) => _assignedErrors[instanceLabel];
+
+  /// Fetches the work items assigned to the PAT's owner, most recently changed
+  /// first, and caches them per instance. Returns the cached list unless
+  /// [refresh] is set.
+  ///
+  /// Two calls: WIQL for the ids, then one field-limited batch read per 200
+  /// ids — WIQL itself only ever returns ids.
+  Future<List<AdoWorkItem>> fetchAssignedWorkItems(
+    AdoInstance instance, {
+    bool refresh = false,
+    bool includeCompleted = false,
+  }) async {
+    final label = instance.label;
+    if (!refresh && _assignedCache.containsKey(label)) {
+      return _assignedCache[label]!;
+    }
+    final pat = instance.pat;
+    if (pat == null || pat.isEmpty) {
+      _assignedErrors[label] = 'No PAT configured for ${instance.label}';
+      notifyListeners();
+      return const [];
+    }
+    if (_assignedLoading.contains(label)) return _assignedCache[label] ?? const [];
+
+    _assignedLoading.add(label);
+    _assignedErrors.remove(label);
+    notifyListeners();
+
+    try {
+      final clauses = <String>['[System.AssignedTo] = @Me'];
+      if (!includeCompleted) {
+        clauses.addAll([
+          "[System.State] <> 'Closed'",
+          "[System.State] <> 'Removed'",
+          "[System.State] <> 'Done'",
+        ]);
+      }
+      final wiql = 'SELECT [System.Id] FROM WorkItems WHERE '
+          '${clauses.join(' AND ')} ORDER BY [System.ChangedDate] DESC';
+
+      final credentials = base64Encode(utf8.encode(':$pat'));
+      final headers = {
+        'Authorization': 'Basic $credentials',
+        'Content-Type': 'application/json',
+      };
+
+      final wiqlResponse = await _client.post(
+        Uri.parse('${instance.baseUrl}/_apis/wit/wiql?api-version=7.0'),
+        headers: headers,
+        body: jsonEncode({'query': wiql}),
+      );
+      if (wiqlResponse.statusCode != 200) {
+        throw Exception('ADO query failed: ${wiqlResponse.statusCode}');
+      }
+
+      final wiqlJson = jsonDecode(wiqlResponse.body) as Map<String, dynamic>;
+      final ids = (wiqlJson['workItems'] as List<dynamic>? ?? [])
+          .map((w) => (w as Map<String, dynamic>)['id'])
+          .whereType<num>()
+          .map((n) => n.toInt())
+          .toList();
+
+      final items = <AdoWorkItem>[];
+      for (var i = 0; i < ids.length; i += _batchSize) {
+        final chunk = ids.sublist(
+            i, i + _batchSize > ids.length ? ids.length : i + _batchSize);
+        final batchUri = Uri.parse(
+          '${instance.baseUrl}/_apis/wit/workitems'
+          '?ids=${chunk.join(',')}&fields=$_workItemFields&api-version=7.0',
+        );
+        final batchResponse = await _client.get(batchUri, headers: headers);
+        if (batchResponse.statusCode != 200) {
+          throw Exception('ADO fetch failed: ${batchResponse.statusCode}');
+        }
+        final batchJson =
+            jsonDecode(batchResponse.body) as Map<String, dynamic>;
+        for (final raw in (batchJson['value'] as List<dynamic>? ?? [])) {
+          final map = raw as Map<String, dynamic>;
+          final id = (map['id'] as num).toInt().toString();
+          final item = AdoWorkItem.fromJson(id, map);
+          items.add(item);
+          // Seed the single-item cache so the preview is instant on pick.
+          _cache['$label:$id'] = item;
+        }
+      }
+
+      _assignedCache[label] = items;
+      return items;
+    } catch (e) {
+      _assignedErrors[label] = e.toString();
+      return _assignedCache[label] ?? const [];
+    } finally {
+      _assignedLoading.remove(label);
+      notifyListeners();
     }
   }
 
