@@ -279,6 +279,17 @@ void main() {
       expect(availableStates(sample()), contains('Design'));
     });
 
+    test('the Design chip sorts last, after the states that narrow the view',
+        () {
+      final states = availableStates([
+        item('1', state: 'Design'),
+        item('2', state: 'Awaiting PR'),
+        item('3', state: 'QA Testing'),
+        item('4', state: 'In Progress'),
+      ]);
+      expect(states, ['Awaiting PR', 'In Progress', 'QA Testing', 'Design']);
+    });
+
     test('filterByState still means literally that state', () {
       expect(idsOf(filterByState(sample(), null)).length, 5,
           reason: 'the raw helper does not apply the default exclusion');

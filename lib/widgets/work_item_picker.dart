@@ -147,8 +147,9 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
                                 ? all.length - inState.length
                                 : 0,
                           ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    // Wraps rather than truncating: the note about what is
+                    // hidden is the half that was being cut off.
+                    maxLines: 2,
                     style: TextStyle(fontSize: 11, color: palette.text3),
                   ),
                 ),
@@ -210,7 +211,7 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
     final states = kDefaultExcludedStates
         .map((s) => s[0].toUpperCase() + s.substring(1))
         .join(', ');
-    return '$base · $hidden in $states hidden';
+    return '$base · $hidden $states hidden';
   }
 
   Widget _buildBody(
