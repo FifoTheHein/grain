@@ -144,7 +144,7 @@ class _TemplateRow extends StatelessWidget {
             value: template.enabled,
             onChanged: (v) =>
                 context.read<QuickTemplateProvider>().setEnabled(template.id, v),
-            activeThumbColor: HarvestTokens.brand,
+            activeThumbColor: palette.brand,
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),

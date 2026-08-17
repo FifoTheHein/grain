@@ -575,7 +575,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               },
               style: SegmentedButton.styleFrom(
                 selectedBackgroundColor: palette.brandTint,
-                selectedForegroundColor: HarvestTokens.brand600,
+                selectedForegroundColor: palette.brand600,
               ),
             ),
             const SizedBox(height: 16),
@@ -721,7 +721,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               ),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
-              activeColor: HarvestTokens.brand,
+              activeColor: palette.brand,
             ),
 
             if (_hasAdoRef) ...[
@@ -895,19 +895,19 @@ class _MappingAppliedBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.brandTint,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: HarvestTokens.brand.withValues(alpha: 0.35)),
+        border: Border.all(color: palette.brand.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.auto_awesome, size: 16, color: HarvestTokens.brand600),
+          Icon(Icons.auto_awesome, size: 16, color: palette.brand600),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: HarvestTokens.brand600,
+                color: palette.brand600,
               ),
             ),
           ),
@@ -915,7 +915,7 @@ class _MappingAppliedBanner extends StatelessWidget {
             TextButton(
               onPressed: onUndo,
               style: TextButton.styleFrom(
-                foregroundColor: HarvestTokens.brand600,
+                foregroundColor: palette.brand600,
                 minimumSize: const Size(0, 32),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
@@ -924,7 +924,7 @@ class _MappingAppliedBanner extends StatelessWidget {
           IconButton(
             onPressed: onDismiss,
             icon: const Icon(Icons.close, size: 16),
-            color: HarvestTokens.brand600,
+            color: palette.brand600,
             visualDensity: VisualDensity.compact,
             tooltip: 'Dismiss',
           ),

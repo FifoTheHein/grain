@@ -162,10 +162,10 @@ class _BeforeAfter extends StatelessWidget {
           ),
           Text(
             _hours(before + add),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: HarvestTokens.brand,
+              color: palette.brand,
             ),
           ),
         ],

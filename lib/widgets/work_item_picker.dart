@@ -186,7 +186,7 @@ class _WorkItemPickerDialogState extends State<_WorkItemPickerDialog> {
                   style: SegmentedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     selectedBackgroundColor: palette.brandTint,
-                    selectedForegroundColor: HarvestTokens.brand600,
+                    selectedForegroundColor: palette.brand600,
                   ),
                 ),
               ],
@@ -378,7 +378,7 @@ class _StateChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? HarvestTokens.brand : palette.border,
+              color: selected ? palette.brand : palette.border,
             ),
           ),
           child: Row(
@@ -389,7 +389,7 @@ class _StateChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? HarvestTokens.brand600 : palette.text,
+                  color: selected ? palette.brand600 : palette.text,
                 ),
               ),
               const SizedBox(width: 6),
@@ -398,7 +398,7 @@ class _StateChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: selected ? HarvestTokens.brand600 : palette.text3,
+                  color: selected ? palette.brand600 : palette.text3,
                 ),
               ),
             ],

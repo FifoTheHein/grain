@@ -62,9 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   labelType: NavigationRailLabelType.all,
                   indicatorColor: palette.brandTint,
                   selectedIconTheme:
-                      const IconThemeData(color: HarvestTokens.brand),
-                  selectedLabelTextStyle: const TextStyle(
-                    color: HarvestTokens.brand,
+                      IconThemeData(color: palette.brand),
+                  selectedLabelTextStyle: TextStyle(
+                    color: palette.brand,
                     fontWeight: FontWeight.w600,
                   ),
                   destinations: const [
@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: Colors.white.withValues(alpha: 0.8))),
                           ],
                         ),
-                        backgroundColor: HarvestTokens.brand,
+                        backgroundColor: palette.brand,
                         foregroundColor: Colors.white,
                         elevation: 2,
                       ),
@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.white.withValues(alpha: 0.8))),
               ],
             ),
-            backgroundColor: HarvestTokens.brand,
+            backgroundColor: palette.brand,
             foregroundColor: Colors.white,
             elevation: 2,
           ),

@@ -327,12 +327,12 @@ class _WeekSummaryStrip extends StatelessWidget {
           children: [
             ...days.map((d) {
               final textColor = d.isSelected
-                  ? HarvestTokens.brand600
+                  ? palette.brand600
                   : d.isFuture
                   ? palette.text4
                   : palette.text;
               final labelColor = d.isSelected
-                  ? HarvestTokens.brand
+                  ? palette.brand
                   : d.isFuture
                   ? palette.text4
                   : palette.text3;
@@ -390,7 +390,7 @@ class _WeekSummaryStrip extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: d.isFuture ? 0 : progress,
                               backgroundColor: palette.surface3,
-                              color: isOver ? HarvestTokens.warn : HarvestTokens.brand,
+                              color: isOver ? HarvestTokens.warn : palette.brand,
                               minHeight: 3,
                             ),
                           ),
@@ -454,7 +454,8 @@ class _DailyProgressBar extends StatelessWidget {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
-    final barColor = isOver ? HarvestTokens.warn : HarvestTokens.brand;
+    final palette = HarvestTokens.of(context);
+    final barColor = isOver ? HarvestTokens.warn : palette.brand;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -504,7 +505,7 @@ class _DailyProgressBar extends StatelessWidget {
                   Positioned.fill(
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: Container(width: 2, height: 8, color: HarvestTokens.brand600),
+                      child: Container(width: 2, height: 8, color: palette.brand600),
                     ),
                   ),
                 // Expected time tick marker
@@ -531,6 +532,7 @@ class _NewDayBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(8, 4, 8, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -548,20 +550,20 @@ class _NewDayBanner extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 4,
               children: [
-                const Text(
+                Text(
                   "Hey, it's a new day!",
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: HarvestTokens.warn),
                 ),
                 GestureDetector(
                   onTap: onGoToToday,
-                  child: const Text(
+                  child: Text(
                     'Go to today\'s timesheet',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: HarvestTokens.brand,
+                      color: palette.brand,
                       decoration: TextDecoration.underline,
-                      decorationColor: HarvestTokens.brand,
+                      decorationColor: palette.brand,
                     ),
                   ),
                 ),

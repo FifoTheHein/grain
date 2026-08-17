@@ -24,7 +24,7 @@ class WeeklyProgressRing extends StatelessWidget {
     final palette = HarvestTokens.of(context);
     final pct = (hours / goal).clamp(0.0, 1.0);
     final isOver = hours > goal;
-    final ringColor = isOver ? HarvestTokens.warn : HarvestTokens.brand;
+    final ringColor = isOver ? HarvestTokens.warn : palette.brand;
     final goalLabel = 'of ${goal % 1 == 0 ? goal.toInt() : goal}h';
 
     return TweenAnimationBuilder<double>(

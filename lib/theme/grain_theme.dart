@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 
-import 'harvest_palette.dart';
-import 'harvest_tokens.dart';
+import 'theme_palettes.dart';
 
-ThemeData buildGrainTheme(Brightness brightness) {
+/// Builds the app theme for [brightness] from the chosen [themePalette],
+/// defaulting to Grain's own.
+ThemeData buildGrainTheme(
+  Brightness brightness, [
+  GrainThemePalette? themePalette,
+]) {
   final palette =
-      brightness == Brightness.dark ? HarvestPalette.dark : HarvestPalette.light;
+      (themePalette ?? kThemePalettes.first).forBrightness(brightness);
   return ThemeData(
     brightness: brightness,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: HarvestTokens.brand,
+      seedColor: palette.brand,
       brightness: brightness,
       surface: palette.surface,
     ),

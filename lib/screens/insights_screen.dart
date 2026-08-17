@@ -304,7 +304,7 @@ class _StatTile extends StatelessWidget {
     final palette = HarvestTokens.of(context);
     final valueColor = warn
         ? HarvestTokens.warn
-        : (emphasis ? HarvestTokens.brand : palette.text);
+        : (emphasis ? palette.brand : palette.text);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -477,7 +477,7 @@ class _DayTimeline extends StatelessWidget {
                       bottom: 0,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: HarvestTokens.brand,
+                          color: palette.brand,
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),

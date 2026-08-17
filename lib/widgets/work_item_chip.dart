@@ -83,13 +83,13 @@ class WorkItemChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.open_in_new, size: 13, color: HarvestTokens.brand600),
+            Icon(Icons.open_in_new, size: 13, color: palette.brand600),
             const SizedBox(width: 6),
             Text(
               'ADO #$workItemId',
               style: TextStyle(
                 fontSize: 12,
-                color: HarvestTokens.brand600,
+                color: palette.brand600,
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -185,10 +185,10 @@ class WorkItemChip extends StatelessWidget {
                               child: cached!.createdByAvatarUrl == null
                                   ? Text(
                                       initials ?? '',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
-                                        color: HarvestTokens.brand600,
+                                        color: palette.brand600,
                                       ),
                                     )
                                   : null,

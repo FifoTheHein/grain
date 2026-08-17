@@ -9,9 +9,11 @@ import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/theme_mode_provider.dart';
+import '../providers/theme_palette_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
+import '../theme/theme_palettes.dart';
 import '../widgets/mapping_rule_editor.dart';
 import '../widgets/quick_template_editor.dart';
 
@@ -40,6 +42,158 @@ class _ThemeModeSelector extends StatelessWidget {
       selected: {provider.mode},
       onSelectionChanged: (s) =>
           context.read<ThemeModeProvider>().setMode(s.first),
+    );
+  }
+}
+
+/// Palette picker: a card per theme showing the colours it actually uses, in
+/// the mode currently on screen, so the preview matches what tapping it does.
+class _ThemePaletteSelector extends StatelessWidget {
+  const _ThemePaletteSelector();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final selectedId = context.watch<ThemePaletteProvider>().id;
+    final brightness = Theme.of(context).brightness;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Colour palette',
+          style: TextStyle(fontSize: 12, color: palette.text2),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final theme in kThemePalettes)
+              _PaletteCard(
+                theme: theme,
+                brightness: brightness,
+                selected: theme.id == selectedId,
+                onTap: () =>
+                    context.read<ThemePaletteProvider>().setPalette(theme.id),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PaletteCard extends StatelessWidget {
+  final GrainThemePalette theme;
+  final Brightness brightness;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PaletteCard({
+    required this.theme,
+    required this.brightness,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final preview = theme.forBrightness(brightness);
+
+    return SizedBox(
+      width: 168,
+      child: Material(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: selected ? preview.brand : palette.border,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // A miniature of the app: canvas, card, accent, ink.
+                Container(
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: preview.bg,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: preview.border),
+                  ),
+                  padding: const EdgeInsets.all(5),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 22,
+                        decoration: BoxDecoration(
+                          color: preview.brand,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: preview.surface,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: preview.border),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Container(
+                        width: 12,
+                        decoration: BoxDecoration(
+                          color: preview.brandTint,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        theme.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: palette.text,
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      Icon(Icons.check_circle,
+                          size: 15, color: preview.brand),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  theme.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 11, color: palette.text3, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -251,7 +405,7 @@ class _AdoInstanceList extends StatelessWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 13),
-                      color: HarvestTokens.brand600,
+                      color: palette.brand600,
                       padding: EdgeInsets.zero,
                       constraints:
                           const BoxConstraints(minWidth: 24, minHeight: 24),
@@ -951,6 +1105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1050,6 +1205,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SectionHeader(title: 'Appearance'),
           const SizedBox(height: 12),
           _ThemeModeSelector(),
+          const SizedBox(height: 16),
+          const _ThemePaletteSelector(),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),
@@ -1092,7 +1249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Adds logged hours to the work item\'s Completed Work field'),
             contentPadding: EdgeInsets.zero,
             dense: true,
-            activeThumbColor: HarvestTokens.brand,
+            activeThumbColor: palette.brand,
           ),
           const SizedBox(height: 8),
           Text(
@@ -1134,7 +1291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: const Text('Save & Reload'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
-              backgroundColor: HarvestTokens.brand,
+              backgroundColor: palette.brand,
             ),
           ),
           const SizedBox(height: 8),
