@@ -299,6 +299,88 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     }
   }
 
+  /// Builds the Harvest external reference and the note that goes with it from
+  /// the ADO section of the form. Shared by logging a duration and starting a
+  /// timer, which differ only in the hours they send.
+  Future<({ExternalReference? extRef, String? notes})> _buildAdoRefAndNotes(
+      AdoService adoService) async {
+    final userNotes = _notesController.text.trim();
+    final workItemId = _workItemIdController.text.trim();
+    final instance = _selectedAdoInstance;
+
+    if (!_hasAdoRef || workItemId.isEmpty || instance == null) {
+      return (extRef: null, notes: userNotes.isEmpty ? null : userNotes);
+    }
+
+    final projectGuid = await adoService.getHarvestConnectionGuid(instance);
+    final workItemType =
+        adoService.getCached(instance.label, workItemId)?.workItemType ??
+            'Work Item';
+    final refId = projectGuid != null
+        ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
+        : workItemId;
+
+    final prefix =
+        '${instance.label} Azure DevOps $workItemType #$workItemId';
+    return (
+      extRef: ExternalReference(
+        id: refId,
+        permalink: instance.permalinkFor(workItemId),
+      ),
+      notes: userNotes.isEmpty ? prefix : '$prefix - $userNotes',
+    );
+  }
+
+  /// Creates the entry with no hours, which starts Harvest timing it. The
+  /// duration inputs are ignored — the timer decides how long it ran.
+  Future<void> _startTimer(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final assignments = context.read<AssignmentProvider>();
+    final entryProvider = context.read<TimeEntryProvider>();
+    final project = assignments.selectedProject;
+    final task = assignments.selectedTask;
+    if (project == null || task == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a project and task')),
+      );
+      return;
+    }
+
+    final ado = await _buildAdoRefAndNotes(context.read<AdoService>());
+    if (!context.mounted) return;
+
+    final started = await entryProvider.startTimer(CreateTimeEntryRequest(
+      userId: AppConfig.userId,
+      projectId: project.id,
+      taskId: task.id,
+      spentDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      notes: ado.notes,
+      externalReference: ado.extRef,
+    ));
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(started
+            ? (entryProvider.successMessage ?? 'Timer started')
+            : (entryProvider.error ?? 'Could not start the timer')),
+        backgroundColor: started ? HarvestTokens.success : HarvestTokens.error,
+      ),
+    );
+
+    if (started) {
+      _notesController.clear();
+      _workItemIdController.clear();
+      setState(() {
+        _hasAdoRef = false;
+        _selectedAdoInstance = null;
+        _notesFromTemplateId = null;
+        _clearMappingBanner();
+      });
+    }
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -332,39 +414,9 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     }
 
     final adoService = context.read<AdoService>();
-
-    ExternalReference? extRef;
-    if (_hasAdoRef &&
-        _workItemIdController.text.trim().isNotEmpty &&
-        _selectedAdoInstance != null) {
-      final workItemId = _workItemIdController.text.trim();
-      final projectGuid =
-          await adoService.getHarvestConnectionGuid(_selectedAdoInstance!);
-      final workItemType =
-          adoService.getCached(_selectedAdoInstance!.label, workItemId)?.workItemType ?? 'Work Item';
-
-      final refId = projectGuid != null
-          ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
-          : workItemId;
-
-      extRef = ExternalReference(
-        id: refId,
-        permalink: _selectedAdoInstance!.permalinkFor(workItemId),
-      );
-    }
-
-    final userNotes = _notesController.text.trim();
-    String? notes;
-    if (extRef != null) {
-      final workItemId = _workItemIdController.text.trim();
-      final workItemType =
-          adoService.getCached(_selectedAdoInstance!.label, workItemId)?.workItemType ?? 'Work Item';
-      final prefix =
-          '${_selectedAdoInstance!.label} Azure DevOps $workItemType #$workItemId';
-      notes = userNotes.isEmpty ? prefix : '$prefix - $userNotes';
-    } else if (userNotes.isNotEmpty) {
-      notes = userNotes;
-    }
+    final ado = await _buildAdoRefAndNotes(adoService);
+    final extRef = ado.extRef;
+    final notes = ado.notes;
 
     // Only meaningful in Start & End mode, and only accepted by accounts that
     // track time via clock times — sending them elsewhere would be noise.
@@ -783,6 +835,26 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
+            const SizedBox(height: 10),
+
+            // Start a running timer instead of logging a fixed duration. The
+            // hours/start-end inputs above are ignored — Harvest counts from
+            // now until you stop it.
+            Builder(builder: (context) {
+              final running = entryProvider.runningEntry;
+              return OutlinedButton.icon(
+                onPressed: entryProvider.isSubmitting || running != null
+                    ? null
+                    : () => _startTimer(context),
+                icon: const Icon(Icons.play_arrow),
+                label: Text(running == null
+                    ? 'Start Timer'
+                    : 'Timer already running on ${running.projectName}'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              );
+            }),
           ],
         ),
       ),

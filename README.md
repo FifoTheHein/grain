@@ -15,6 +15,7 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Hours & minutes input** — pick hours (0–24) and minutes in 5-minute intervals
 - **Duration or Start & End** — log a plain duration, or pick start and end times; when your Harvest account tracks time by clock times, those are sent through and power the Insights gap analysis
 - **Date picker** — log time against any past date, defaulting to today
+- **Start a timer** — instead of logging a fixed duration, start Harvest's own timer and stop it when you're done; because it is Harvest's timer and not a local one, it shows as running in Harvest's web and mobile apps too. Works on duration-tracking accounts — hours accrue while it runs
 - **Quick templates** — one-tap chips for the work you log most often ("PR Reviews", "Standup"), each with a preset project, task and default notes; tapping one fills the form without submitting anything
 - **Work item mapping rules** — when a linked ADO work item resolves, the first matching rule selects the Harvest project and task for you, with a banner naming the rule and an Undo
 
@@ -42,6 +43,7 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Weekly progress ring** — animated circular arc showing week total vs. goal; brand-orange fill, switches to amber when over goal; center label shows `Xh Ym / of 40h`; "THIS WEEK" caption with contextual helper text (`Xh to go`, `Goal met`, `+Xh over`); over-goal state moves the label beside the ring for visual emphasis
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
 - **Daily progress bar** — visual indicator of daily progress toward a configurable goal (derived from work day start/end/break settings); shows overflow in amber; when viewing today, displays an **expected hours** tick marker on the bar and an "Expected: Xh Ym" label based on how much of the work day has elapsed
+- **Stop & continue** — a running entry counts up live on its card with a Stop button; any stopped entry can be resumed with Continue. Harvest allows one running timer per user, so Continue is disabled while another is going
 - **Edit entries** — tap the pencil icon to open a pre-filled edit form with an orange context banner showing the duration and entry ID; changes are saved via `PATCH` and reflected immediately
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
 
