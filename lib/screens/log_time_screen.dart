@@ -1,12 +1,17 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
+import '../models/ado_work_item.dart';
+import '../models/mapping_rule.dart';
+import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
+import '../providers/mapping_rule_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
@@ -38,6 +43,13 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   TimeOfDay _startTime = const TimeOfDay(hour: 8, minute: 30);
   TimeOfDay _endTime = const TimeOfDay(hour: 9, minute: 30);
   bool _showEndBeforeStartError = false;
+
+  /// `instanceLabel:workItemId` a mapping rule has already been applied for, so
+  /// a rebuild or a re-fetch never overrides a selection the user has since
+  /// changed by hand.
+  String? _mappingAppliedKey;
+  String? _mappingBanner;
+  _MappingUndo? _mappingUndo;
 
   @override
   void initState() {
@@ -132,13 +144,18 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     final text = _workItemIdController.text.trim();
     if (text.isEmpty || _selectedAdoInstance == null) {
       _debounce?.cancel();
-      setState(() => _previewLoading = false);
+      setState(() {
+        _previewLoading = false;
+        _clearMappingBanner();
+      });
       return;
     }
 
     final adoService = context.read<AdoService>();
-    if (adoService.getCached(_selectedAdoInstance!.label, text) != null) {
+    final cached = adoService.getCached(_selectedAdoInstance!.label, text);
+    if (cached != null) {
       setState(() => _previewLoading = false);
+      _maybeApplyMapping(cached);
       return;
     }
 
@@ -151,7 +168,68 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       await adoService.fetchWorkItem(instance, text);
       if (!mounted) return;
       setState(() => _previewLoading = false);
+      final item = adoService.getCached(instance.label, text);
+      if (item != null) _maybeApplyMapping(item);
     });
+  }
+
+  /// Applies the first matching mapping rule to the project/task selection —
+  /// once per work item, and only when both the rule's project and task are
+  /// still in the current assignment list.
+  void _maybeApplyMapping(AdoWorkItem item) {
+    final instance = _selectedAdoInstance;
+    if (instance == null) return;
+    final key = '${instance.label}:${item.id}';
+    if (_mappingAppliedKey == key) return;
+
+    final match = context.read<MappingRuleProvider>().match(item);
+    if (match == null) return;
+
+    final assignments = context.read<AssignmentProvider>();
+    final project =
+        assignments.projects.firstWhereOrNull((p) => p.id == match.projectId);
+    final task = project?.tasks.firstWhereOrNull((t) => t.id == match.taskId);
+    if (project == null || task == null) return;
+
+    final undo = _MappingUndo(
+      project: assignments.selectedProject,
+      task: assignments.selectedTask,
+      notes: _notesController.text,
+    );
+    assignments.selectProjectById(project.id, taskId: task.id);
+
+    // Only prefill notes the user has not already written into.
+    final template = match.rule.noteTemplate;
+    if (template != null &&
+        template.trim().isNotEmpty &&
+        _notesController.text.trim().isEmpty) {
+      _notesController.text = renderNoteTemplate(template, item.matchContext);
+    }
+
+    setState(() {
+      _mappingAppliedKey = key;
+      _mappingUndo = undo;
+      _mappingBanner = '${match.rule.name} → ${project.name} · ${task.name}';
+    });
+  }
+
+  void _undoMapping() {
+    final undo = _mappingUndo;
+    if (undo == null) return;
+    context.read<AssignmentProvider>().restoreSelection(undo.project, undo.task);
+    _notesController.text = undo.notes;
+    // _mappingAppliedKey stays set so the rule does not immediately re-apply.
+    setState(() {
+      _mappingUndo = null;
+      _mappingBanner = null;
+    });
+  }
+
+  /// Caller is responsible for being inside `setState`.
+  void _clearMappingBanner() {
+    _mappingAppliedKey = null;
+    _mappingUndo = null;
+    _mappingBanner = null;
   }
 
   Future<void> _pickDate(BuildContext context) async {
@@ -282,6 +360,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         _hasAdoRef = false;
         _selectedAdoInstance = null;
         _showEndBeforeStartError = false;
+        _clearMappingBanner();
       });
       if (_useStartEndTime) _initStartEndDefaults();
     }
@@ -322,6 +401,18 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               ErrorBanner(message: 'Projects: ${assignments.error!}'),
             if (entryProvider.error != null)
               ErrorBanner(message: entryProvider.error!),
+
+            if (_mappingBanner != null) ...[
+              _MappingAppliedBanner(
+                text: _mappingBanner!,
+                onUndo: _mappingUndo != null ? _undoMapping : null,
+                onDismiss: () => setState(() {
+                  _mappingUndo = null;
+                  _mappingBanner = null;
+                }),
+              ),
+              const SizedBox(height: 12),
+            ],
 
             const ProjectTaskSelector(),
             const SizedBox(height: 16),
@@ -498,6 +589,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                   if (!_hasAdoRef) {
                     _workItemIdController.clear();
                     _selectedAdoInstance = null;
+                    _clearMappingBanner();
                   } else if (adoInstances.length == 1) {
                     _selectedAdoInstance = adoInstances.first;
                   }
@@ -620,6 +712,78 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The project/task/notes state a mapping rule replaced, so it can be restored.
+class _MappingUndo {
+  final HarvestProject? project;
+  final HarvestTask? task;
+  final String notes;
+
+  const _MappingUndo({
+    required this.project,
+    required this.task,
+    required this.notes,
+  });
+}
+
+/// Tells the user a rule picked the project/task for them, and offers a way out.
+class _MappingAppliedBanner extends StatelessWidget {
+  final String text;
+  final VoidCallback? onUndo;
+  final VoidCallback onDismiss;
+
+  const _MappingAppliedBanner({
+    required this.text,
+    required this.onUndo,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: palette.brandTint,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: HarvestTokens.brand.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome, size: 16, color: HarvestTokens.brand600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: HarvestTokens.brand600,
+              ),
+            ),
+          ),
+          if (onUndo != null)
+            TextButton(
+              onPressed: onUndo,
+              style: TextButton.styleFrom(
+                foregroundColor: HarvestTokens.brand600,
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text('Undo'),
+            ),
+          IconButton(
+            onPressed: onDismiss,
+            icon: const Icon(Icons.close, size: 16),
+            color: HarvestTokens.brand600,
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Dismiss',
+          ),
+        ],
       ),
     );
   }

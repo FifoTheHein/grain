@@ -4,6 +4,7 @@ import 'providers/ado_instance_provider.dart';
 import 'providers/assignment_provider.dart';
 import 'services/ado_service.dart';
 import 'providers/time_entry_provider.dart';
+import 'providers/mapping_rule_provider.dart';
 import 'providers/project_category_provider.dart';
 import 'providers/theme_mode_provider.dart';
 import 'screens/home_screen.dart';
@@ -40,6 +41,9 @@ class HarvestApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ProjectCategoryProvider()..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MappingRuleProvider()..load(),
         ),
         ChangeNotifierProvider(
           create: (_) => ThemeModeProvider()..load(),

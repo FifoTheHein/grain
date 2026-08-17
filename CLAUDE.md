@@ -27,7 +27,9 @@ flutter build apk --release
 flutter analyze
 ```
 
-There are no automated tests beyond a placeholder in `test/widget_test.dart`.
+Run tests with `flutter test`. Coverage is limited to the pure mapping-rule
+logic (`test/mapping_rule_test.dart`) plus a placeholder in
+`test/widget_test.dart`.
 
 ## Setup Requirement
 
@@ -39,7 +41,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 
 **Layers:**
 
-- **`lib/models/`** — Pure data classes: `TimeEntry` + request DTOs, `HarvestProject`/`HarvestTask`, `AdoWorkItem`, `AdoInstance`, `ExternalReference`
+- **`lib/models/`** — Pure data classes: `TimeEntry` + request DTOs, `HarvestProject`/`HarvestTask`, `AdoWorkItem`, `AdoInstance`, `ExternalReference`, `MappingRule` + its matcher
 - **`lib/services/`** — HTTP clients with no Flutter dependencies:
   - `HarvestService` — Harvest API v2 (assignments, create/update time entries). Reads credentials from SharedPreferences.
   - `AdoService` (`ChangeNotifier`) — ADO REST API v7, in-memory work item cache, deduplication via a pending-request set.
@@ -48,6 +50,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
   - `AssignmentProvider` — selected project/task and defaults
   - `AdoInstanceProvider` — CRUD for ADO configurations
   - `ProjectCategoryProvider` — project color/code categories, `weeklyGoalHours`, and work day settings (`workDayStart`, `workDayEnd`, `breakHours`); exposes `dailyGoalHours` computed getter = `(end − start) − breakHours`
+  - `MappingRuleProvider` — work item → project/task mapping rules and the auto-apply toggle
 - **`lib/screens/`** — Four screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries; `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker; `SettingsScreen` manages credentials and ADO instances.
 
 @.claude/docs/recent-entries-screen.md
@@ -55,5 +58,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
 @.claude/docs/settings-screen.md
 
 @.claude/docs/ado-integration.md
+
+@.claude/docs/mapping-rules.md
 
 **State setup** — `main.dart` wires all providers with `MultiProvider` and injects `AdoService` into both `AdoInstanceProvider` and `TimeEntryProvider`.

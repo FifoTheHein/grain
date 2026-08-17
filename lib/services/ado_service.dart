@@ -51,7 +51,8 @@ class AdoService extends ChangeNotifier {
     try {
       final uri = Uri.parse(
         '${instance.baseUrl}/_apis/wit/workitems/$trimmed'
-        r'?api-version=7.0&$select=System.Title,System.State,System.CreatedBy,System.WorkItemType',
+        r'?api-version=7.0&$select=System.Title,System.State,System.CreatedBy,System.WorkItemType'
+        r',System.TeamProject,System.AreaPath,System.IterationPath,System.AssignedTo,System.Tags',
       );
       final credentials = base64Encode(utf8.encode(':$pat'));
       final response = await _client.get(uri, headers: {
