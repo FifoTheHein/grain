@@ -29,6 +29,21 @@ single-item cache, so the preview renders instantly on pick. Requires a PAT.
   is kept even when its children do not — and those children are dropped.
 - `flattenTree` / `flattenWithDepth` render the forest as an indented list.
 
+**Status filter** — board-style chips above the list: "All statuses" plus one
+per state, each with its count, tapping the active chip clearing it.
+
+- `availableStates` derives the chips from the fetched items rather than
+  hard-coding them, so each project's process comes through as-is. Sorted
+  alphabetically, not by count, so a chip does not jump position on refresh.
+- `kHiddenFilterStates` (currently `blocked`) suppresses a chip without hiding
+  the work: Blocked items are still listed under "All statuses" and still
+  reachable by search.
+- `kCompletedStates` / `excludeCompleted` drop finished work client-side. The
+  WIQL already excludes Done, Closed and Removed server-side; this is the guard
+  for a process that names finished work differently.
+- The picker applies state before text, so the tree nests only what survived
+  the filter and a task whose parent is in another state reads as a root.
+
 **Picker (`lib/widgets/work_item_picker.dart`)** — `showWorkItemPicker` returns
 the chosen id or null. Search field, Tree/Flat toggle, a refresh button, a
 match count, and distinct empty states for "nothing assigned", "no matches" and
