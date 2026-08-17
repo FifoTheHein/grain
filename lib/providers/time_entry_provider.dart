@@ -13,6 +13,11 @@ class TimeEntryProvider extends ChangeNotifier {
 
   List<TimeEntry> entries = [];
   Map<String, double> weeklyTotals = {};
+
+  /// True when the Harvest account records clock times on entries. Learned
+  /// from the fetched week rather than configured — an account tracking by
+  /// duration returns null times, and Grain then never sends them.
+  bool tracksByStartEnd = false;
   bool isLoading = false;
   bool isSubmitting = false;
   String? error;
@@ -123,6 +128,9 @@ class TimeEntryProvider extends ChangeNotifier {
       if (requestId != _loadRecentEntriesRequestId) return;
 
       error = null;
+      if (all.isNotEmpty) {
+        tracksByStartEnd = all.any((e) => e.startedTime != null);
+      }
 
       // Compute weekly totals
       final totals = <String, double>{};

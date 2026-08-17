@@ -68,6 +68,9 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
   int _timeOfDayToMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
+  static String _formatClock(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
   TimeOfDay _addMinutes(TimeOfDay t, int minutes) {
     final total = (_timeOfDayToMinutes(t) + minutes).clamp(0, 23 * 60 + 59).toInt();
     return TimeOfDay(hour: total ~/ 60, minute: total % 60);
@@ -312,6 +315,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       notes = userNotes;
     }
 
+    // Only meaningful in Start & End mode, and only accepted by accounts that
+    // track time via clock times — sending them elsewhere would be noise.
+    final sendClockTimes = _useStartEndTime && entryProvider.tracksByStartEnd;
+
     final request = CreateTimeEntryRequest(
       userId: AppConfig.userId,
       projectId: project.id,
@@ -320,6 +327,8 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       hours: hours,
       notes: notes,
       externalReference: extRef,
+      startedTime: sendClockTimes ? _formatClock(_startTime) : null,
+      endedTime: sendClockTimes ? _formatClock(_endTime) : null,
     );
 
     // Capture before clearing state on success

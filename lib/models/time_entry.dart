@@ -1,3 +1,5 @@
+import 'day_insights.dart';
+
 class AdoInstance {
   final String label;
   final String baseUrl;
@@ -78,6 +80,11 @@ class TimeEntry {
   final String? createdAt;
   final bool isRunning;
 
+  /// Harvest clock times, e.g. `"8:30am"`. Only populated when the Harvest
+  /// account tracks time via start and end times rather than duration.
+  final String? startedTime;
+  final String? endedTime;
+
   const TimeEntry({
     required this.id,
     required this.spentDate,
@@ -91,7 +98,24 @@ class TimeEntry {
     this.externalReference,
     this.createdAt,
     this.isRunning = false,
+    this.startedTime,
+    this.endedTime,
   });
+
+  /// True when this entry knows when it happened, not just how long it took.
+  bool get hasClockTimes =>
+      parseClockMinutes(startedTime) != null &&
+      parseClockMinutes(endedTime) != null;
+
+  /// The entry as a span in minutes from midnight, or null when untimed.
+  /// An end at or before the start (an entry crossing midnight) is dropped
+  /// rather than guessed at.
+  InsightSpan? get span {
+    final start = parseClockMinutes(startedTime);
+    final end = parseClockMinutes(endedTime);
+    if (start == null || end == null || end <= start) return null;
+    return InsightSpan(start: start, end: end, key: '$projectId:$taskId');
+  }
 
   factory TimeEntry.fromJson(Map<String, dynamic> json) {
     final ext = json['external_reference'] as Map<String, dynamic>?;
@@ -116,6 +140,8 @@ class TimeEntry {
             ),
       createdAt: json['created_at'] as String?,
       isRunning: json['is_running'] as bool? ?? false,
+      startedTime: json['started_time'] as String?,
+      endedTime: json['ended_time'] as String?,
     );
   }
 }
@@ -129,6 +155,11 @@ class CreateTimeEntryRequest {
   final String? notes;
   final ExternalReference? externalReference;
 
+  /// Clock times in `HH:mm`, sent only when the Harvest account tracks time via
+  /// start and end times — duration-tracking accounts ignore them.
+  final String? startedTime;
+  final String? endedTime;
+
   const CreateTimeEntryRequest({
     required this.userId,
     required this.projectId,
@@ -137,6 +168,8 @@ class CreateTimeEntryRequest {
     required this.hours,
     this.notes,
     this.externalReference,
+    this.startedTime,
+    this.endedTime,
   });
 
   Map<String, dynamic> toJson() => {
@@ -148,6 +181,8 @@ class CreateTimeEntryRequest {
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
         if (externalReference != null)
           'external_reference': externalReference!.toJson(),
+        if (startedTime != null) 'started_time': startedTime,
+        if (endedTime != null) 'ended_time': endedTime,
       };
 }
 

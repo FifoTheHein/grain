@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'insights_screen.dart';
 import 'log_time_screen.dart';
 import 'recent_entries_screen.dart';
 import 'settings_screen.dart';
@@ -26,6 +27,11 @@ class _HomeScreenState extends State<HomeScreen> {
       label: 'Log Time',
     ),
     NavigationDestination(
+      icon: Icon(Icons.insights_outlined),
+      selectedIcon: Icon(Icons.insights),
+      label: 'Insights',
+    ),
+    NavigationDestination(
       icon: Icon(Icons.settings_outlined),
       selectedIcon: Icon(Icons.settings),
       label: 'Settings',
@@ -35,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _screens = const [
     RecentEntriesScreen(),
     LogTimeScreen(),
+    InsightsScreen(),
     SettingsScreen(),
   ];
 
@@ -70,6 +77,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Icon(Icons.add_circle_outline),
                       selectedIcon: Icon(Icons.add_circle),
                       label: Text('Log Time'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.insights_outlined),
+                      selectedIcon: Icon(Icons.insights),
+                      label: Text('Insights'),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.settings_outlined),

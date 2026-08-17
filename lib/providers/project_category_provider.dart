@@ -9,12 +9,14 @@ class ProjectCategoryProvider extends ChangeNotifier {
   static const _workDayStartKey = 'work_day_start';
   static const _workDayEndKey = 'work_day_end';
   static const _breakHoursKey = 'break_hours';
+  static const _minGapMinutesKey = 'min_gap_minutes';
 
   final Map<int, ProjectCategory> _categories = {};
   double _weeklyGoalHours = 40.0;
   TimeOfDay _workDayStart = const TimeOfDay(hour: 8, minute: 30);
   TimeOfDay _workDayEnd = const TimeOfDay(hour: 17, minute: 0);
   double _breakHours = 0.5;
+  int _minGapMinutes = 15;
 
   // 12-color fixed palette (Material 500-level, warm-to-cool spread)
   static const _palette = [
@@ -38,6 +40,9 @@ class ProjectCategoryProvider extends ChangeNotifier {
   TimeOfDay get workDayEnd => _workDayEnd;
   double get breakHours => _breakHours;
 
+  /// Smallest uncovered stretch the Insights screen reports as a gap.
+  int get minGapMinutes => _minGapMinutes;
+
   double get dailyGoalHours {
     final startMinutes = _workDayStart.hour * 60 + _workDayStart.minute;
     final endMinutes = _workDayEnd.hour * 60 + _workDayEnd.minute;
@@ -59,6 +64,7 @@ class ProjectCategoryProvider extends ChangeNotifier {
     _workDayStart = _parseTime(prefs.getString(_workDayStartKey), const TimeOfDay(hour: 8, minute: 30));
     _workDayEnd = _parseTime(prefs.getString(_workDayEndKey), const TimeOfDay(hour: 17, minute: 0));
     _breakHours = prefs.getDouble(_breakHoursKey) ?? 0.5;
+    _minGapMinutes = prefs.getInt(_minGapMinutesKey) ?? 15;
     notifyListeners();
   }
 
@@ -106,6 +112,13 @@ class ProjectCategoryProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_breakHoursKey, _breakHours);
+  }
+
+  Future<void> setMinGapMinutes(int minutes) async {
+    _minGapMinutes = minutes.clamp(1, 240);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_minGapMinutesKey, _minGapMinutes);
   }
 
   static String _formatTime(TimeOfDay t) =>

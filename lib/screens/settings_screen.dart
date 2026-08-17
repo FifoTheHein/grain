@@ -927,6 +927,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<int>(
+          initialValue: provider.minGapMinutes,
+          decoration: const InputDecoration(
+            labelText: 'Report gaps of at least',
+            border: OutlineInputBorder(),
+            helperText: 'Used by the Insights screen',
+          ),
+          items: const [5, 10, 15, 30, 60]
+              .map((m) => DropdownMenuItem(value: m, child: Text('$m minutes')))
+              .toList(),
+          onChanged: (v) {
+            if (v != null) {
+              context.read<ProjectCategoryProvider>().setMinGapMinutes(v);
+            }
+          },
+        ),
       ],
     );
   }
