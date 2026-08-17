@@ -8,14 +8,17 @@ import '../config/app_config.dart';
 import '../models/ado_work_item.dart';
 import '../models/mapping_rule.dart';
 import '../models/project_assignment.dart';
+import '../models/quick_template.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/mapping_rule_provider.dart';
+import '../providers/quick_template_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
 import '../widgets/project_task_selector.dart';
+import '../widgets/quick_template_bar.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/work_item_preview.dart';
 
@@ -50,6 +53,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   String? _mappingAppliedKey;
   String? _mappingBanner;
   _MappingUndo? _mappingUndo;
+
+  /// Template whose notes are currently sitting in the notes field, so tapping
+  /// a second template can replace them without clobbering anything typed.
+  String? _notesFromTemplateId;
 
   @override
   void initState() {
@@ -228,6 +235,33 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     });
   }
 
+  /// Fills the form from a template. Project and task always win — the tap is
+  /// an explicit choice — while notes only get overwritten when they are empty
+  /// or came from another template.
+  void _applyTemplate(QuickTemplate template) {
+    final assignments = context.read<AssignmentProvider>();
+    final project = assignments.projects
+        .firstWhereOrNull((p) => p.id == template.projectId);
+    final task = project?.tasks.firstWhereOrNull((t) => t.id == template.taskId);
+    if (project == null || task == null) return;
+
+    assignments.selectProjectById(project.id, taskId: task.id);
+
+    final templateNotes = template.notes ?? '';
+    final canReplaceNotes =
+        _notesController.text.trim().isEmpty || _notesFromTemplateId != null;
+    if (canReplaceNotes) {
+      _notesController.text = templateNotes;
+      _notesFromTemplateId = templateNotes.isEmpty ? null : template.id;
+    }
+
+    setState(() {
+      // An explicit pick supersedes whatever a mapping rule chose.
+      _mappingUndo = null;
+      _mappingBanner = null;
+    });
+  }
+
   /// Caller is responsible for being inside `setState`.
   void _clearMappingBanner() {
     _mappingAppliedKey = null;
@@ -369,6 +403,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         _hasAdoRef = false;
         _selectedAdoInstance = null;
         _showEndBeforeStartError = false;
+        _notesFromTemplateId = null;
         _clearMappingBanner();
       });
       if (_useStartEndTime) _initStartEndDefaults();
@@ -410,6 +445,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
               ErrorBanner(message: 'Projects: ${assignments.error!}'),
             if (entryProvider.error != null)
               ErrorBanner(message: entryProvider.error!),
+
+            QuickTemplateBar(onApply: _applyTemplate),
+            if (context.watch<QuickTemplateProvider>().enabledTemplates.isNotEmpty)
+              const SizedBox(height: 16),
 
             if (_mappingBanner != null) ...[
               _MappingAppliedBanner(
@@ -577,6 +616,9 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
             // Notes
             TextFormField(
               controller: _notesController,
+              // Typing takes ownership of the field, so a later template tap
+              // leaves what you wrote alone.
+              onChanged: (_) => _notesFromTemplateId = null,
               decoration: const InputDecoration(
                 labelText: 'Notes',
                 border: OutlineInputBorder(),

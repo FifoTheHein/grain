@@ -6,6 +6,7 @@ import 'services/ado_service.dart';
 import 'providers/time_entry_provider.dart';
 import 'providers/mapping_rule_provider.dart';
 import 'providers/project_category_provider.dart';
+import 'providers/quick_template_provider.dart';
 import 'providers/theme_mode_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/harvest_service.dart';
@@ -44,6 +45,9 @@ class HarvestApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => MappingRuleProvider()..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => QuickTemplateProvider()..load(),
         ),
         ChangeNotifierProvider(
           create: (_) => ThemeModeProvider()..load(),
