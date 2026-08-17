@@ -258,27 +258,35 @@ class _StateFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = counts.values.fold<int>(0, (a, b) => a + b);
-    return SizedBox(
-      height: 34,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _StateChip(
-            label: 'All statuses',
-            count: total,
-            selected: selected == null,
-            onTap: () => onSelected(null),
-          ),
-          for (final state in states)
+    // Chips wrap onto as many rows as they need, capped at roughly three so a
+    // process with a lot of states cannot crowd out the list; past that the
+    // block scrolls.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 116),
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
             _StateChip(
-              label: state,
-              count: counts[state] ?? 0,
-              selected: selected?.toLowerCase() == state.toLowerCase(),
-              // Tapping the active chip clears it, back to all statuses.
-              onTap: () => onSelected(
-                  selected?.toLowerCase() == state.toLowerCase() ? null : state),
+              label: 'All statuses',
+              count: total,
+              selected: selected == null,
+              onTap: () => onSelected(null),
             ),
-        ],
+            for (final state in states)
+              _StateChip(
+                label: state,
+                count: counts[state] ?? 0,
+                selected: selected?.toLowerCase() == state.toLowerCase(),
+                // Tapping the active chip clears it, back to all statuses.
+                onTap: () => onSelected(
+                    selected?.toLowerCase() == state.toLowerCase()
+                        ? null
+                        : state),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -300,44 +308,42 @@ class _StateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: Material(
-        color: selected ? palette.brandTint : palette.surface2,
+    // No outer padding — the Wrap owns the gaps between chips.
+    return Material(
+      color: selected ? palette.brandTint : palette.surface2,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: selected ? HarvestTokens.brand : palette.border,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? HarvestTokens.brand : palette.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? HarvestTokens.brand600 : palette.text,
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? HarvestTokens.brand600 : palette.text,
-                  ),
+              const SizedBox(width: 6),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? HarvestTokens.brand600 : palette.text3,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: selected ? HarvestTokens.brand600 : palette.text3,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
