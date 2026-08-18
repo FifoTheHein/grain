@@ -1,0 +1,15 @@
+# Copy to android/key.properties and fill in. That file is gitignored — the
+# keystore and its passwords must never be committed.
+#
+# Generate the keystore once and keep it somewhere you will still have it in a
+# year; losing it means no future build can update an installed Grain:
+#
+#   keytool -genkey -v -keystore ~/grain-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias grain
+#
+# storeFile may be absolute, or relative to the android/ directory.
+
+storeFile=/absolute/path/to/grain-release.jks
+storePassword=
+keyAlias=grain
+keyPassword=

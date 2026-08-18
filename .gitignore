@@ -46,6 +46,10 @@ app.*.map.json
 
 # Sensitive credentials
 lib/config/app_config.dart
+# android/ ignores key.properties and its own keystores; these catch a
+# keystore left anywhere else in the tree.
+*.jks
+*.keystore
 harvest_postman_collection_2.json
 .worktrees/
 .claude/settings.local.json

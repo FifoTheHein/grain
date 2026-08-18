@@ -1,4 +1,4 @@
-package com.example.harvest
+package com.fifothehein.grain
 
 import io.flutter.embedding.android.FlutterActivity
 

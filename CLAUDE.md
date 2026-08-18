@@ -40,6 +40,12 @@ assert contrast ratios. `test/widget_test.dart` is still a placeholder.
 
 `lib/config/app_config.dart` is gitignored and must be created manually. It contains Harvest API credentials (token, account ID, user ID) and default ADO instances. The app will not run without it.
 
+`android/key.properties` is gitignored too, and `flutter build apk --release`
+fails without it rather than falling back to the debug keystore — a debug key
+is per-machine, so a build signed with one can never be updated from anywhere
+else, and the uninstall that forces wipes every stored preference. Copy
+`android/key.properties.example`; the README has the `keytool` invocation.
+
 ## Architecture
 
 A Flutter web app for logging time to the Harvest API with optional Azure DevOps (ADO) work item integration. All state persists in browser localStorage via `shared_preferences`.
