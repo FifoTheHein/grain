@@ -21,6 +21,10 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
   final Color brand;
   final Color brand600;
 
+  /// Ink for text and icons sitting *on* a brand fill — the app bar, a filled
+  /// button, the running duration pill. White is wrong for a light accent.
+  final Color onBrand;
+
   const HarvestPalette({
     required this.bg,
     required this.surface,
@@ -37,6 +41,7 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     required this.brandTint2,
     required this.brand,
     required this.brand600,
+    required this.onBrand,
   });
 
   static const light = HarvestPalette(
@@ -55,6 +60,7 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     brandTint2: Color(0xFFFDD3BD),
     brand: Color(0xFFFA5D24),
     brand600: Color(0xFFE54714),
+    onBrand: Color(0xFFFFFFFF),
   );
 
   // Dark palette: neutral gray with a faint cool tint (Fork / VS Code vibe).
@@ -78,6 +84,7 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     brandTint2: Color(0xFF5E3826),  // brand-tinted bg pill — stronger
     brand: Color(0xFFFA5D24),
     brand600: Color(0xFFE54714),
+    onBrand: Color(0xFFFFFFFF),
   );
 
   @override
@@ -97,6 +104,7 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     Color? brandTint2,
     Color? brand,
     Color? brand600,
+    Color? onBrand,
   }) =>
       HarvestPalette(
         bg: bg ?? this.bg,
@@ -114,6 +122,7 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
         brandTint2: brandTint2 ?? this.brandTint2,
         brand: brand ?? this.brand,
         brand600: brand600 ?? this.brand600,
+        onBrand: onBrand ?? this.onBrand,
       );
 
   @override
@@ -135,6 +144,7 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
       brandTint2: Color.lerp(brandTint2, other.brandTint2, t)!,
       brand: Color.lerp(brand, other.brand, t)!,
       brand600: Color.lerp(brand600, other.brand600, t)!,
+      onBrand: Color.lerp(onBrand, other.onBrand, t)!,
     );
   }
 }

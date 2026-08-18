@@ -135,6 +135,48 @@ void main() {
     });
   });
 
+  group('onBrand', () {
+    test('clears the 3:1 floor for large UI text on every palette', () {
+      // The app bar, filled buttons and the running pill paint text in this
+      // colour over a brand fill. Grain's white-on-orange sits at 3.16:1 — it
+      // predates the palettes and is deliberately left as it is, so 3:1 (the
+      // WCAG floor for large text and UI components) is the bar here.
+      for (final p in kThemePalettes) {
+        expect(_contrast(p.light.onBrand, p.light.brand), greaterThan(3.0),
+            reason: '${p.id} light');
+        expect(_contrast(p.dark.onBrand, p.dark.brand), greaterThan(3.0),
+            reason: '${p.id} dark');
+      }
+    });
+
+    test('the derived palettes clear 4.5:1, since nothing constrains them', () {
+      // White over Warm Sand's amber was 1.8:1 — the unreadable header.
+      for (final p in kThemePalettes.where((p) => p.id != 'grain')) {
+        expect(_contrast(p.light.onBrand, p.light.brand), greaterThan(4.5),
+            reason: '${p.id} light');
+        expect(_contrast(p.dark.onBrand, p.dark.brand), greaterThan(4.5),
+            reason: '${p.id} dark');
+      }
+    });
+
+    test('is whichever ink contrasts more with the accent', () {
+      // Not a luminance threshold: a mid-tone accent falls on the wrong side
+      // of any fixed cut-off, so the better of the two candidates wins.
+      // Grain is exempt: white on its orange is the look it has always had,
+      // even though dark ink would measure higher.
+      const darkInk = Color(0xFF17130E);
+      for (final p in kThemePalettes.where((p) => p.id != 'grain')) {
+        for (final variant in [p.light, p.dark]) {
+          final chosen = _contrast(variant.onBrand, variant.brand);
+          final alternative = variant.onBrand == Colors.white
+              ? _contrast(darkInk, variant.brand)
+              : _contrast(Colors.white, variant.brand);
+          expect(chosen, greaterThanOrEqualTo(alternative), reason: p.id);
+        }
+      }
+    });
+  });
+
   group('accent', () {
     test('is the light-mode brand, for a preview with no theme to read', () {
       for (final p in kThemePalettes) {

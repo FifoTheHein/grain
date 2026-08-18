@@ -386,9 +386,9 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
       appBar: AppBar(
         title: const Text('Edit Entry'),
         backgroundColor: palette.brand,
-        foregroundColor: Colors.white,
+        foregroundColor: palette.onBrand,
         elevation: 2,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: palette.onBrand),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -701,12 +701,12 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                         ? null
                         : () => _submit(context),
                     icon: entryProvider.isSubmitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: palette.onBrand,
                             ),
                           )
                         : const Icon(Icons.check),

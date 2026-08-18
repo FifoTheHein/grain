@@ -819,12 +819,12 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                   ? null
                   : () => _submit(context),
               icon: entryProvider.isSubmitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: palette.onBrand,
                       ),
                     )
                   : const Icon(Icons.check),

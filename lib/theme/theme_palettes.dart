@@ -78,6 +78,7 @@ const _grain = GrainThemePalette(
     brandTint2: Color(0xFFFDD3BD),
     brand: Color(0xFFFA5D24),
     brand600: Color(0xFFE54714),
+    onBrand: Color(0xFFFFFFFF),
   ),
   dark: HarvestPalette(
     bg: Color(0xFF2A2C2F),
@@ -95,6 +96,7 @@ const _grain = GrainThemePalette(
     brandTint2: Color(0xFF5E3826),
     brand: Color(0xFFFA5D24),
     brand600: Color(0xFFE54714),
+    onBrand: Color(0xFFFFFFFF),
   ),
 );
 
@@ -178,6 +180,23 @@ GrainThemePalette _derive({
 }) {
   Color mix(Color a, Color b, double t) => Color.lerp(a, b, t)!;
 
+  // The ink that sits on a brand fill. Chosen by measuring both candidates
+  // rather than thresholding luminance: a mid-tone accent like Modern Slate's
+  // dark-mode #94A3B8 falls on the wrong side of any fixed cut-off, and white
+  // over it reads at 2.6:1.
+  Color inkOn(Color fill) {
+    const darkInkOnFill = Color(0xFF17130E);
+    double contrast(Color a, Color b) {
+      final l1 = a.computeLuminance(), l2 = b.computeLuminance();
+      final hi = l1 > l2 ? l1 : l2, lo = l1 > l2 ? l2 : l1;
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    return contrast(Colors.white, fill) >= contrast(darkInkOnFill, fill)
+        ? Colors.white
+        : darkInkOnFill;
+  }
+
   final lightPalette = HarvestPalette(
     bg: lightBg,
     surface: lightSurface,
@@ -194,6 +213,7 @@ GrainThemePalette _derive({
     brandTint2: mix(lightSurface, accent, 0.3),
     brand: accent,
     brand600: mix(accent, Colors.black, 0.12),
+    onBrand: inkOn(accent),
   );
 
   final darkPalette = HarvestPalette(
@@ -212,6 +232,7 @@ GrainThemePalette _derive({
     brandTint2: mix(darkSurface, accentOnDark, 0.38),
     brand: accentOnDark,
     brand600: mix(accentOnDark, Colors.white, 0.15),
+    onBrand: inkOn(accentOnDark),
   );
 
   return GrainThemePalette(
