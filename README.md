@@ -178,7 +178,33 @@ cp lib/config/app_config.example.dart lib/config/app_config.dart
 
 > **Note:** for ADO instances, `/_workitems/edit/{id}` is appended automatically — only provide the project base URL.
 
-### 3. Install dependencies & run
+### 3. Set up the Android release keystore
+
+Only needed for `flutter build apk` — skip it if you are working on web alone.
+
+The release build refuses to fall back to the debug keystore, because a debug key is generated per machine: an APK signed with one can only ever be updated from that same machine, and the uninstall a mismatch forces wipes every preference the app holds.
+
+Generate a keystore once, and keep it somewhere you will still have it in a year — lose it and no future build can update an installed Grain:
+
+```bash
+keytool -genkey -v -keystore ~/grain-release.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias grain
+```
+
+Then point the build at it. `android/key.properties` is gitignored, as are `*.jks` and `*.keystore` — never commit either:
+
+```bash
+cp android/key.properties.example android/key.properties
+```
+
+| Field           | Value                                                          |
+| --------------- | -------------------------------------------------------------- |
+| `storeFile`     | Path to the `.jks` — absolute, or relative to `android/`        |
+| `storePassword` | The keystore password you chose                                 |
+| `keyAlias`      | `grain`, unless you passed a different `-alias`                 |
+| `keyPassword`   | The key password (`keytool` lets this match the store password) |
+
+### 4. Install dependencies & run
 
 ```bash
 flutter pub get
@@ -187,7 +213,7 @@ flutter run -d web-server --web-port=8080
 
 Then open `http://localhost:8080` in Chrome.
 
-### 4. Run the tests
+### 5. Run the tests
 
 ```bash
 flutter test
@@ -196,7 +222,7 @@ flutter analyze
 
 Coverage is deliberately limited to the pure logic — mapping rules, day analytics, quick templates and work item search — which is where the behaviour worth pinning lives. The UI has no widget tests beyond a placeholder.
 
-### 5. Build for production
+### 6. Build for production
 
 Both targets should be built together:
 
@@ -213,7 +239,9 @@ flutter build apk --release
 
 Serve the `build/web` directory from any static host.
 
-The APK is debug-signed for side-loading — there is no Play Store signing config. Install it directly on a device (`adb install build/app/outputs/flutter-apk/app-release.apk`, or copy the file over and open it).
+The APK is signed with your own release keystore (step 3) and side-loaded — there is no Play Store listing. Install it directly on a device (`adb install build/app/outputs/flutter-apk/app-release.apk`, or copy the file over and open it).
+
+Releases up to and including `v1.1.0` were signed with the per-machine Android debug key. Android will not install a keystore-signed build over one of those, so the first upgrade past `v1.1.0` needs the old app uninstalled first — which clears its settings, since everything Grain stores lives in app preferences. Note the Harvest token, ADO instances and any mapping rules before uninstalling.
 
 ## Settings Reference
 
