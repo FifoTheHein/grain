@@ -45,7 +45,7 @@ class DurationPill extends StatelessWidget {
           fontFamily: 'Courier New',
           fontSize: fontSize,
           fontWeight: FontWeight.w600,
-          color: running ? Colors.white : palette.brand600,
+          color: running ? palette.onBrand : palette.brand600,
           height: 1.1,
         ),
       ),
@@ -67,12 +67,12 @@ class DurationPill extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: palette.brand,
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(color: palette.onBrand, width: 1.5),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.play_arrow,
               size: 9,
-              color: Colors.white,
+              color: palette.onBrand,
             ),
           ),
         ),

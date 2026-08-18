@@ -111,11 +111,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text('A better Harvest',
                                 style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.white.withValues(alpha: 0.8))),
+                                    color: palette.onBrand.withValues(alpha: 0.8))),
                           ],
                         ),
                         backgroundColor: palette.brand,
-                        foregroundColor: Colors.white,
+                        foregroundColor: palette.onBrand,
                         elevation: 2,
                       ),
                       // NavigationRail insets itself and the in-column AppBar
@@ -160,11 +160,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text('A better Harvest',
                     style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.8))),
+                        color: palette.onBrand.withValues(alpha: 0.8))),
               ],
             ),
             backgroundColor: palette.brand,
-            foregroundColor: Colors.white,
+            foregroundColor: palette.onBrand,
             elevation: 2,
           ),
           // AppBar and NavigationBar consume the top and bottom insets between

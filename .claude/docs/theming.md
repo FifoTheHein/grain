@@ -19,6 +19,21 @@ label, description, light, dark }`, unit tested in
 - `_derive` takes a separate `accentOnDark`, because a light-mode accent chosen
   for white (Modern Slate's near-black, say) disappears on a dark canvas.
 
+**Ink on the accent** — `HarvestPalette.onBrand` is the colour for text and
+icons painted *over* a brand fill: the app bar, a filled button, the running
+duration pill. `_derive` picks it by measuring both candidates against the
+accent and taking the higher contrast, rather than thresholding luminance — a
+mid-tone accent (Modern Slate's dark-mode `#94A3B8`) falls on the wrong side of
+any fixed cut-off. Grain keeps white by hand: it measures 3.16:1 on the brand
+orange, which is the look the app has always had, so both the "pick the better
+ink" and the 4.5:1 assertions exempt it.
+
+**`colorScheme.primary` is pinned to the accent.** `ColorScheme.fromSeed`
+derives a *tonal* primary from its seed — close to the accent but not it — so
+Material widgets reading `colorScheme` (the selected day chip, filled buttons)
+painted a colour no palette had chosen. `buildGrainTheme` overrides `primary`,
+`onPrimary`, `secondary` and `onSecondary` after seeding.
+
 **The accent lives in the palette, not in tokens.** `HarvestPalette` carries
 `brand` and `brand600` alongside the surfaces, reached with
 `HarvestTokens.of(context)`. `HarvestTokens` keeps only what is genuinely
