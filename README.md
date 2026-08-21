@@ -3,13 +3,24 @@
 
 A personal Flutter app for logging time entries to [Harvest](https://www.getharvest.com/) with first-class Azure DevOps integration. Runs as a **web app** and an **Android APK**.
 
-| Light                                            | Dark                                           |
-| ------------------------------------------------ | ---------------------------------------------- |
+| Light                                                | Dark                                               |
+| ---------------------------------------------------- | -------------------------------------------------- |
 | ![Recent — light](docs/screenshots/recent-light.png) | ![Recent — dark](docs/screenshots/recent-dark.png) |
+
+> The screenshots are rendered mockups, not captures of a live account — the
+> sources live in [`docs/mockups/`](docs/mockups/) and the projects, work items
+> and people in them are invented. See [Regenerating the
+> screenshots](#regenerating-the-screenshots).
 
 ## Features
 
 ### Log Time
+
+![Log Time](docs/screenshots/log-time.png)
+
+Quick-start chips, a resolved work item preview, and the banner naming the
+mapping rule that picked the project and task.
+
 - **Project & task selection** — loads your assigned projects and tasks from the Harvest API; responsive layout places the two dropdowns side-by-side on wide screens
 - **Default project & task** — configure defaults in Settings so the form is pre-filled on load
 - **Hours & minutes input** — pick hours (0–24) and minutes in 5-minute intervals
@@ -20,6 +31,13 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Work item mapping rules** — when a linked ADO work item resolves, the first matching rule selects the Harvest project and task for you, with a banner naming the rule and an Undo
 
 ### Azure DevOps Integration
+
+![Work item picker](docs/screenshots/work-item-picker.png)
+
+The picker over everything assigned to you: status chips with per-state counts,
+Tree view nesting Tasks under their User Story, and a count line that names what
+was held back.
+
 - **Configurable ADO instances** — add any number of Azure DevOps project URLs in Settings; select the active instance via a styled segmented button with PAT-status dots
 - **PAT authentication** — store a Personal Access Token per instance (stored in `localStorage`, never committed); instances with a configured PAT show a green dot
 - **Work item search** — the search icon on the Work Item # field opens a picker over everything assigned to you, so you no longer need to know the number. Matches id, title, type, state, project or tag (`#123` and `123` both work, and `483` finds `13483`); **Tree** view nests Tasks under their User Story and keeps a matched Task's parent for context, **Flat** lists them plainly
@@ -36,6 +54,13 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Single-instance auto-select** — when only one ADO instance is configured, it is selected automatically on the Log Time and Edit screens
 
 ### Recent Entries
+
+![Edit Time with a running timer](docs/screenshots/edit-time-timer.png)
+
+Edit Time while the timer runs: the duration inputs give way to the live total
+and a Stop, everything else stays editable, and Completed Work can be pushed to
+ADO by hand.
+
 - **Default landing screen** — the app opens directly on today's entries
 - **New day banner** — if a background refresh detects the date has rolled over while you were viewing "today", a banner appears offering a one-tap jump to the new day
 - **Weekly summary strip** — compact Mon–Sun strip showing each day's total; tap any day to navigate; selected day is highlighted
@@ -49,6 +74,9 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
 
 ### Insights
+
+![Insights](docs/screenshots/insights.png)
+
 Day analytics for whichever date is selected on Recent — navigating the date on either screen moves the other.
 
 - **Stat tiles** — hours logged against the daily goal, coverage as a percentage, and how much of the day is still unaccounted for (or how far past the goal you are)
@@ -58,6 +86,12 @@ Day analytics for whichever date is selected on Recent — navigating the date o
 - **Degrades honestly** — a Harvest account that tracks by duration records how long you worked but not when, so the totals, coverage and breakdown still work and the screen explains why the gap list is unavailable
 
 ### Visual Design
+
+![Settings — Appearance](docs/screenshots/settings-appearance.png)
+
+Mode and palette are independent choices; each card previews its palette in the
+mode you are currently in.
+
 - **Grain logo** — custom SVG hourglass-and-grain icon; shown in the app bar header (rounded corners) and used as the Android launcher icon and web favicon
 - **Light & dark themes** — every palette ships both; switch between **System / Light / Dark** in Settings, persisted across sessions
 - **Colour palettes** — pick the look of the whole interface in Settings → Appearance: **Grain** (warm paper, brand orange), **Modern Slate** (cool neutrals), **Deep Indigo**, **Emerald Earth** or **Warm Sand**. Each card previews the palette in the mode you're currently in. Contrast ratios for every palette are asserted by tests, not eyeballed
@@ -74,6 +108,12 @@ Day analytics for whichever date is selected on Recent — navigating the date o
 - Skipped automatically if a submit, update, or delete is in progress to prevent conflicts
 
 ### Settings
+
+![Settings — rules and templates](docs/screenshots/settings-rules.png)
+
+ADO instances with PAT and GUID status, prioritised mapping rules, and the quick
+templates that back the Log Time chips.
+
 - All credentials and ADO instances persist in browser `localStorage` and take effect immediately without recompiling
 - **Theme** — System / Light / Dark segmented toggle (default System)
 - **Project Categories** — view and customise the colour and short code assigned to each project; 12-colour palette with an edit dialog
@@ -88,6 +128,14 @@ Day analytics for whichever date is selected on Recent — navigating the date o
 ## Project Structure
 
 ```
+docs/
+├── mockups/                              # HTML sources for the README images
+│   ├── grain.css                         # palettes copied from theme_palettes.dart
+│   ├── icons.js                          # inline SVG sprite
+│   ├── render.py                         # renders each page to docs/screenshots/
+│   └── *.html                            # one file per screen
+└── screenshots/                          # rendered PNGs used by this README
+
 lib/
 ├── main.dart
 ├── config/
@@ -214,6 +262,31 @@ flutter build apk --release
 Serve the `build/web` directory from any static host.
 
 The APK is debug-signed for side-loading — there is no Play Store signing config. Install it directly on a device (`adb install build/app/outputs/flutter-apk/app-release.apk`, or copy the file over and open it).
+
+## Regenerating the screenshots
+
+The images in this README are rendered from HTML, not captured from a running
+app, so they can be published without blurring out client names, work item
+titles, Azure DevOps URLs or connection GUIDs. Every project, work item and
+person in them is made up.
+
+The sources are in `docs/mockups/` — one `.html` file per screen, sharing
+`grain.css` (whose palette values are copied verbatim from
+`lib/theme/theme_palettes.dart`) and an inline icon sprite. To re-render after a
+UI change:
+
+```bash
+pip install playwright
+python3 docs/mockups/render.py            # all shots
+python3 docs/mockups/render.py insights   # just one
+```
+
+Output lands in `docs/screenshots/` at 2x scale. The script drives the Chromium
+already present in the dev container; set `CHROME_PATH` if yours is elsewhere.
+
+Because these are reconstructions, they drift when the real UI changes — treat
+`docs/mockups/` as documentation to update alongside a screen, not as a
+generated artefact that stays correct on its own.
 
 ## Settings Reference
 

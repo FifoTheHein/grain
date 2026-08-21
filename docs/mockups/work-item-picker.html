@@ -1,0 +1,96 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Grain — Work item picker</title>
+<link rel="stylesheet" href="grain.css">
+<script src="icons.js"></script>
+<body class="grain-dark">
+<div class="shell">
+
+  <nav class="rail">
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-recent"/></svg></span><span class="rail-label">Recent</span></div>
+    <div class="rail-item on"><span class="rail-icon"><svg class="i i-22"><use href="#ic-plus"/></svg></span><span class="rail-label">Log Time</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-insights"/></svg></span><span class="rail-label">Insights</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-settings"/></svg></span><span class="rail-label">Settings</span></div>
+  </nav>
+
+  <div class="pane">
+    <header class="appbar">
+      <span class="logo"><img src="../../assets/icon.svg" alt=""></span>
+      <div><h1>Grain</h1><div class="sub">A better Harvest</div></div>
+    </header>
+
+    <div class="body">
+      <!-- The Log Time form, dimmed behind the picker. -->
+      <div class="scroll"><div class="wrap">
+        <div class="eyebrow">Quick start</div>
+        <div class="chiprow"><span class="tchip"><svg class="i i-16"><use href="#ic-image"/></svg>PR Reviews</span></div>
+        <div class="pair">
+          <div class="field"><span class="lab">Project</span><span class="val">NWD001 — Northwind Platform |</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+          <div class="field"><span class="lab">Task</span><span class="val">Development</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+        </div>
+        <div class="field"><span class="lab">Date</span><span class="val">Fri, 21 Aug 2026</span><svg class="i i-22" style="color:var(--brand)"><use href="#ic-calendar"/></svg></div>
+        <div class="seg"><div class="on"><svg class="i i-18"><use href="#ic-check"/></svg>Duration</div><div><svg class="i i-18"><use href="#ic-clock"/></svg>Start &amp; End</div></div>
+        <div class="field tall"><span class="lab">Notes</span><span class="val ph">Notes</span></div>
+        <div class="field">
+          <span class="lab">Work Item #</span>
+          <svg class="i i-20" style="color:var(--text3)"><use href="#ic-hash"/></svg>
+          <span class="val ph">Work Item #</span>
+          <svg class="i i-20" style="color:var(--brand)"><use href="#ic-search"/></svg>
+        </div>
+        <div class="btn filled"><svg class="i i-18"><use href="#ic-check"/></svg>Log Time</div>
+      </div></div>
+
+      <div class="scrim"></div>
+
+      <div class="dialog">
+        <h2><span>Work items · Northwind</span><span class="sp"></span><svg class="i i-22" style="color:var(--text2)"><use href="#ic-refresh"/></svg></h2>
+
+        <div class="search"><svg class="i i-20"><use href="#ic-search"/></svg>Search id, title, type, state or tag</div>
+
+        <div class="states">
+          <span class="state on">All statuses <span class="n">48</span></span>
+          <span class="state">Awaiting PR <span class="n">13</span></span>
+          <span class="state">In Progress <span class="n">6</span></span>
+          <span class="state">New <span class="n">17</span></span>
+          <span class="state">QA Testing <span class="n">7</span></span>
+          <span class="state">Ready <span class="n">2</span></span>
+          <span class="state">Ready for QA <span class="n">3</span></span>
+          <span class="state">Design <span class="n">612</span></span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="count">48 of 48 assigned to you · 612 Design hidden</span>
+          <span class="viewtoggle">
+            <div class="on"><svg class="i i-16"><use href="#ic-tree"/></svg>Tree</div>
+            <div><svg class="i i-16"><use href="#ic-list"/></svg>Flat</div>
+          </span>
+        </div>
+
+        <div style="margin-top:8px">
+          <div class="wi">
+            <div class="title">Settle partner transactions end to end</div>
+            <div class="meta">#4179 &nbsp;User Story · In Progress · PI Planning 2, Refinement</div>
+          </div>
+          <div class="wi child">
+            <div class="title">Mark the order complete when the partner line item finalises</div>
+            <div class="meta">#4548 &nbsp;Task · New</div>
+          </div>
+          <div class="wi child">
+            <div class="title">Release the over-held wallet funds when the order-complete webhook lands</div>
+            <div class="meta">#4839 &nbsp;Task · New</div>
+          </div>
+          <div class="wi child">
+            <div class="title">Webhook receiver — single endpoint, signature check and event store</div>
+            <div class="meta">#4843 &nbsp;Task · In Progress</div>
+          </div>
+          <div class="wi child">
+            <div class="title">Consignment and consignment_service webhook handlers</div>
+            <div class="meta">#4844 &nbsp;Task · In Progress</div>
+          </div>
+        </div>
+
+        <div class="foot">Cancel</div>
+      </div>
+    </div>
+  </div>
+</div>
