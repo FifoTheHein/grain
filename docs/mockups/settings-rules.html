@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Grain — Settings · Rules &amp; templates</title>
+<link rel="stylesheet" href="grain.css">
+<script src="icons.js"></script>
+<body class="grain-dark">
+<div class="shell">
+
+  <nav class="rail">
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-recent"/></svg></span><span class="rail-label">Recent</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-plus"/></svg></span><span class="rail-label">Log Time</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-insights"/></svg></span><span class="rail-label">Insights</span></div>
+    <div class="rail-item on"><span class="rail-icon"><svg class="i i-22"><use href="#ic-settings"/></svg></span><span class="rail-label">Settings</span></div>
+  </nav>
+
+  <div class="pane">
+    <header class="appbar">
+      <span class="logo"><img src="../../assets/icon.svg" alt=""></span>
+      <div><h1>Grain</h1><div class="sub">A better Harvest</div></div>
+    </header>
+
+    <div class="body"><div class="scroll"><div class="wrap">
+
+      <div class="section first">Azure DevOps Instances</div>
+      <div class="srow">
+        <span class="rail-icon" style="width:36px;height:36px;border-radius:18px;background:var(--surface3);color:var(--text2)"><svg class="i i-18"><use href="#ic-link"/></svg></span>
+        <span class="t">
+          <span class="n">Northwind</span>
+          <span class="s">https://dev.azure.com/contoso/Northwind</span>
+        </span>
+        <span class="dot"></span>
+        <svg class="i i-18" style="color:var(--brand)"><use href="#ic-pencil"/></svg>
+        <svg class="i i-18" style="color:var(--error)"><use href="#ic-trash"/></svg>
+      </div>
+      <div class="srow" style="padding:2px 0 10px 48px">
+        <svg class="i i-16" style="color:var(--success)"><use href="#ic-check"/></svg>
+        <span class="t"><span class="s" style="font-size:12px">0f3c1a92-7b45-4e21-9d88-3ac6be51f7d0</span></span>
+        <svg class="i i-16" style="color:var(--text3)"><use href="#ic-pencil"/></svg>
+      </div>
+
+      <div style="display:flex;justify-content:center">
+        <span class="btn outline" style="margin-top:4px;padding:9px 18px;font-size:13px"><svg class="i i-16"><use href="#ic-history"/></svg>Reset to Defaults</span>
+      </div>
+
+      <div class="srow" style="margin-top:14px">
+        <span class="t">
+          <span class="n">Update Completed Work when logging time</span>
+          <span class="s">Adds logged hours to the work item's Completed Work field</span>
+        </span>
+        <span class="toggle"><i></i></span>
+      </div>
+      <div class="s" style="font-size:12px;color:var(--text3)">User ID: 1234567</div>
+
+      <div class="divider"></div>
+
+      <div class="rowhead">
+        <span class="section" style="margin:0">Work Item Mapping Rules</span>
+        <span class="addbtn"><svg class="i i-16"><use href="#ic-plus"/></svg>Add</span>
+      </div>
+
+      <div class="srow">
+        <span class="t">
+          <span class="n">Auto-select project &amp; task from work items</span>
+          <span class="s">Applies the first matching rule when a work item loads</span>
+        </span>
+        <span class="toggle"><i></i></span>
+      </div>
+
+      <div class="rulecard">
+        <svg class="i i-18" style="color:var(--text4)"><use href="#ic-drag"/></svg>
+        <span class="t">
+          <span class="n">Platform work</span>
+          <span class="c">Area path is under path "Northwind\Platform"</span>
+          <span class="m">→ Northwind Retail | Platform · Development</span>
+        </span>
+        <span class="toggle"><i></i></span>
+        <svg class="i i-18" style="color:var(--text2)"><use href="#ic-pencil"/></svg>
+      </div>
+
+      <div class="rulecard">
+        <svg class="i i-18" style="color:var(--text4)"><use href="#ic-drag"/></svg>
+        <span class="t">
+          <span class="n">Support</span>
+          <span class="c">Area path is under path "Northwind\Helpdesk" · Type is one of Bug, Issue</span>
+          <span class="m">→ Northwind Retail | Helpdesk · Development</span>
+        </span>
+        <span class="toggle"><i></i></span>
+        <svg class="i i-18" style="color:var(--text2)"><use href="#ic-pencil"/></svg>
+      </div>
+
+      <div class="hint">Rules are evaluated top to bottom; the first match wins.</div>
+
+      <div class="divider"></div>
+
+      <div class="rowhead">
+        <span class="section" style="margin:0">Quick Templates</span>
+        <span class="addbtn"><svg class="i i-16"><use href="#ic-plus"/></svg>Add</span>
+      </div>
+
+      <div class="rulecard" style="border-left-color:var(--stateActive)">
+        <svg class="i i-18" style="color:var(--text4)"><use href="#ic-drag"/></svg>
+        <span class="ic" style="width:26px;height:26px;border-radius:6px;display:grid;place-content:center;background:var(--brandTint);color:var(--brand)"><svg class="i i-16"><use href="#ic-image"/></svg></span>
+        <span class="t">
+          <span class="n">PR Reviews</span>
+          <span class="m">Northwind Retail | Platform · Development</span>
+          <span class="c">PR Reviews</span>
+        </span>
+        <span class="toggle"><i></i></span>
+        <svg class="i i-18" style="color:var(--text2)"><use href="#ic-pencil"/></svg>
+      </div>
+
+      <div class="rulecard" style="border-left-color:var(--stateDone)">
+        <svg class="i i-18" style="color:var(--text4)"><use href="#ic-drag"/></svg>
+        <span class="ic" style="width:26px;height:26px;border-radius:6px;display:grid;place-content:center;background:var(--surface3);color:var(--stateDone)"><svg class="i i-16"><use href="#ic-clock"/></svg></span>
+        <span class="t">
+          <span class="n">Standup</span>
+          <span class="m">Northwind Retail | Platform · Meetings</span>
+          <span class="c">Daily standup</span>
+        </span>
+        <span class="toggle"><i></i></span>
+        <svg class="i i-18" style="color:var(--text2)"><use href="#ic-pencil"/></svg>
+      </div>
+
+      <div style="height:22px"></div>
+    </div></div></div>
+  </div>
+</div>
