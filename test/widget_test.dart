@@ -15,8 +15,10 @@ import 'package:harvest/services/ado_service.dart';
 import 'package:harvest/services/harvest_service.dart';
 import 'package:harvest/theme/grain_theme.dart';
 import 'package:harvest/theme/theme_palettes.dart';
+import 'package:harvest/widgets/app_version_label.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,7 +68,22 @@ Widget settingsApp({required Size size}) {
 }
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    PackageInfo.setMockInitialValues(
+      appName: 'harvest',
+      packageName: 'harvest',
+      version: '1.2.5',
+      buildNumber: '8',
+      buildSignature: '',
+    );
+  });
+
+  test('formatAppVersion', () {
+    expect(formatAppVersion('1.2.5', '8'), 'Grain 1.2.5 (build 8)');
+    expect(formatAppVersion('1.2.5', ''), 'Grain 1.2.5');
+    expect(formatAppVersion(' ', '8'), 'Grain');
+  });
 
   Future<void> pumpAt(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
@@ -95,6 +112,12 @@ void main() {
       }
       expect(find.textContaining('refresh every'), findsOneWidget);
       expect(find.textContaining('meeting rule'), findsOneWidget);
+    });
+
+    testWidgets('the list ends with the app version', (tester) async {
+      await pumpAt(tester, phone);
+      await tester.pumpAndSettle();
+      expect(find.text('Grain 1.2.5 (build 8)'), findsOneWidget);
     });
 
     testWidgets('a group opens its page and back returns to the list',
@@ -151,6 +174,12 @@ void main() {
       expect(find.text('Harvest account'), findsOneWidget,
           reason: 'the sidebar stays');
       expect(find.byTooltip('All settings'), findsNothing);
+    });
+
+    testWidgets('the sidebar shows the app version', (tester) async {
+      await pumpAt(tester, const Size(1100, 900));
+      await tester.pumpAndSettle();
+      expect(find.text('Grain 1.2.5 (build 8)'), findsOneWidget);
     });
   });
 }
