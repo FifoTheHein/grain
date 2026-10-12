@@ -1,24 +1,56 @@
 # SettingsScreen (`lib/screens/settings_screen.dart`)
 
-State: token + accountId `TextEditingController`s, `_obscureToken`, `_defaultProjectId`, `_defaultTaskId`, `_autoRefreshIntervalMinutes` (all loaded from SharedPreferences in `_load()`). No provider listeners — reads on demand.
+A short list of groups, each opening its own page. `SettingsGroup` (an enum in
+this file) defines the order, titles, icons and the page each one builds.
 
-**Sections (scrollable column):**
-1. **Harvest Credentials** — API token (obscured) + Account ID fields
-2. **Default Project** — `_DefaultProjectDropdown` → `_DefaultTaskDropdown` (only shown when project selected); stored as `default_project_id` / `default_task_id` in prefs
-3. **Background Refresh** — interval dropdown (5/15/30/60 min); applied on save via `TimeEntryProvider.setRefreshInterval`
-4. **Project Categories** — `_ProjectCategoryRow` per project; edit dialog has 12-color palette + code (≤5 chars); persisted via `ProjectCategoryProvider.setCategory`
-5. **Weekly Goal** — free-text hours field; calls `ProjectCategoryProvider.setWeeklyGoal` on every keystroke
-6. **Work Day** — start time + end time (tappable, `showTimePicker`), break hours field, and the Insights gap threshold dropdown; calls `setWorkDayStart` / `setWorkDayEnd` / `setBreakHours` / `setMinGapMinutes`; derived label shows "= Xh work day" live
-7. **Azure DevOps Instances** — `_AdoInstanceList`; add/edit via `_showAdoDialog`; each row shows label, baseUrl, PAT presence dot, and Harvest GUID status (check/warn icon); GUID editable via `_showEditGuidDialog` → `AdoService.setHarvestGuid`
-8. **Work Item Rules** — `MappingRuleList` (`lib/widgets/mapping_rule_editor.dart`): auto-apply switch, drag-to-reorder rule rows, add/edit via `showMappingRuleDialog`; see `mapping-rules.md`
-9. **Quick Templates** — `QuickTemplateList` (`lib/widgets/quick_template_editor.dart`): drag-to-reorder template rows, add/edit via `showQuickTemplateDialog`; see `quick-templates.md`
-10. **Calendar Import** — `CalendarImportSettings` (`lib/widgets/calendar_import_settings.dart`): ICS URL, auto-log, default project/task, Sync now / Upload .ics; applies immediately; see `calendar-import.md`
-11. **Meeting Rules** — `MappingRuleList(kind: RuleKind.meeting)`; meeting → project/task rules for the calendar import
-12. **Action buttons** — Save & Reload, Clear Cache & Refresh, Migrate ADO References (streams progress via `_MigrationProgressDialog`), Reset to Defaults
+**Layout** — a `LayoutBuilder` on the screen's own width, against
+`HarvestTokens.kWideBreakpoint`:
 
-**Private widgets (all in this file):**
-- `_SectionHeader` — title + optional trailing action widget
-- `_AdoInstanceList` — watches `AdoInstanceProvider` + `AdoService`; "Reset to Defaults" resets to `AppConfig` defaults
-- `_DefaultProjectDropdown` / `_DefaultTaskDropdown` — guard against stale selected IDs missing from current project list
-- `_ProjectCategoryRow` — color swatch + code badge + edit button; opens `_showEditCategoryDialog` with `StatefulBuilder` dialog
-- `_MigrationProgressDialog` — subscribes to `Stream<({int done, int total, int failed})>`; shows indeterminate → determinate `LinearProgressIndicator`
+- **Narrow:** the group list and a page take turns. `_selected` null shows the
+  list; a page gets a `_PageHeader` with a back arrow, and a `PopScope` turns
+  the system back gesture into "back to the list" rather than leaving the app.
+- **Wide:** the list is a 240 px sidebar beside the selected page, which
+  defaults to Harvest account.
+
+Each list row shows a live one-line summary built in `_summaryFor` from the
+providers ("2 instances · 2 rules", "Auto-log on · 3 meeting rules"), so the
+list says where things stand without opening anything.
+
+**Saving** — every page saves as you change it. The one exception is the
+Harvest credentials: a half-typed token would fail every request, so they wait
+for **Save & reconnect**, which also reloads projects and entries. There is no
+page-wide Save button any more.
+
+**Pages (`lib/screens/settings/`)**, sharing `settings_shared.dart`
+(`SettingsSectionHeader`, `SettingsSectionDivider`, `SettingsHint`,
+`SettingsPageBody`):
+
+1. **Harvest account** (`account_settings.dart`) — token (obscured), account
+   ID, user ID, Save & reconnect; refresh interval, applied immediately via
+   `TimeEntryProvider.setRefreshInterval`
+2. **Time tracking** (`time_tracking_settings.dart`) — Log Time default
+   project/task, written to `default_project_id` / `default_task_id` on pick;
+   weekly goal, work day start/end/break with the derived "= Xh work day", and
+   the Insights gap threshold (`ProjectCategoryProvider`); Quick Templates
+   (`QuickTemplateList`, see `quick-templates.md`)
+3. **Azure DevOps** (`ado_settings.dart`) — `_AdoInstanceList` with add/edit via
+   `showAdoInstanceDialog`, PAT dot and Harvest GUID status (editable via
+   `_showEditGuidDialog` → `AdoService.setHarvestGuid`); the Completed Work
+   switch (`ado_update_completed_work`, saved on toggle); Work Item Rules
+   (`MappingRuleList`, see `mapping-rules.md`)
+4. **Calendar** (`calendar_settings.dart`) — `CalendarImportSettings` and the
+   Meeting Rules list (`MappingRuleList(kind: RuleKind.meeting)`); see
+   `calendar-import.md`
+5. **Appearance** (`appearance_settings.dart`) — theme mode, palette selector
+   (see `theming.md`), and project colours/codes (`_ProjectCategoryRow`, 12-colour
+   edit dialog, `ProjectCategoryProvider.setCategory`)
+6. **Maintenance** (`maintenance_settings.dart`) — Clear cache & refresh,
+   Migrate ADO references (progress via `_MigrationProgressDialog`), Reset to
+   defaults (confirms first; clears credentials, Log Time default, refresh
+   interval and Completed Work, keeping rules, templates, instances, calendar
+   and appearance). The storage footer reads "this browser" on the web and
+   "this device" on Android.
+
+**Tests** — `test/widget_test.dart` pumps the screen with every provider it
+reads (Harvest and ADO behind a `MockClient`) and checks the list, opening and
+backing out of every group, the Reset confirmation, and the wide sidebar.

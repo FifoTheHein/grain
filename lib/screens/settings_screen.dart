@@ -1,230 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../config/app_config.dart';
-import '../models/project_assignment.dart';
-import '../models/project_category.dart';
-import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
 import '../providers/assignment_provider.dart';
+import '../providers/calendar_import_provider.dart';
+import '../providers/mapping_rule_provider.dart';
+import '../providers/meeting_rule_provider.dart';
 import '../providers/project_category_provider.dart';
+import '../providers/quick_template_provider.dart';
 import '../providers/theme_mode_provider.dart';
 import '../providers/theme_palette_provider.dart';
 import '../providers/time_entry_provider.dart';
-import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
-import '../theme/theme_palettes.dart';
-import '../widgets/calendar_import_settings.dart';
-import '../widgets/mapping_rule_editor.dart';
-import '../widgets/quick_template_editor.dart';
+import 'settings/account_settings.dart';
+import 'settings/ado_settings.dart';
+import 'settings/appearance_settings.dart';
+import 'settings/calendar_settings.dart';
+import 'settings/maintenance_settings.dart';
+import 'settings/time_tracking_settings.dart';
 
-class _ThemeModeSelector extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<ThemeModeProvider>();
-    return SegmentedButton<ThemeMode>(
-      segments: const [
-        ButtonSegment(
-          value: ThemeMode.system,
-          label: Text('System'),
-          icon: Icon(Icons.brightness_auto),
-        ),
-        ButtonSegment(
-          value: ThemeMode.light,
-          label: Text('Light'),
-          icon: Icon(Icons.light_mode_outlined),
-        ),
-        ButtonSegment(
-          value: ThemeMode.dark,
-          label: Text('Dark'),
-          icon: Icon(Icons.dark_mode_outlined),
-        ),
-      ],
-      selected: {provider.mode},
-      onSelectionChanged: (s) =>
-          context.read<ThemeModeProvider>().setMode(s.first),
-    );
-  }
-}
+/// The groups Settings is split into, in display order.
+enum SettingsGroup {
+  account('Harvest account', Icons.person_outline),
+  timeTracking('Time tracking', Icons.timer_outlined),
+  ado('Azure DevOps', Icons.link),
+  calendar('Calendar', Icons.event_outlined),
+  appearance('Appearance', Icons.palette_outlined),
+  maintenance('Maintenance', Icons.build_outlined);
 
-/// Palette picker: a card per theme showing the colours it actually uses, in
-/// the mode currently on screen, so the preview matches what tapping it does.
-class _ThemePaletteSelector extends StatelessWidget {
-  const _ThemePaletteSelector();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    final selectedId = context.watch<ThemePaletteProvider>().id;
-    final brightness = Theme.of(context).brightness;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Colour palette',
-          style: TextStyle(fontSize: 12, color: palette.text2),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final theme in kThemePalettes)
-              _PaletteCard(
-                theme: theme,
-                brightness: brightness,
-                selected: theme.id == selectedId,
-                onTap: () =>
-                    context.read<ThemePaletteProvider>().setPalette(theme.id),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _PaletteCard extends StatelessWidget {
-  final GrainThemePalette theme;
-  final Brightness brightness;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _PaletteCard({
-    required this.theme,
-    required this.brightness,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    final preview = theme.forBrightness(brightness);
-
-    return SizedBox(
-      width: 168,
-      child: Material(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: selected ? preview.brand : palette.border,
-                width: selected ? 2 : 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // A miniature of the app: canvas, card, accent, ink.
-                Container(
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: preview.bg,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: preview.border),
-                  ),
-                  padding: const EdgeInsets.all(5),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 22,
-                        decoration: BoxDecoration(
-                          color: preview.brand,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: preview.surface,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: preview.border),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Container(
-                        width: 12,
-                        decoration: BoxDecoration(
-                          color: preview.brandTint,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        theme.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: palette.text,
-                        ),
-                      ),
-                    ),
-                    if (selected)
-                      Icon(Icons.check_circle,
-                          size: 15, color: preview.brand),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  theme.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 11, color: palette.text3, height: 1.3),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
   final String title;
-  final Widget? action;
-  const _SectionHeader({required this.title, this.action});
+  final IconData icon;
+  const SettingsGroup(this.title, this.icon);
 
-  @override
-  Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: palette.text,
-            ),
-          ),
-        ),
-        ?action,
-      ],
-    );
-  }
+  Widget page() => switch (this) {
+        SettingsGroup.account => const AccountSettingsPage(),
+        SettingsGroup.timeTracking => const TimeTrackingSettingsPage(),
+        SettingsGroup.ado => const AdoSettingsPage(),
+        SettingsGroup.calendar => const CalendarSettingsPage(),
+        SettingsGroup.appearance => const AppearanceSettingsPage(),
+        SettingsGroup.maintenance => const MaintenanceSettingsPage(),
+      };
 }
 
+/// Settings: a short list of groups, each opening its own page.
+///
+/// Narrow, the list and a page take turns, with a back arrow (and the system
+/// back gesture) returning to the list. Wide, the list is a sidebar beside the
+/// selected page. Every page saves as you change it, except the Harvest
+/// credentials, which have their own button.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -232,1205 +54,199 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-Future<void> _showEditGuidDialog(
-    BuildContext context, AdoInstance instance, String? currentGuid) async {
-  final controller = TextEditingController(text: currentGuid ?? '');
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('Harvest GUID — ${instance.label}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Normally learned automatically from a native Harvest entry. '
-            'Set manually if auto-detection has not worked.',
-            style: TextStyle(fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Harvest Connection GUID',
-              border: OutlineInputBorder(),
-              hintText: '4b6afb17-0252-4bf2-b64a-cf7227b6f0d6',
-            ),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Save'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirmed == true && context.mounted) {
-    final guid = controller.text.trim();
-    if (guid.isNotEmpty) {
-      await context.read<AdoService>().setHarvestGuid(instance.label, guid);
-    }
-  }
-}
-
-class _AdoInstanceList extends StatelessWidget {
-  final void Function(int index, AdoInstance instance) onEdit;
-
-  const _AdoInstanceList({required this.onEdit});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    final provider = context.watch<AdoInstanceProvider>();
-    final adoService = context.watch<AdoService>();
-
-    if (provider.instances.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'No instances configured.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        ...provider.instances.asMap().entries.map((entry) {
-          final i = entry.key;
-          final instance = entry.value;
-          final guid = adoService.getCachedHarvestGuid(instance.label);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: palette.surface3,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.link,
-                        size: 16, color: palette.text2),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          instance.label,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                instance.baseUrl,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 11, color: palette.text3),
-                              ),
-                            ),
-                            if (instance.pat != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: HarvestTokens.success,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 15),
-                    color: palette.text2,
-                    tooltip: 'Edit',
-                    onPressed: () => onEdit(i, instance),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 15),
-                    color: HarvestTokens.error,
-                    tooltip: 'Remove',
-                    onPressed: () =>
-                        context.read<AdoInstanceProvider>().remove(i),
-                  ),
-                ],
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.only(left: 42, top: 4, bottom: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      guid != null
-                          ? Icons.check_circle_outline
-                          : Icons.warning_amber_outlined,
-                      size: 13,
-                      color: guid != null
-                          ? HarvestTokens.success
-                          : HarvestTokens.warn,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        guid ?? 'Harvest GUID not yet learned',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: guid != null ? 'monospace' : null,
-                          fontSize: 11,
-                          color: guid != null
-                              ? palette.text3
-                              : HarvestTokens.warn,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 13),
-                      color: palette.brand600,
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 24, minHeight: 24),
-                      onPressed: () =>
-                          _showEditGuidDialog(context, instance, guid),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }),
-        const SizedBox(height: 4),
-        OutlinedButton.icon(
-          onPressed: () => context.read<AdoInstanceProvider>().resetToDefaults(),
-          icon: const Icon(Icons.restore, size: 16),
-          label: const Text('Reset to Defaults'),
-          style: OutlinedButton.styleFrom(
-            textStyle: Theme.of(context).textTheme.bodySmall,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DefaultProjectDropdown extends StatelessWidget {
-  final int? selectedId;
-  final void Function(int?) onChanged;
-
-  const _DefaultProjectDropdown({
-    required this.selectedId,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<AssignmentProvider>();
-
-    if (provider.isLoading) {
-      return const SizedBox(
-        height: 48,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (provider.projects.isEmpty) {
-      return const Text('No projects loaded yet.');
-    }
-
-    final items = [
-      const DropdownMenuItem<int?>(
-        value: null,
-        child: Text('— None (use first project) —'),
-      ),
-      ...provider.projects.map((p) => DropdownMenuItem<int?>(
-            value: p.id,
-            child: Text(p.code.isNotEmpty ? '${p.code} — ${p.name}' : p.name),
-          )),
-    ];
-
-    // Ensure selectedId is valid — null if it no longer exists in projects
-    final validId = provider.projects.any((p) => p.id == selectedId)
-        ? selectedId
-        : null;
-
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Default Project',
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: validId,
-          isDense: true,
-          isExpanded: true,
-          items: items,
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
-
-class _DefaultTaskDropdown extends StatelessWidget {
-  final int projectId;
-  final int? selectedTaskId;
-  final void Function(int?) onChanged;
-
-  const _DefaultTaskDropdown({
-    required this.projectId,
-    required this.selectedTaskId,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<AssignmentProvider>();
-    final project = provider.projects.where((p) => p.id == projectId).firstOrNull;
-
-    if (project == null || project.tasks.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final validTaskId =
-        project.tasks.any((t) => t.id == selectedTaskId) ? selectedTaskId : null;
-
-    final items = [
-      const DropdownMenuItem<int?>(
-        value: null,
-        child: Text('— None (use first task) —'),
-      ),
-      ...project.tasks.map((t) => DropdownMenuItem<int?>(
-            value: t.id,
-            child: Text(t.name),
-          )),
-    ];
-
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Default Task',
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: validTaskId,
-          isDense: true,
-          isExpanded: true,
-          items: items,
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
-
-class _ProjectCategoryRow extends StatelessWidget {
-  final HarvestProject project;
-  final ProjectCategoryProvider catProvider;
-
-  const _ProjectCategoryRow({
-    required this.project,
-    required this.catProvider,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    final cat = catProvider.categoryFor(
-      project.id,
-      fallbackCode: project.code.isNotEmpty ? project.code : '?',
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: cat.color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: cat.tint,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              cat.code,
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: cat.color,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              project.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 13, color: palette.text),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            color: palette.text3,
-            tooltip: 'Edit category',
-            onPressed: () =>
-                _showEditCategoryDialog(context, project, cat, catProvider),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showEditCategoryDialog(
-    BuildContext context,
-    HarvestProject project,
-    ProjectCategory current,
-    ProjectCategoryProvider provider,
-  ) async {
-    final codeController = TextEditingController(text: current.code);
-    Color selectedColor = current.color;
-    Color selectedTint = current.tint;
-
-    const palette = [
-      (Color(0xFFFA5D24), Color(0xFFFEE6DA)),
-      (Color(0xFF7C5CFF), Color(0xFFEEE9FF)),
-      (Color(0xFF14B8A6), Color(0xFFD7F5F0)),
-      (Color(0xFF8A837A), Color(0xFFF1ECE3)),
-      (Color(0xFF2563EB), Color(0xFFDCEAFD)),
-      (Color(0xFF16A34A), Color(0xFFDCFCE7)),
-      (Color(0xFFC026D3), Color(0xFFF5D0FE)),
-      (Color(0xFFD97706), Color(0xFFFEF3C7)),
-      (Color(0xFFDC2626), Color(0xFFFEE2E2)),
-      (Color(0xFF0891B2), Color(0xFFCFFAFE)),
-      (Color(0xFF65A30D), Color(0xFFECFCCB)),
-      (Color(0xFFDB2777), Color(0xFFFCE7F3)),
-    ];
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlgState) => AlertDialog(
-          title: Text('Edit category — ${project.name}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Color', style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final (c, t) in palette)
-                    GestureDetector(
-                      onTap: () => setDlgState(() {
-                        selectedColor = c;
-                        selectedTint = t;
-                      }),
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: c,
-                          shape: BoxShape.circle,
-                          border: selectedColor == c
-                              ? Border.all(color: Colors.black, width: 2)
-                              : null,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text('Code (up to 5 letters)',
-                  style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 6),
-              TextField(
-                controller: codeController,
-                maxLength: 5,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'e.g. TFN',
-                  counterText: '',
-                ),
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      await provider.setCategory(
-        project.id,
-        ProjectCategory(
-          color: selectedColor,
-          tint: selectedTint,
-          code: codeController.text.trim().toUpperCase(),
-        ),
-      );
-    }
-  }
-}
-
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _tokenController = TextEditingController();
-  final _accountIdController = TextEditingController();
-  bool _obscureToken = true;
-  int? _defaultProjectId;
-  int? _defaultTaskId;
-  int _autoRefreshIntervalMinutes = 15;
-  bool _adoUpdateCompletedWork = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _tokenController.dispose();
-    _accountIdController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _tokenController.text =
-          prefs.getString('harvest_token') ?? AppConfig.defaultToken;
-      _accountIdController.text =
-          prefs.getString('harvest_account_id') ?? AppConfig.defaultAccountId;
-      _defaultProjectId = prefs.getInt('default_project_id');
-      _defaultTaskId = prefs.getInt('default_task_id');
-      _autoRefreshIntervalMinutes =
-          prefs.getInt('auto_refresh_interval_minutes') ?? 15;
-      _adoUpdateCompletedWork =
-          prefs.getBool('ado_update_completed_work') ?? true;
-    });
-  }
-
-  Future<void> _save(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('harvest_token', _tokenController.text.trim());
-    await prefs.setString(
-        'harvest_account_id', _accountIdController.text.trim());
-    if (_defaultProjectId != null) {
-      await prefs.setInt('default_project_id', _defaultProjectId!);
-    } else {
-      await prefs.remove('default_project_id');
-    }
-    if (_defaultTaskId != null) {
-      await prefs.setInt('default_task_id', _defaultTaskId!);
-    } else {
-      await prefs.remove('default_task_id');
-    }
-    await prefs.setBool('ado_update_completed_work', _adoUpdateCompletedWork);
-
-    if (!context.mounted) return;
-
-    // Reload data with new credentials and apply new refresh interval
-    context.read<AssignmentProvider>().load();
-    context.read<TimeEntryProvider>().loadRecentEntries();
-    context
-        .read<TimeEntryProvider>()
-        .setRefreshInterval(_autoRefreshIntervalMinutes);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Settings saved — reloading data'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Future<void> _showAdoDialog(BuildContext context,
-      {int? index, AdoInstance? existing}) async {
-    final labelController =
-        TextEditingController(text: existing?.label ?? '');
-    final urlController =
-        TextEditingController(text: existing?.baseUrl ?? '');
-    final patController =
-        TextEditingController(text: existing?.pat ?? '');
-    final formKey = GlobalKey<FormState>();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setDialogState) {
-          bool obscurePat = true;
-          return AlertDialog(
-            title: Text(
-                existing == null ? 'Add ADO Instance' : 'Edit ADO Instance'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: labelController,
-                    decoration: const InputDecoration(
-                      labelText: 'Label',
-                      border: OutlineInputBorder(),
-                      hintText: 'Transport',
-                    ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: urlController,
-                    decoration: const InputDecoration(
-                      labelText: 'Project URL',
-                      border: OutlineInputBorder(),
-                      hintText: 'https://dev.azure.com/org/project',
-                      helperText:
-                          '/_workitems/edit/{id} is appended automatically',
-                    ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  StatefulBuilder(
-                    builder: (_, setPATState) => TextFormField(
-                      controller: patController,
-                      obscureText: obscurePat,
-                      decoration: InputDecoration(
-                        labelText: 'Personal Access Token (PAT)',
-                        border: const OutlineInputBorder(),
-                        helperText: 'Needs Read access to Work Items',
-                        suffixIcon: IconButton(
-                          icon: Icon(obscurePat
-                              ? Icons.visibility
-                              : Icons.visibility_off),
-                          onPressed: () =>
-                              setPATState(() => obscurePat = !obscurePat),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx2, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate()) {
-                    Navigator.pop(ctx2, true);
-                  }
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    final labelText = labelController.text.trim();
-    final urlText = urlController.text.trim();
-    final patText = patController.text.trim();
-
-    if (confirmed == true && context.mounted) {
-      final instance = AdoInstance(
-        label: labelText,
-        baseUrl: urlText,
-        pat: patText.isEmpty ? null : patText,
-      );
-      final provider = context.read<AdoInstanceProvider>();
-      if (index == null) {
-        provider.add(instance);
-      } else {
-        provider.update(index, instance);
-      }
-    }
-  }
-
-  Future<void> _reset(BuildContext context) async {
-    final timeEntryProvider = context.read<TimeEntryProvider>();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('harvest_token');
-    await prefs.remove('harvest_account_id');
-    await prefs.remove('default_project_id');
-    await prefs.remove('default_task_id');
-    await prefs.remove('auto_refresh_interval_minutes');
-    await prefs.remove('ado_update_completed_work');
-    timeEntryProvider.setRefreshInterval(15);
-    if (!mounted) return;
-    setState(() {
-      _tokenController.text = AppConfig.defaultToken;
-      _accountIdController.text = AppConfig.defaultAccountId;
-      _defaultProjectId = null;
-      _defaultTaskId = null;
-      _autoRefreshIntervalMinutes = 15;
-      _adoUpdateCompletedWork = true;
-    });
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reset to defaults')),
-    );
-  }
-
-  Future<void> _migrateAdoReferences(BuildContext context) async {
-    final entryProvider = context.read<TimeEntryProvider>();
-    final adoService = context.read<AdoService>();
-    final instances = context.read<AdoInstanceProvider>().instances;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _MigrationProgressDialog(
-        stream: entryProvider.migrateAdoReferences(adoService, instances),
-      ),
-    );
-  }
-
-  Future<void> _clearCache(BuildContext context) async {
-    context.read<TimeEntryProvider>().entries.clear();
-    await context.read<TimeEntryProvider>().loadRecentEntries();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cache cleared — refreshed time entries'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Widget _buildProjectCategoriesSection(BuildContext context) {
-    final projects = context.watch<AssignmentProvider>().projects;
-    final catProvider = context.watch<ProjectCategoryProvider>();
-
-    if (projects.isEmpty) {
-      return Text(
-        'No projects loaded.',
-        style: TextStyle(fontSize: 12, color: HarvestTokens.of(context).text3),
-      );
-    }
-
-    return Column(
-      children: [
-        for (final project in projects)
-          _ProjectCategoryRow(project: project, catProvider: catProvider),
-      ],
-    );
-  }
-
-  Widget _buildWeeklyGoalField(BuildContext context) {
-    final catProvider = context.watch<ProjectCategoryProvider>();
-    final goal = catProvider.weeklyGoalHours;
-    final initialValue =
-        goal == goal.truncateToDouble() ? goal.toInt().toString() : '$goal';
-
-    return TextFormField(
-      key: ValueKey(initialValue),
-      initialValue: initialValue,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: const InputDecoration(
-        labelText: 'Weekly goal hours',
-        border: OutlineInputBorder(),
-        suffixText: 'h',
-      ),
-      onChanged: (v) {
-        final hours = double.tryParse(v);
-        if (hours != null && hours > 0) {
-          context.read<ProjectCategoryProvider>().setWeeklyGoal(hours);
-        }
-      },
-    );
-  }
-
-  Widget _buildWorkDaySection(BuildContext context) {
-    final provider = context.watch<ProjectCategoryProvider>();
-    final start = provider.workDayStart;
-    final end = provider.workDayEnd;
-    final breakH = provider.breakHours;
-    final daily = provider.dailyGoalHours;
-    final dailyLabel = daily == daily.truncateToDouble()
-        ? '${daily.toInt()}h work day'
-        : '${daily.toStringAsFixed(1)}h work day';
-    final breakInitial = breakH == breakH.truncateToDouble()
-        ? breakH.toInt().toString()
-        : '$breakH';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Start time'),
-                trailing: Text(
-                  start.format(context),
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () async {
-                  final picked = await showTimePicker(
-                    context: context,
-                    initialTime: start,
-                  );
-                  if (picked != null && context.mounted) {
-                    context.read<ProjectCategoryProvider>().setWorkDayStart(picked);
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('End time'),
-                trailing: Text(
-                  end.format(context),
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () async {
-                  final picked = await showTimePicker(
-                    context: context,
-                    initialTime: end,
-                  );
-                  if (picked != null && context.mounted) {
-                    context.read<ProjectCategoryProvider>().setWorkDayEnd(picked);
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                key: ValueKey(breakInitial),
-                initialValue: breakInitial,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Break hours',
-                  border: OutlineInputBorder(),
-                  suffixText: 'h',
-                ),
-                onChanged: (v) {
-                  final hours = double.tryParse(v);
-                  if (hours != null && hours >= 0) {
-                    context.read<ProjectCategoryProvider>().setBreakHours(hours);
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  '= $dailyLabel',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          initialValue: provider.minGapMinutes,
-          decoration: const InputDecoration(
-            labelText: 'Report gaps of at least',
-            border: OutlineInputBorder(),
-            helperText: 'Used by the Insights screen',
-          ),
-          items: const [5, 10, 15, 30, 60]
-              .map((m) => DropdownMenuItem(value: m, child: Text('$m minutes')))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) {
-              context.read<ProjectCategoryProvider>().setMinGapMinutes(v);
-            }
-          },
-        ),
-      ],
-    );
-  }
+  /// The open page; null shows the list on a narrow screen.
+  SettingsGroup? _selected;
 
   @override
   Widget build(BuildContext context) {
-    final palette = HarvestTokens.of(context);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+    return LayoutBuilder(builder: (context, constraints) {
+      final wide = constraints.maxWidth >= HarvestTokens.kWideBreakpoint;
+      return wide ? _buildWide(context) : _buildNarrow(context);
+    });
+  }
+
+  Widget _buildNarrow(BuildContext context) {
+    final selected = _selected;
+    if (selected == null) {
+      return ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: _groupTiles(context, selected: null),
+      );
+    }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _selected = null);
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SectionHeader(title: 'Harvest Credentials'),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _tokenController,
-            obscureText: _obscureToken,
-            decoration: InputDecoration(
-              labelText: 'API Token',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureToken ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () =>
-                    setState(() => _obscureToken = !_obscureToken),
-              ),
-            ),
+          _PageHeader(
+            group: selected,
+            onBack: () => setState(() => _selected = null),
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _accountIdController,
-            decoration: const InputDecoration(
-              labelText: 'Account ID',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Default Project'),
-          const SizedBox(height: 12),
-          _DefaultProjectDropdown(
-            selectedId: _defaultProjectId,
-            onChanged: (id) => setState(() {
-              _defaultProjectId = id;
-              _defaultTaskId = null;
-            }),
-          ),
-          if (_defaultProjectId != null) ...[
-            const SizedBox(height: 12),
-            _DefaultTaskDropdown(
-              projectId: _defaultProjectId!,
-              selectedTaskId: _defaultTaskId,
-              onChanged: (id) => setState(() => _defaultTaskId = id),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Text(
-            'Pre-selected on the Log Time screen when the app loads.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Background Refresh'),
-          const SizedBox(height: 12),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Refresh interval',
-              border: OutlineInputBorder(),
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: _autoRefreshIntervalMinutes,
-                isDense: true,
-                isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: 5, child: Text('Every 5 minutes')),
-                  DropdownMenuItem(
-                      value: 15, child: Text('Every 15 minutes')),
-                  DropdownMenuItem(
-                      value: 30, child: Text('Every 30 minutes')),
-                  DropdownMenuItem(value: 60, child: Text('Every hour')),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  setState(() => _autoRefreshIntervalMinutes = v);
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Silently re-fetches the current week in the background. Takes effect after Save.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Appearance'),
-          const SizedBox(height: 12),
-          _ThemeModeSelector(),
-          const SizedBox(height: 16),
-          const _ThemePaletteSelector(),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Project Categories'),
-          const SizedBox(height: 12),
-          _buildProjectCategoriesSection(context),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Weekly Goal'),
-          const SizedBox(height: 12),
-          _buildWeeklyGoalField(context),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Work Day'),
-          const SizedBox(height: 4),
-          _buildWorkDaySection(context),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(
-            title: 'Azure DevOps Instances',
-            action: TextButton.icon(
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-              onPressed: () => _showAdoDialog(context),
-            ),
-          ),
-          const SizedBox(height: 4),
-          _AdoInstanceList(
-              onEdit: (i, instance) =>
-                  _showAdoDialog(context, index: i, existing: instance)),
-          const SizedBox(height: 4),
-          SwitchListTile(
-            value: _adoUpdateCompletedWork,
-            onChanged: (v) => setState(() => _adoUpdateCompletedWork = v),
-            title: const Text('Update Completed Work when logging time'),
-            subtitle: const Text(
-                'Adds logged hours to the work item\'s Completed Work field'),
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            activeThumbColor: palette.brand,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'User ID: ${AppConfig.userId}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(
-            title: 'Work Item Rules',
-            action: TextButton.icon(
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-              onPressed: () => showMappingRuleDialog(context),
-            ),
-          ),
-          const SizedBox(height: 4),
-          MappingRuleList(),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(
-            title: 'Quick Templates',
-            action: TextButton.icon(
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-              onPressed: () => showQuickTemplateDialog(context),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const QuickTemplateList(),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(title: 'Calendar Import'),
-          const SizedBox(height: 8),
-          const CalendarImportSettings(),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          _SectionHeader(
-            title: 'Meeting Rules',
-            action: TextButton.icon(
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-              onPressed: () =>
-                  showMappingRuleDialog(context, kind: RuleKind.meeting),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Pick the project for an imported calendar meeting. First match '
-            'wins; then a work item number in the title (#123) is tried '
-            'through the work item rules, then the Calendar Import default.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          MappingRuleList(kind: RuleKind.meeting),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: () => _save(context),
-            icon: const Icon(Icons.save_outlined),
-            label: const Text('Save & Reload'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              backgroundColor: palette.brand,
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => _clearCache(context),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Clear Cache & Refresh'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(44),
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => _migrateAdoReferences(context),
-            icon: const Icon(Icons.link),
-            label: const Text('Migrate ADO References'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(44),
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => _reset(context),
-            icon: const Icon(Icons.restart_alt),
-            label: const Text('Reset to Defaults'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(44),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Settings are stored in browser localStorage.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: HarvestTokens.of(context).text3),
-          ),
+          const Divider(height: 1),
+          Expanded(child: KeyedSubtree(key: ValueKey(selected), child: selected.page())),
         ],
       ),
     );
   }
-}
 
-class _MigrationProgressDialog extends StatefulWidget {
-  final Stream<({int done, int total, int failed})> stream;
-
-  const _MigrationProgressDialog({required this.stream});
-
-  @override
-  State<_MigrationProgressDialog> createState() =>
-      _MigrationProgressDialogState();
-}
-
-class _MigrationProgressDialogState extends State<_MigrationProgressDialog> {
-  int done = 0;
-  int total = 0;
-  int failed = 0;
-  bool finished = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.stream.listen(
-      (progress) {
-        if (mounted) {
-          setState(() {
-            done = progress.done;
-            total = progress.total;
-            failed = progress.failed;
-            finished = progress.total > 0 && progress.done == progress.total;
-          });
-        }
-      },
-      onDone: () {
-        if (mounted) {
-          setState(() {
-            finished = true;
-          });
-        }
-      },
+  Widget _buildWide(BuildContext context) {
+    final selected = _selected ?? SettingsGroup.account;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 240,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: _groupTiles(context, selected: selected),
+          ),
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(
+          child: KeyedSubtree(key: ValueKey(selected), child: selected.page()),
+        ),
+      ],
     );
   }
+
+  List<Widget> _groupTiles(BuildContext context, {SettingsGroup? selected}) {
+    final tiles = <Widget>[];
+    for (final group in SettingsGroup.values) {
+      if (group == SettingsGroup.maintenance) {
+        tiles.add(const Divider(indent: 16, endIndent: 16));
+      }
+      tiles.add(_GroupTile(
+        group: group,
+        summary: _summaryFor(context, group),
+        selected: group == selected,
+        onTap: () => setState(() => _selected = group),
+      ));
+    }
+    return tiles;
+  }
+
+  /// One line under each group, so the list says where things stand without
+  /// opening anything.
+  String _summaryFor(BuildContext context, SettingsGroup group) {
+    switch (group) {
+      case SettingsGroup.account:
+        final projects = context.watch<AssignmentProvider>().projects.length;
+        final every = context.watch<TimeEntryProvider>().refreshIntervalMinutes;
+        return '${_plural(projects, 'project')} · refresh every '
+            '${every == 60 ? 'hour' : '$every min'}';
+      case SettingsGroup.timeTracking:
+        final cats = context.watch<ProjectCategoryProvider>();
+        final goal = cats.weeklyGoalHours;
+        final templates = context.watch<QuickTemplateProvider>().templates.length;
+        return '${goal == goal.truncateToDouble() ? goal.toInt() : goal}h week · '
+            '${cats.workDayStart.format(context)}–${cats.workDayEnd.format(context)} · '
+            '${_plural(templates, 'template')}';
+      case SettingsGroup.ado:
+        final instances = context.watch<AdoInstanceProvider>().instances.length;
+        final rules = context.watch<MappingRuleProvider>().rules.length;
+        return '${_plural(instances, 'instance')} · ${_plural(rules, 'rule')}';
+      case SettingsGroup.calendar:
+        final calendar = context.watch<CalendarImportProvider>();
+        final rules = context.watch<MeetingRuleProvider>().rules.length;
+        final mode = !CalendarImportProvider.canFetchUrl
+            ? 'Upload .ics'
+            : calendar.icsUrl.isEmpty
+                ? 'Not set up'
+                : calendar.autoLog
+                    ? 'Auto-log on'
+                    : 'Auto-log off';
+        return '$mode · ${_plural(rules, 'meeting rule')}';
+      case SettingsGroup.appearance:
+        final palette = context.watch<ThemePaletteProvider>().palette.label;
+        final mode = switch (context.watch<ThemeModeProvider>().mode) {
+          ThemeMode.system => 'System',
+          ThemeMode.light => 'Light',
+          ThemeMode.dark => 'Dark',
+        };
+        return '$palette · $mode';
+      case SettingsGroup.maintenance:
+        return 'Clear cache, migrate references, reset';
+    }
+  }
+
+  static String _plural(int n, String noun) => '$n $noun${n == 1 ? '' : 's'}';
+}
+
+class _GroupTile extends StatelessWidget {
+  final SettingsGroup group;
+  final String summary;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _GroupTile({
+    required this.group,
+    required this.summary,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Migrating ADO References'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+    final palette = HarvestTokens.of(context);
+    return ListTile(
+      leading: Icon(group.icon, color: selected ? palette.brand : palette.text2),
+      title: Text(
+        group.title,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: selected ? palette.brand : palette.text,
+        ),
+      ),
+      subtitle: Text(
+        summary,
+        // Two lines, so the summary survives the narrow wide-layout sidebar.
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: palette.text3),
+      ),
+      trailing: Icon(Icons.chevron_right, color: palette.text3),
+      selected: selected,
+      selectedTileColor: palette.brandTint,
+      onTap: onTap,
+    );
+  }
+}
+
+class _PageHeader extends StatelessWidget {
+  final SettingsGroup group;
+  final VoidCallback onBack;
+
+  const _PageHeader({required this.group, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 16, 4),
+      child: Row(
         children: [
-          if (!finished)
-            LinearProgressIndicator(
-              value: total == 0 ? null : done / total,
-            ),
-          const SizedBox(height: 12),
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'All settings',
+            onPressed: onBack,
+          ),
+          const SizedBox(width: 4),
+          Icon(group.icon, size: 20, color: palette.text2),
+          const SizedBox(width: 8),
           Text(
-            !finished && total == 0
-                ? 'Starting...'
-                : finished && total == 0
-                    ? 'No entries needed migration'
-                    : finished
-                        ? 'Done: ${total - failed} updated, $failed failed'
-                        : '$done / $total',
+            group.title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: palette.text,
+            ),
           ),
         ],
       ),
-      actions: finished
-          ? [
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ]
-          : [],
     );
   }
 }

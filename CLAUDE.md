@@ -36,7 +36,8 @@ timer endpoints (`test/timer_test.dart`), the ADO Completed Work push
 (`test/completed_work_test.dart`) and the calendar import
 (`test/calendar_import_test.dart`), which drive the HTTP clients with a
 `MockClient`, and the theme palettes (`test/theme_palette_test.dart`), which
-assert contrast ratios. `test/widget_test.dart` is still a placeholder.
+assert contrast ratios. `test/widget_test.dart` covers Settings navigation
+(group list, every page, the wide sidebar).
 
 ## Setup Requirement
 
@@ -62,7 +63,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
   - `MeetingRuleProvider` — meeting → project/task rules (a `MappingRuleProvider` on its own prefs keys)
   - `CalendarImportProvider` — ICS calendar settings, the logged-meeting ledger, and the auto-sync on entry refresh
   - `ThemeModeProvider` / `ThemePaletteProvider` — System/Light/Dark, and which colour palette the interface uses
-- **`lib/screens/`** — Five screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries; `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker; `InsightsScreen` analyses the selected day; `SettingsScreen` manages credentials and ADO instances.
+- **`lib/screens/`** — Five screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries; `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker; `InsightsScreen` analyses the selected day; `SettingsScreen` is a group list (a sidebar when wide) opening one page per group from `lib/screens/settings/`.
 
 @.claude/docs/recent-entries-screen.md
 
