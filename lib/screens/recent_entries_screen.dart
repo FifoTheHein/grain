@@ -418,10 +418,15 @@ class _DayData {
 /// - selected, future: a dashed outline, normal ink;
 /// - today, not selected: the number in the accent (see
 ///   [HarvestPalette.brandInkOn]) and a dot under it;
-/// - future: faded to [kFutureDayOpacity] as a whole.
+/// - future, not selected: every colour faded to [kFutureDayOpacity].
+///
+/// The fade is baked into the colours rather than wrapping the tile in an
+/// `Opacity`: on Android that layer clipped the top pixel row of the day
+/// labels, cutting the tops off T and F.
 class _DayStyle {
   final Color? fill;
   final bool dashed;
+  final bool faded;
   final Color label;
   final Color number;
   final Color hours;
@@ -430,6 +435,7 @@ class _DayStyle {
   const _DayStyle({
     required this.fill,
     required this.dashed,
+    this.faded = false,
     required this.label,
     required this.number,
     required this.hours,
@@ -447,13 +453,16 @@ class _DayStyle {
         dot: palette.onBrand,
       );
     }
+    final faded = d.isFuture && !d.isSelected;
+    Color f(Color c) => faded ? c.withValues(alpha: c.a * kFutureDayOpacity) : c;
     return _DayStyle(
       fill: null,
       dashed: d.isSelected,
-      label: d.isSelected ? palette.text : palette.text3,
-      number: d.isToday ? palette.brandInkOn(background) : palette.text,
-      hours: d.isSelected ? palette.text : palette.text2,
-      dot: palette.brandInkOn(background),
+      faded: faded,
+      label: f(d.isSelected ? palette.text : palette.text3),
+      number: f(d.isToday ? palette.brandInkOn(background) : palette.text),
+      hours: f(d.isSelected ? palette.text : palette.text2),
+      dot: f(palette.brandInkOn(background)),
     );
   }
 }
@@ -518,7 +527,7 @@ class _WeekSummaryStrip extends StatelessWidget {
     return _buildCompact(context, days, weekTotal);
   }
 
-  /// Faded when future, dashed when a selected future day, and wired to
+  /// Dashed when a selected future day (fading lives in [_DayStyle]), and wired to
   /// [onDayTap] only within the cap.
   Widget _dayFrame({
     required _DayData d,
@@ -540,11 +549,6 @@ class _WeekSummaryStrip extends StatelessWidget {
     );
     if (style.dashed) {
       tile = DashedBorder(color: palette.text2, radius: radius, child: tile);
-    }
-    // A selected future day is the one you are looking at, so it is not
-    // faded with the rest of the week ahead.
-    if (d.isFuture && !d.isSelected) {
-      tile = Opacity(opacity: kFutureDayOpacity, child: tile);
     }
     return Expanded(
       child: Padding(
@@ -709,11 +713,13 @@ class _WeekSummaryStrip extends StatelessWidget {
                         height: 3,
                         child: LinearProgressIndicator(
                           value: progress,
-                          backgroundColor: solid ? palette.onBrand.withValues(alpha: 0.3) : palette.surface3,
+                          backgroundColor: solid
+                              ? palette.onBrand.withValues(alpha: 0.3)
+                              : palette.surface3.withValues(alpha: style.faded ? kFutureDayOpacity : 1),
                           color: solid
                               ? palette.onBrand
                               : (isOver ? HarvestTokens.warn : palette.brand)
-                                  .withValues(alpha: d.isFuture ? 0.5 : 1),
+                                  .withValues(alpha: style.faded ? 0.5 * kFutureDayOpacity : d.isFuture ? 0.5 : 1),
                           minHeight: 3,
                         ),
                       ),
