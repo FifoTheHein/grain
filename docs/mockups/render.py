@@ -22,6 +22,7 @@ CHROME = os.environ.get("CHROME_PATH", "/opt/pw-browsers/chromium-1194/chrome-li
 SHOTS = [
     ("recent.html", "recent-light", "grain-light", 1010),
     ("recent.html", "recent-dark", "grain-dark", 1010),
+    ("recent-ahead.html", "recent-ahead", "grain-dark", 640),
     ("insights.html", "insights", "grain-light", 760),
     ("log-time.html", "log-time", "grain-dark", 920),
     ("work-item-picker.html", "work-item-picker", "grain-dark", 840),

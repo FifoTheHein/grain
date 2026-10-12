@@ -203,7 +203,7 @@ class _DateHeader extends StatelessWidget {
 
   // Both sides take the same width, so the label stays centred whether or
   // not the Today jump is showing.
-  static const _sideWidth = 108.0;
+  static const _sideWidth = 96.0;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +221,7 @@ class _DateHeader extends StatelessWidget {
                   icon: const Icon(Icons.chevron_left),
                   onPressed: onPrevious,
                   tooltip: 'Previous day',
+                  visualDensity: VisualDensity.compact,
                 ),
                 if (onToday != null)
                   Flexible(
@@ -230,7 +231,7 @@ class _DateHeader extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: palette.brandInkOn(palette.bg),
                         side: BorderSide(color: palette.brand),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         minimumSize: const Size(0, 30),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
@@ -274,12 +275,16 @@ class _DateHeader extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      heading.subtitle,
-                      key: const ValueKey('day-subtitle'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(color: palette.text2),
+                    // Shrinks rather than cutting off "in N days" on a
+                    // narrow phone.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        heading.subtitle,
+                        key: const ValueKey('day-subtitle'),
+                        maxLines: 1,
+                        style: theme.textTheme.bodySmall?.copyWith(color: palette.text2),
+                      ),
                     ),
                   ],
                 ),
@@ -294,6 +299,7 @@ class _DateHeader extends StatelessWidget {
                 icon: const Icon(Icons.chevron_right),
                 onPressed: onNext,
                 tooltip: 'Next day',
+                visualDensity: VisualDensity.compact,
               ),
             ),
           ),

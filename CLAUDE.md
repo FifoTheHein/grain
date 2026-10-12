@@ -35,8 +35,9 @@ Run tests with `flutter test`. Coverage is the pure logic — mapping rules
 quick templates (`test/quick_template_test.dart`), work item search
 (`test/work_item_search_test.dart`), the ICS parser (`test/ics_parser_test.dart`)
 meeting filtering/dedup/placement (`test/meeting_test.dart`), the rules' Any text field (`test/rule_any_text_test.dart`),
-Log Time's duration parsing (`test/duration_input_test.dart`) and its gap and
-Start & End suggestions (`test/log_time_defaults_test.dart`) — plus the
+Log Time's duration parsing and hold acceleration (`test/duration_input_test.dart`) and its gap and
+Start & End suggestions (`test/log_time_defaults_test.dart`), the week-ahead
+cap and Recent's day labels (`test/future_days_test.dart`) — plus the
 timer endpoints (`test/timer_test.dart`), the ADO Completed Work push
 (`test/completed_work_test.dart`) and the calendar import
 (`test/calendar_import_test.dart`), which drive the HTTP clients with a
@@ -44,7 +45,8 @@ timer endpoints (`test/timer_test.dart`), the ADO Completed Work push
 assert contrast ratios. `test/widget_test.dart` covers Settings navigation
 (group list, every page, the wide sidebar); `test/duration_stepper_test.dart`
 the duration stepper and Log Time's action bar; `test/log_time_screen_test.dart`
-the Log Time screen itself.
+the Log Time screen itself; `test/recent_entries_screen_test.dart` Recent's
+future days; `test/time_entry_card_test.dart` the entry card.
 
 ## Setup Requirement
 
@@ -70,7 +72,7 @@ A Flutter web app for logging time to the Harvest API with optional Azure DevOps
   - `MeetingRuleProvider` — meeting → project/task rules (a `MappingRuleProvider` on its own prefs keys)
   - `CalendarImportProvider` — ICS calendar settings, the logged-meeting ledger, and the auto-sync on entry refresh
   - `ThemeModeProvider` / `ThemePaletteProvider` — System/Light/Dark, and which colour palette the interface uses
-- **`lib/screens/`** — Five screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries (stepper, gap suggestion, pinned action bar); `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker; `InsightsScreen` analyses the selected day; `SettingsScreen` is a group list (a sidebar when wide) opening one page per group from `lib/screens/settings/`.
+- **`lib/screens/`** — Five screens composed under a bottom-nav `HomeScreen`. `LogTimeScreen` creates entries (stepper, gap suggestion, pinned action bar); `EditTimeScreen` updates them; `RecentEntriesScreen` shows daily entries with a date picker, up to a week ahead; `InsightsScreen` analyses the selected day; `SettingsScreen` is a group list (a sidebar when wide) opening one page per group from `lib/screens/settings/`.
 
 @.claude/docs/log-time-screen.md
 

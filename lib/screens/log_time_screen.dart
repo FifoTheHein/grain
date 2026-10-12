@@ -996,31 +996,50 @@ class _DateChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
+    // Compact, so all four fit one row beside the date.
+    const density = VisualDensity(horizontal: -2, vertical: -2);
+    const labelPadding = EdgeInsets.symmetric(horizontal: 4);
+    const padding = EdgeInsets.symmetric(horizontal: 4, vertical: 6);
     Widget day(String label, int offset) => ChoiceChip(
           label: Text(label),
           selected: daysFromToday == offset,
           onSelected: (_) => onDay(offset),
           showCheckmark: false,
+          visualDensity: density,
+          labelPadding: labelPadding,
+          padding: padding,
         );
+    // One row: the date keeps its width and the chips share the rest,
+    // shrinking on a very narrow phone rather than wrapping onto a second
+    // line.
     return Row(
       children: [
-        Expanded(
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              day('Yesterday', -1),
-              day('Today', 0),
-              day('Tomorrow', 1),
-              ChoiceChip(
-                avatar: const Icon(Icons.calendar_today, size: 16),
-                label: const Text('Pick'),
-                selected: daysFromToday.abs() > 1,
-                onSelected: (_) => onPick(),
-                showCheckmark: false,
-                tooltip: 'Pick a date',
-              ),
-            ],
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                day('Yesterday', -1),
+                const SizedBox(width: 6),
+                day('Today', 0),
+                const SizedBox(width: 6),
+                day('Tomorrow', 1),
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: Icon(Icons.calendar_today,
+                      size: 16, semanticLabel: 'Pick a date'),
+                  selected: daysFromToday.abs() > 1,
+                  onSelected: (_) => onPick(),
+                  showCheckmark: false,
+                  tooltip: 'Pick a date',
+                  visualDensity: density,
+                  labelPadding: labelPadding,
+                  padding: padding,
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 8),

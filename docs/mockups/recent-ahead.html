@@ -1,0 +1,93 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Grain — Recent, logged ahead</title>
+<link rel="stylesheet" href="grain.css">
+<script src="icons.js"></script>
+<!-- Tomorrow selected on Recent: an entry logged ahead. -->
+<body class="grain-light">
+<div class="shell">
+
+  <nav class="rail">
+    <div class="rail-item on"><span class="rail-icon"><svg class="i i-22"><use href="#ic-recent"/></svg></span><span class="rail-label">Recent</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-plus"/></svg></span><span class="rail-label">Log Time</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-insights"/></svg></span><span class="rail-label">Insights</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-settings"/></svg></span><span class="rail-label">Settings</span></div>
+  </nav>
+
+  <div class="pane">
+    <header class="appbar">
+      <span class="logo"><img src="../../assets/icon.svg" alt=""></span>
+      <div><h1>Grain</h1><div class="sub">A better Harvest</div></div>
+    </header>
+
+    <div class="body">
+      <div class="scroll"><div class="wrap">
+
+        <div class="datenav">
+          <span class="side"><span class="iconbtn"><svg class="i i-22"><use href="#ic-left"/></svg></span><span class="jump">Today</span></span>
+          <div class="label"><div class="w">Tomorrow <span class="up">UPCOMING</span></div><div class="date">Sat 22 Aug 2026</div></div>
+          <span class="side r"><span class="iconbtn"><svg class="i i-22"><use href="#ic-right"/></svg></span></span>
+        </div>
+
+        <div class="weekcard">
+          <div class="days">
+            <div class="day"><div class="dow">MON</div><div class="num">17</div><div class="hrs">8h 15m</div><div class="daybar"><i style="width:100%"></i></div></div>
+            <div class="day"><div class="dow">TUE</div><div class="num">18</div><div class="hrs">9h 05m</div><div class="daybar"><i style="width:100%"></i></div></div>
+            <div class="day"><div class="dow">WED</div><div class="num">19</div><div class="hrs">9h 40m</div><div class="daybar"><i style="width:100%"></i></div></div>
+            <div class="day"><div class="dow">THU</div><div class="num">20</div><div class="hrs">10h 30m</div><div class="daybar"><i style="width:100%"></i></div></div>
+            <div class="day today"><div class="dow">FRI</div><div class="num">21</div><div class="hrs">6h 25m</div><div class="daybar"><i style="width:80%"></i></div></div>
+            <div class="day fut sel"><div class="dow">SAT</div><div class="num">22</div><div class="hrs plan">2h</div><div class="daybar"><i style="width:24%"></i></div></div>
+            <div class="day fut"><div class="dow">SUN</div><div class="num">23</div><div class="hrs">–</div><div class="daybar"></div></div>
+          </div>
+          <div class="ring over">
+            <div class="top">
+              <div class="arc">
+                <svg width="68" height="68" viewBox="0 0 68 68">
+                  <circle cx="34" cy="34" r="28" fill="none" stroke="var(--surface3)" stroke-width="6"/>
+                  <circle cx="34" cy="34" r="28" fill="none" stroke="var(--warn)" stroke-width="6"
+                          stroke-linecap="round" stroke-dasharray="175.9" stroke-dashoffset="0"/>
+                </svg>
+              </div>
+              <div class="beside">
+                <div class="tot">45h 55m</div>
+                <div class="of">of 40h</div>
+              </div>
+            </div>
+            <div class="cap">THIS WEEK</div>
+            <div class="help">+5h 55m over</div>
+          </div>
+        </div>
+
+
+        <div class="futnote"><svg class="i i-16"><use href="#ic-calendar"/></svg>Logged ahead. Harvest already counts these in this week’s total.</div>
+
+        <div class="card compact">
+          <div class="pill planned">1h<br>30m</div>
+          <div class="entry">
+            <div class="head"><span class="code cat-orange">OPS</span><span class="task">Leave</span></div>
+            <div class="notes">Dentist, out from 13:00</div>
+          </div>
+          <span class="iconbtn act off"><svg class="i i-18"><use href="#ic-play"/></svg></span>
+        </div>
+
+        <div class="card compact">
+          <div class="pill planned">30m</div>
+          <div class="entry">
+            <div class="head"><span class="code cat-green">PLAT</span><span class="task">Meetings</span></div>
+            <div class="notes">Sprint review prep</div>
+          </div>
+          <span class="iconbtn act off"><svg class="i i-18"><use href="#ic-play"/></svg></span>
+        </div>
+
+      </div></div>
+
+      <div class="dailybar">
+        <div class="row">
+          <span class="tot">Logged ahead: 2h</span>
+          <span class="rem">6h 30m to goal</span>
+        </div>
+        <div class="track"><i style="width:24%;opacity:.5"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
