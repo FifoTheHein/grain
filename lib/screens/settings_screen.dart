@@ -93,13 +93,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// The sidebar's width, and the widest a page's content grows beside it —
+  /// past that, form fields stretch into lines too long to scan.
+  static const _sidebarWidth = 300.0;
+  static const _pageMaxWidth = 760.0;
+
   Widget _buildWide(BuildContext context) {
     final selected = _selected ?? SettingsGroup.account;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          width: 240,
+          width: _sidebarWidth,
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: _groupTiles(context, selected: selected),
@@ -107,7 +112,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const VerticalDivider(width: 1),
         Expanded(
-          child: KeyedSubtree(key: ValueKey(selected), child: selected.page()),
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _pageMaxWidth),
+              child: KeyedSubtree(
+                  key: ValueKey(selected), child: selected.page()),
+            ),
+          ),
         ),
       ],
     );
