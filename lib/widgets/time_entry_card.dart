@@ -3,6 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/entry_display.dart';
+import '../models/future_days.dart';
 import '../models/time_entry.dart';
 import '../utils/open_url.dart';
 import '../providers/ado_instance_provider.dart';
@@ -94,7 +95,11 @@ class TimeEntryCard extends StatelessWidget {
               // Leading: duration pill, counting up while the timer runs
               Builder(builder: (context) {
                 if (!entry.isRunning) {
-                  return DurationPill(hours: entry.hours, size: 38);
+                  return DurationPill(
+                    hours: entry.hours,
+                    size: 38,
+                    planned: isFutureSpentDate(entry.spentDate, DateTime.now()),
+                  );
                 }
                 final provider = context.watch<TimeEntryProvider>();
                 return _LiveDurationPill(
@@ -353,16 +358,21 @@ class _TimerButton extends StatelessWidget {
     }
 
     // Harvest runs one timer per user, so resuming while another is going
-    // would silently stop that one.
+    // would silently stop that one. And it times today: an entry logged
+    // ahead has nothing to continue yet.
     final another = provider.runningEntry;
+    final future = isFutureSpentDate(entry.spentDate, DateTime.now());
     return IconButton(
+      key: const ValueKey('continue-timer'),
       visualDensity: VisualDensity.compact,
       icon: const Icon(Icons.play_circle_outline, size: 20),
-      tooltip: another == null
-          ? 'Continue timing this entry'
-          : 'Stop the running timer first',
+      tooltip: future
+          ? 'Timers only run for today'
+          : another == null
+              ? 'Continue timing this entry'
+              : 'Stop the running timer first',
       color: palette.text3,
-      onPressed: busy || another != null
+      onPressed: busy || another != null || future
           ? null
           : () => _run(context, () => provider.restartTimer(entry.id)),
     );

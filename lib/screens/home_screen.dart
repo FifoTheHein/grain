@@ -5,6 +5,26 @@ import 'recent_entries_screen.dart';
 import 'settings_screen.dart';
 import '../theme/harvest_tokens.dart';
 
+/// Lets a screen under [HomeScreen] switch tabs, e.g. Recent's empty future
+/// day opening Log Time on that date.
+class HomeNavigation extends InheritedWidget {
+  /// Switches to Log Time with [date] preselected.
+  final ValueChanged<DateTime> logTimeFor;
+
+  const HomeNavigation({
+    super.key,
+    required this.logTimeFor,
+    required super.child,
+  });
+
+  /// Null outside a [HomeScreen], as in tests that pump a screen alone.
+  static HomeNavigation? maybeOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<HomeNavigation>();
+
+  @override
+  bool updateShouldNotify(HomeNavigation oldWidget) => false;
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -14,6 +34,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
+
+  /// The date Log Time opens on when another screen handed one over. Cleared
+  /// by any ordinary tab change, so a later visit opens on today as usual.
+  DateTime? _logTimeDate;
+
+  static const _logTimeTab = 1;
+
+  void _selectTab(int i) => setState(() {
+        _tab = i;
+        _logTimeDate = null;
+      });
+
+  void _logTimeFor(DateTime date) => setState(() {
+        _tab = _logTimeTab;
+        _logTimeDate = date;
+      });
 
   static const _destinations = [
     NavigationDestination(
@@ -38,12 +74,15 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  final _screens = const [
-    RecentEntriesScreen(),
-    LogTimeScreen(),
-    InsightsScreen(),
-    SettingsScreen(),
-  ];
+  Widget get _screen => HomeNavigation(
+        logTimeFor: _logTimeFor,
+        child: switch (_tab) {
+          0 => const RecentEntriesScreen(),
+          _logTimeTab => LogTimeScreen(initialDate: _logTimeDate),
+          2 => const InsightsScreen(),
+          _ => const SettingsScreen(),
+        },
+      );
 
   static const _settingsTab = 3;
 
@@ -64,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 NavigationRail(
                   selectedIndex: _tab,
-                  onDestinationSelected: (i) => setState(() => _tab = i),
+                  onDestinationSelected: _selectTab,
                   labelType: NavigationRailLabelType.all,
                   indicatorColor: palette.brandTint,
                   selectedIconTheme:
@@ -135,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: ConstrainedBox(
                               constraints:
                                   BoxConstraints(maxWidth: _wideMaxWidth),
-                              child: _screens[_tab],
+                              child: _screen,
                             ),
                           ),
                         ),
@@ -182,13 +221,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: _screens[_tab],
+                child: _screen,
               ),
             ),
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _tab,
-            onDestinationSelected: (i) => setState(() => _tab = i),
+            onDestinationSelected: _selectTab,
             destinations: _destinations,
           ),
         );

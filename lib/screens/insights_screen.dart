@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/day_insights.dart';
+import '../models/future_days.dart';
 import '../models/time_entry.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
@@ -27,9 +28,12 @@ class InsightsScreen extends StatelessWidget {
 
   Future<void> _pickDate(BuildContext context) async {
     final provider = context.read<TimeEntryProvider>();
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: provider.selectedDate,
+      // Recent can leave a future day selected; Insights stops at today.
+      initialDate:
+          isFutureDay(provider.selectedDate, now) ? now : provider.selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
@@ -44,6 +48,9 @@ class InsightsScreen extends StatelessWidget {
 
     final entries = entryProvider.entries;
     final isToday = entryProvider.isSelectedDateToday;
+    // Recent can select up to a week ahead; Insights only reads what has
+    // happened, so a future day gets a pointer back rather than analytics.
+    final isFuture = isFutureDay(entryProvider.selectedDate, DateTime.now());
 
     // Entries carrying clock times drive the gap analysis; the rest still
     // count towards the day's total.
@@ -81,7 +88,7 @@ class InsightsScreen extends StatelessWidget {
         _DateNavRow(
           date: entryProvider.selectedDate,
           onPrevious: () => _shiftDate(context, -1),
-          onNext: isToday ? null : () => _shiftDate(context, 1),
+          onNext: isToday || isFuture ? null : () => _shiftDate(context, 1),
           onTapDate: () => _pickDate(context),
         ),
         const SizedBox(height: 16),
@@ -90,6 +97,13 @@ class InsightsScreen extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 48),
             child: Center(child: CircularProgressIndicator()),
+          )
+        else if (isFuture)
+          const _EmptyCard(
+            icon: Icons.event_outlined,
+            title: 'This day hasn’t happened yet',
+            message: 'Insights cover today and earlier. Time logged ahead '
+                'shows on Recent.',
           )
         else if (entries.isEmpty)
           _EmptyCard(

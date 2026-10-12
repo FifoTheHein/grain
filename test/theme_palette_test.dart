@@ -114,6 +114,30 @@ void main() {
       }
     });
 
+    test('the accent reads as text on the canvas and on the week card', () {
+      // Today's date on Recent's week strip: the phone strip sits on the
+      // canvas, the wide one on surface2. brandInkOn picks brand or 600.
+      for (final p in kThemePalettes) {
+        for (final (mode, v) in [('light', p.light), ('dark', p.dark)]) {
+          expect(_contrast(v.brandInkOn(v.bg), v.bg), greaterThan(3.0),
+              reason: '${p.id} $mode on bg');
+          expect(_contrast(v.brandInkOn(v.surface2), v.surface2),
+              greaterThan(3.0),
+              reason: '${p.id} $mode on surface2');
+        }
+      }
+    });
+
+    test('brandInkOn takes whichever accent contrasts more', () {
+      for (final p in kThemePalettes) {
+        for (final v in [p.light, p.dark]) {
+          final chosen = _contrast(v.brandInkOn(v.bg), v.bg);
+          expect(chosen, greaterThanOrEqualTo(_contrast(v.brand, v.bg)));
+          expect(chosen, greaterThanOrEqualTo(_contrast(v.brand600, v.bg)));
+        }
+      }
+    });
+
     test('surfaces are distinguishable from the canvas', () {
       for (final p in kThemePalettes) {
         expect(p.light.surface, isNot(p.light.bg), reason: '${p.id} light');

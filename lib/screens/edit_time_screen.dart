@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../models/future_days.dart';
 import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
 import '../providers/ado_instance_provider.dart';
@@ -177,11 +178,15 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
   }
 
   Future<void> _pickDate(BuildContext context) async {
+    // The same week-ahead cap as Recent and Log Time — stretched to the
+    // entry's own date when Harvest holds one further out, so the picker can
+    // still open on it.
+    final cap = latestSelectableDate(DateTime.now());
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: _selectedDate.isAfter(cap) ? _selectedDate : cap,
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }

@@ -40,27 +40,29 @@ void main() {
     testWidgets('starts at zero with − disabled', (tester) async {
       var changes = 0;
       await tester.pumpWidget(app(_Host(onChange: (_) => changes++)));
-      expect(find.text('tap to type · hold ± to repeat'), findsOneWidget);
+      expect(find.text('tap to type'), findsOneWidget);
+      expect(find.text('tap ±1 min · hold '), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Decrease duration'));
       await tester.pump();
       expect(changes, 0);
     });
 
-    testWidgets('± step by 5 minutes', (tester) async {
+    testWidgets('± step by 1 minute', (tester) async {
       int? last;
       await tester.pumpWidget(app(_Host(initial: 60, onChange: (m) => last = m)));
       await tester.tap(find.bySemanticsLabel('Increase duration'));
       await tester.pump();
-      expect(last, 65);
-      expect(find.text('1.08 hours'), findsOneWidget);
+      expect(last, 61);
+      expect(find.text('1.02 hours'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Decrease duration'));
       await tester.pump();
       await tester.tap(find.bySemanticsLabel('Decrease duration'));
       await tester.pump();
-      expect(last, 55);
+      expect(last, 59);
     });
 
-    testWidgets('holding + repeats', (tester) async {
+    testWidgets('holding + repeats a minute at a time at first',
+        (tester) async {
       int? last;
       await tester.pumpWidget(app(_Host(onChange: (m) => last = m)));
       final gesture = await tester
@@ -72,7 +74,27 @@ void main() {
       await gesture.up();
       await tester.pump(const Duration(seconds: 1));
       // One on press, then four ticks — and nothing after release.
-      expect(last, 25);
+      expect(last, 5);
+    });
+
+    testWidgets('holding longer speeds up to 5, then 15', (tester) async {
+      final seen = <int>[];
+      await tester.pumpWidget(app(_Host(onChange: seen.add)));
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.bySemanticsLabel('Increase duration')));
+      await tester.pump(const Duration(milliseconds: 350));
+      for (var i = 0; i < 45; i++) {
+        await tester.pump(const Duration(milliseconds: 90));
+      }
+      await gesture.up();
+      await tester.pump(const Duration(seconds: 1));
+      final steps = [
+        for (var i = 1; i < seen.length; i++) seen[i] - seen[i - 1],
+      ];
+      expect(steps.take(12), everyElement(1));
+      expect(steps.skip(13).take(27), everyElement(5));
+      expect(steps.skip(40), everyElement(15));
+      expect(seen.last, 150 + 5 * 15);
     });
 
     testWidgets('a chip sets the value and highlights while it matches',

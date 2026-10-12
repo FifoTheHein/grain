@@ -30,10 +30,11 @@ TimeEntry _entry({
   String? notes,
   ExternalReference? ref,
   bool running = false,
+  String spentDate = '2026-10-12',
 }) =>
     TimeEntry(
       id: id,
-      spentDate: '2026-10-12',
+      spentDate: spentDate,
       hours: 0.5,
       notes: notes,
       projectId: 10,
@@ -186,5 +187,39 @@ void main() {
     ));
     expect(button.onPressed, isNull);
     expect(find.byTooltip('Stop the running timer first'), findsOneWidget);
+  });
+
+  testWidgets('an entry logged ahead has a dashed pill and no Continue',
+      (tester) async {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final ahead = _entry(
+        spentDate:
+            '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-'
+            '${tomorrow.day.toString().padLeft(2, '0')}');
+    await tester.pumpWidget(_app(ahead));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('planned-pill')), findsOneWidget);
+    final button = tester
+        .widget<IconButton>(find.byKey(const ValueKey('continue-timer')));
+    expect(button.onPressed, isNull);
+    expect(find.byTooltip('Timers only run for today'), findsOneWidget);
+    expect(find.byTooltip('Continue timing this entry'), findsNothing);
+  });
+
+  testWidgets('an entry for today keeps its solid pill and Continue',
+      (tester) async {
+    final now = DateTime.now();
+    final today = _entry(
+        spentDate: '${now.year}-${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')}');
+    await tester.pumpWidget(_app(today));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('planned-pill')), findsNothing);
+    final button = tester
+        .widget<IconButton>(find.byKey(const ValueKey('continue-timer')));
+    expect(button.onPressed, isNotNull);
   });
 }
