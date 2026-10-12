@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:harvest/providers/ado_instance_provider.dart';
@@ -85,6 +86,23 @@ void main() {
     expect(formatAppVersion(' ', '8'), 'Grain');
   });
 
+  test('formatAppVersion drops the split APK offset on Android only', () {
+    // --split-per-abi: armeabi-v7a +1000, arm64-v8a +2000, x86_64 +4000.
+    expect(formatAppVersion('1.2.6', '2009', android: true),
+        'Grain 1.2.6 (build 9)');
+    expect(formatAppVersion('1.2.6', '1009', android: true),
+        'Grain 1.2.6 (build 9)');
+    expect(formatAppVersion('1.2.6', '4009', android: true),
+        'Grain 1.2.6 (build 9)');
+    // A universal APK carries the build as-is.
+    expect(formatAppVersion('1.2.6', '9', android: true),
+        'Grain 1.2.6 (build 9)');
+    // The web's version.json already holds the pubspec's number.
+    expect(formatAppVersion('1.2.6', '9'), 'Grain 1.2.6 (build 9)');
+    expect(formatAppVersion('1.2.6', 'abc', android: true),
+        'Grain 1.2.6 (build abc)');
+  });
+
   Future<void> pumpAt(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -118,6 +136,25 @@ void main() {
       await pumpAt(tester, phone);
       await tester.pumpAndSettle();
       expect(find.text('Grain 1.2.5 (build 8)'), findsOneWidget);
+    });
+
+    testWidgets('on Android the label shows the pubspec build, not the '
+        'split APK versionCode', (tester) async {
+      PackageInfo.setMockInitialValues(
+        appName: 'harvest',
+        packageName: 'harvest',
+        version: '1.2.6',
+        buildNumber: '2009',
+        buildSignature: '',
+      );
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        await pumpAt(tester, phone);
+        await tester.pumpAndSettle();
+        expect(find.text('Grain 1.2.6 (build 9)'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     testWidgets('a group opens its page and back returns to the list',
