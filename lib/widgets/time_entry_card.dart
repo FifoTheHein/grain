@@ -22,13 +22,13 @@ class TimeEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
-    final hasAdoRef = entry.externalReference != null;
+    final hasAdoRef = entry.adoReference != null;
 
     // Resolve ADO instance for this entry
     AdoInstance? matchingInstance;
     if (hasAdoRef) {
       final instances = context.watch<AdoInstanceProvider>().instances;
-      final permalink = entry.externalReference!.permalink ?? '';
+      final permalink = entry.adoReference!.permalink ?? '';
       for (final inst in instances) {
         if (inst.matchesPermalink(permalink)) {
           matchingInstance = inst;
@@ -38,7 +38,7 @@ class TimeEntryCard extends StatelessWidget {
     }
 
     final adoService = hasAdoRef ? context.watch<AdoService>() : null;
-    final rawRefId = entry.externalReference?.id ?? '';
+    final rawRefId = entry.adoReference?.id ?? '';
     final workItemId =
         rawRefId.isNotEmpty ? AdoService.parseWorkItemId(rawRefId) : '';
 
@@ -153,13 +153,13 @@ class TimeEntryCard extends StatelessWidget {
                             matchingInstance.label, workItemId),
                         isLoading: adoService.isPending(
                             matchingInstance.label, workItemId),
-                        permalink: entry.externalReference!.permalink,
+                        permalink: entry.adoReference!.permalink,
                       )
                     else
                       GestureDetector(
-                        onTap: (entry.externalReference!.permalink != null &&
-                                entry.externalReference!.permalink!.isNotEmpty)
-                            ? () => openUrl(entry.externalReference!.permalink!)
+                        onTap: (entry.adoReference!.permalink != null &&
+                                entry.adoReference!.permalink!.isNotEmpty)
+                            ? () => openUrl(entry.adoReference!.permalink!)
                             : null,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

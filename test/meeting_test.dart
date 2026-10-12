@@ -3,6 +3,7 @@ import 'package:harvest/models/calendar_event.dart';
 import 'package:harvest/models/mapping_rule.dart';
 import 'package:harvest/models/meeting.dart';
 import 'package:harvest/models/time_entry.dart';
+import 'package:harvest/services/meeting_importer.dart';
 
 final now = DateTime.utc(2026, 10, 12, 15);
 
@@ -301,6 +302,57 @@ void main() {
       final target = chooseMeetingTarget(
           fallback: (projectId: 1, taskId: 1), isAssigned: (_, _) => true)!;
       expect(meetingNoteFor(event(summary: 'Retro'), target), 'Retro');
+    });
+  });
+
+  group('external references', () {
+    test('ADO references are work items', () {
+      expect(
+          const ExternalReference(
+            id: 'AzureDevOps_4b6a_User Story_13483',
+            permalink: 'https://dev.azure.com/agile-bridge/TFN/_workitems/edit/13483',
+          ).isAdoWorkItem,
+          isTrue);
+      expect(const ExternalReference(id: '13483').isAdoWorkItem, isTrue);
+      // A native Harvest ADO entry: GUID in the permalink, no composite id.
+      expect(
+          const ExternalReference(
+            id: '42',
+            permalink: 'https://dev.azure.com/org/1f2e-guid/_workitems/edit/42',
+          ).isAdoWorkItem,
+          isTrue);
+      expect(
+          const ExternalReference(
+            id: '77',
+            permalink: 'https://contoso.visualstudio.com/P/_workitems/edit/77',
+          ).isAdoWorkItem,
+          isTrue);
+    });
+
+    test('a calendar meeting reference is not a work item', () {
+      final ref = meetingReference(event(
+          description: 'https://teams.microsoft.com/l/meetup-join/abc'));
+      expect(ref.id, startsWith(kMeetingRefPrefix));
+      expect(ref.isAdoWorkItem, isFalse);
+      expect(meetingReference(event()).isAdoWorkItem, isFalse,
+          reason: 'no Teams link falls back to an Outlook permalink');
+    });
+
+    test('a calendar reference read back from Harvest is not a work item', () {
+      final entry = TimeEntry.fromJson({
+        'id': 1,
+        'spent_date': '2026-10-12',
+        'hours': 0.17,
+        'project': {'id': 1, 'name': 'P'},
+        'task': {'id': 1, 'name': 'T'},
+        'external_reference': {
+          'id': 'GrainCalendar_4a7750fe7320d41b_1791786600',
+          'group_id': 'GrainCalendarEvent',
+          'permalink': 'https://teams.microsoft.com/l/meetup-join/x',
+        },
+      });
+      expect(entry.externalReference, isNotNull);
+      expect(entry.adoReference, isNull);
     });
   });
 }

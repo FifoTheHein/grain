@@ -279,7 +279,9 @@ class TimeEntryProvider extends ChangeNotifier {
     //      (caused by a previous migration run before parseWorkItemId was used).
     final candidates = weekEntries.where((e) {
       final ref = e.externalReference;
-      if (ref == null) return false;
+      // Only work item references are migration candidates — a calendar
+      // meeting's reference would otherwise read as a "plain numeric" one.
+      if (ref == null || !ref.isAdoWorkItem) return false;
       final id = ref.id;
       if (!id.startsWith('AzureDevOps_')) return true; // plain numeric
 

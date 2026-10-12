@@ -64,6 +64,22 @@ class ExternalReference {
         'service': service,
         'service_icon_url': serviceIconUrl,
       };
+
+  /// True when this points at an Azure DevOps work item. Entries carry other
+  /// references too — the calendar import tags meetings `GrainCalendar_…` —
+  /// and reading one of those as a work item number would show a bogus
+  /// "ADO #" link and offer to push hours to a work item that doesn't exist.
+  ///
+  /// Decided from what Harvest returns rather than [groupId], which it does
+  /// not round-trip reliably: an ADO permalink host, or an id in either ADO
+  /// shape — `AzureDevOps_{guid}_{type}_{n}` or a bare number.
+  bool get isAdoWorkItem {
+    final host = Uri.tryParse(permalink ?? '')?.host.toLowerCase() ?? '';
+    if (host == 'dev.azure.com' || host.endsWith('.visualstudio.com')) {
+      return true;
+    }
+    return id.startsWith('AzureDevOps_') || RegExp(r'^\d+$').hasMatch(id);
+  }
 }
 
 class TimeEntry {
@@ -120,6 +136,11 @@ class TimeEntry {
     if (elapsed.isNegative) return hours;
     return hours + elapsed.inSeconds / 3600.0;
   }
+
+  /// The external reference when it is an ADO work item, else null — what
+  /// every ADO feature should read instead of [externalReference].
+  ExternalReference? get adoReference =>
+      externalReference?.isAdoWorkItem == true ? externalReference : null;
 
   /// True when this entry knows when it happened, not just how long it took.
   bool get hasClockTimes =>

@@ -74,11 +74,11 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     _selectedDate = DateFormat('yyyy-MM-dd').parse(entry.spentDate);
 
     // ADO reference
-    if (entry.externalReference != null) {
+    if (entry.adoReference != null) {
       _hasAdoRef = true;
       _workItemIdController.text =
-          AdoService.parseWorkItemId(entry.externalReference!.id);
-      final permalink = entry.externalReference!.permalink ?? '';
+          AdoService.parseWorkItemId(entry.adoReference!.id);
+      final permalink = entry.adoReference!.permalink ?? '';
       final instances = context.read<AdoInstanceProvider>().instances;
       for (final inst in instances) {
         if (inst.matchesPermalink(permalink)) {
@@ -277,7 +277,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
         _workItemIdController.text.trim().isNotEmpty &&
         _selectedAdoInstance != null) {
       final workItemId = _workItemIdController.text.trim();
-      final originalRef = widget.entry.externalReference;
+      final originalRef = widget.entry.adoReference;
 
       // If the ADO reference is unchanged (same work item + same instance),
       // preserve the original external reference as-is. This prevents
@@ -721,7 +721,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                   // Manual Completed Work push, for an entry whose hours were
                   // never sent — a timed one, or one whose automatic sync
                   // failed. Confirms with the before and after first.
-                  if (widget.entry.externalReference != null) ...[
+                  if (widget.entry.adoReference != null) ...[
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: () =>

@@ -14,7 +14,7 @@ import '../theme/harvest_tokens.dart';
 /// rather than guesses, and shows the before and after so the decision is
 /// informed. Returns true when a value was written.
 Future<bool> showCompletedWorkSync(BuildContext context, TimeEntry entry) async {
-  final ref = entry.externalReference;
+  final ref = entry.adoReference;
   if (ref == null) {
     _toast(context, 'This entry is not linked to a work item');
     return false;
@@ -106,11 +106,11 @@ Future<bool> showCompletedWorkSync(BuildContext context, TimeEntry entry) async 
 /// configured instance, and the Completed Work feature left switched on.
 Future<bool> canSyncCompletedWork(
     BuildContext context, TimeEntry entry) async {
-  if (entry.externalReference == null) return false;
+  if (entry.adoReference == null) return false;
   final prefs = await SharedPreferences.getInstance();
   if (!(prefs.getBool('ado_update_completed_work') ?? true)) return false;
   if (!context.mounted) return false;
-  final permalink = entry.externalReference!.permalink ?? '';
+  final permalink = entry.adoReference!.permalink ?? '';
   return context
       .read<AdoInstanceProvider>()
       .instances
