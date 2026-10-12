@@ -23,6 +23,8 @@
   .qchips { display: flex; gap: 6px; margin-top: 12px; }
   .q { padding: 7px 0; flex: 1; text-align: center; border-radius: 16px; border: 1px solid var(--borderStrong); font-size: 13px; color: var(--text2); }
   .q.on { background: var(--brand); border-color: var(--brand); color: var(--onBrand); font-weight: 600; }
+  .accel { display: flex; justify-content: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--text3); align-items: center; }
+  .accel span { padding: 1px 7px; border-radius: 10px; background: var(--surface2); color: var(--text2); }
 
   .gapchip { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px;
              border-radius: 10px; border: 1px solid var(--brand); background: var(--brandTint); }
@@ -76,8 +78,9 @@
       </div>
 
       <div class="dchips">
-        <span class="dchip on">Today</span>
         <span class="dchip">Yesterday</span>
+        <span class="dchip on">Today</span>
+        <span class="dchip">Tomorrow</span>
         <span class="dchip"><svg class="i i-16"><use href="#ic-calendar"/></svg>Pick</span>
         <span class="when">Mon 12 Oct</span>
       </div>
@@ -92,6 +95,7 @@
         <div class="dur"><div class="big">1<small>h</small> 45<small>m</small></div><div class="sub">1.75 hours</div></div>
         <span class="sbtn">+</span>
       </div>
+      <div class="accel">tap ±1 min · hold <span>1</span>→<span>5</span>→<span>15</span></div>
       <div class="qchips"><span class="q">15m</span><span class="q">30m</span><span class="q">45m</span><span class="q">1h</span><span class="q">1½h</span><span class="q">2h</span></div>
 
       <div class="gapchip">

@@ -84,14 +84,25 @@ body {
 }
 .days { display: flex; flex: 1; gap: 4px; }
 .day { flex: 1; text-align: center; padding: 8px 2px 10px; border-radius: 10px; border: 1.5px solid transparent; }
-.day.sel { border-color: var(--brand); }
 .day .dow { font-size: 11px; letter-spacing: .6px; color: var(--text3); font-weight: 500; }
 .day .num { font-size: 21px; font-weight: 500; margin: 2px 0 4px; }
 .day .hrs { font-size: 11px; color: var(--text2); }
-.day.sel .dow, .day.sel .num, .day.sel .hrs { color: var(--brand); }
-.day.off .dow, .day.off .num, .day.off .hrs { color: var(--text4); }
 .daybar { height: 3px; border-radius: 2px; background: var(--surface3); margin-top: 7px; overflow: hidden; }
 .daybar i { display: block; height: 100%; background: var(--brand); border-radius: 2px; }
+/* Today keeps an accent number; the selected day (today or earlier) is a
+   solid brand tile; future days are faded, and a selected one is dashed. */
+.day.today .num { color: var(--brand); }
+.day.sel { background: var(--brand); border-color: var(--brand); }
+.day.sel .dow, .day.sel .num, .day.sel .hrs { color: var(--onBrand); }
+.day.sel .daybar { background: rgba(255,255,255,.3); }
+.day.sel .daybar i { background: var(--onBrand); }
+.day.fut { opacity: .38; }
+.day.fut .num { font-weight: 400; }
+.day.fut.sel { opacity: 1; background: transparent; border: 1.5px dashed var(--text2); }
+.day.fut.sel .dow, .day.fut.sel .num, .day.fut.sel .hrs { color: var(--text); }
+.day.fut.sel .daybar { background: var(--surface3); }
+.day.fut.sel .daybar i { background: var(--brand); opacity: .5; }
+.day.fut .hrs.plan { font-style: italic; }
 
 .ring { width: 132px; flex: 0 0 132px; text-align: center; border-left: 1px solid var(--divider); padding-left: 10px; }
 .ring .arc { position: relative; width: 78px; height: 78px; margin: 0 auto; }
@@ -108,6 +119,17 @@ body {
 .ring .help { font-size: 12px; color: var(--text2); margin-top: 2px; }
 .ring.over .tot, .ring.over .help { color: var(--warn); }
 
+/* A future day: UPCOMING, a jump back to today, and a note over entries
+   logged ahead. */
+.datenav .side { display: flex; align-items: center; gap: 2px; width: 110px; }
+.datenav .side.r { justify-content: flex-end; }
+.datenav .w { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; justify-content: center; }
+.up { font-size: 10px; font-weight: 700; letter-spacing: .6px; padding: 2px 6px; border-radius: 4px;
+      border: 1px dashed var(--text3); color: var(--text3); }
+.jump { font-size: 12px; font-weight: 600; color: var(--brand); padding: 5px 10px; border-radius: 14px; border: 1px solid var(--brand); }
+.futnote { display: flex; gap: 8px; align-items: center; margin: 10px 0 2px; padding: 8px 10px; border-radius: 8px;
+           border: 1px dashed var(--borderStrong); font-size: 12px; color: var(--text2); }
+
 /* ── Entry card ──────────────────────────────────────────────────── */
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -121,6 +143,7 @@ body {
   font-feature-settings: "tnum"; position: relative;
 }
 .pill.running { background: var(--brand); color: var(--onBrand); }
+.pill.planned { background: transparent; border: 1.5px dashed var(--text3); color: var(--text2); }
 .pill .badge {
   position: absolute; right: -1px; bottom: -1px; width: 15px; height: 15px;
   border-radius: 8px; background: var(--brand600); border: 2px solid var(--surface);
@@ -151,6 +174,7 @@ body {
 .card.compact .notes { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card.compact .wichip { margin-top: 6px; }
 .card.compact .act { width: 36px; height: 36px; flex: 0 0 36px; color: var(--text3); }
+.card.compact .act.off { color: var(--text4); }
 .entry .when { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text3); }
 
 /* ── ADO work item chip ──────────────────────────────────────────── */

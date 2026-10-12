@@ -15,6 +15,7 @@ import 'package:harvest/services/harvest_service.dart';
 import 'package:harvest/theme/grain_theme.dart';
 import 'package:harvest/theme/theme_palettes.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,7 +45,7 @@ http.Client harvestMock() => MockClient((req) async {
     });
 
 Future<void> pumpLogTime(WidgetTester tester,
-    {List<AdoInstance> instances = const []}) async {
+    {List<AdoInstance> instances = const [], DateTime? initialDate}) async {
   tester.view.physicalSize = const Size(420, 1400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -68,7 +69,7 @@ Future<void> pumpLogTime(WidgetTester tester,
     ],
     child: MaterialApp(
       theme: buildGrainTheme(Brightness.dark, kThemePalettes.first),
-      home: const Scaffold(body: LogTimeScreen()),
+      home: Scaffold(body: LogTimeScreen(initialDate: initialDate)),
     ),
   ));
   await tester.pumpAndSettle();
@@ -121,10 +122,58 @@ void main() {
     expect(find.text('NWR001 · Development · yesterday 08:30–09:30'),
         findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('End plus 5 minutes'));
+    await tester.tap(find.bySemanticsLabel('End plus 1 minute'));
     await tester.pump();
-    expect(find.text('09:35'), findsOneWidget);
-    expect(find.text('Log 1h 5m'), findsOneWidget);
+    expect(find.text('09:31'), findsOneWidget);
+    expect(find.text('Log 1h 1m'), findsOneWidget);
+  });
+
+  testWidgets('Tomorrow logs ahead: no timer, and a line saying so',
+      (tester) async {
+    await pumpLogTime(tester);
+    expect(find.byKey(const ValueKey('logging-ahead')), findsNothing);
+    OutlinedButton timer() => tester.widget<OutlinedButton>(
+        find.byKey(const ValueKey('timer-button')));
+    expect(timer().onPressed, isNotNull);
+
+    await tester.tap(find.text('30m'));
+    await tester.tap(find.text('Tomorrow'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('logging-ahead')), findsOneWidget);
+    expect(find.text('Logging ahead. Timers only run for today.'),
+        findsOneWidget);
+    expect(find.text('NWR001 · Development · tomorrow'), findsOneWidget);
+    expect(timer().onPressed, isNull);
+    expect(find.byTooltip('Timers only run for today'), findsOneWidget);
+
+    await tester.tap(find.text('Today'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('logging-ahead')), findsNothing);
+    expect(timer().onPressed, isNotNull);
+  });
+
+  testWidgets('Start & End on a future day runs from the work-day start',
+      (tester) async {
+    await pumpLogTime(tester);
+    await tester.tap(find.text('Tomorrow'));
+    await tester.tap(find.text('Start & End'));
+    await tester.pumpAndSettle();
+    expect(find.text('08:30'), findsOneWidget);
+    expect(find.text('09:30'), findsOneWidget);
+    expect(find.text('NWR001 · Development · tomorrow 08:30–09:30'),
+        findsOneWidget);
+  });
+
+  testWidgets('opens on a date handed over from Recent', (tester) async {
+    final now = DateTime.now();
+    final inThree = DateTime(now.year, now.month, now.day + 3);
+    await pumpLogTime(tester, initialDate: inThree);
+    await tester.tap(find.text('15m'));
+    await tester.pump();
+    expect(
+        find.text('NWR001 · Development · ${DateFormat('EEE d MMM').format(inThree)}'),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('logging-ahead')), findsOneWidget);
   });
 
   testWidgets('a remembered Start & End choice is restored', (tester) async {

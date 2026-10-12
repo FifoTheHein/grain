@@ -8,6 +8,7 @@ import '../config/app_config.dart';
 import '../models/ado_work_item.dart';
 import '../models/day_insights.dart';
 import '../models/duration_input.dart';
+import '../models/future_days.dart';
 import '../models/log_time_defaults.dart';
 import '../models/mapping_rule.dart';
 import '../models/meeting.dart' show workItemIdFromTitle;
@@ -26,6 +27,7 @@ import '../widgets/duration_stepper.dart';
 import '../widgets/log_action_bar.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/quick_template_bar.dart';
+import '../widgets/upcoming_tag.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/work_item_picker.dart';
 import '../widgets/work_item_preview.dart';
@@ -34,7 +36,11 @@ import '../widgets/work_item_preview.dart';
 const kLogTimeStartEndKey = 'log_time_start_end';
 
 class LogTimeScreen extends StatefulWidget {
-  const LogTimeScreen({super.key});
+  /// The date the form opens on, e.g. an empty future day on Recent handing
+  /// over "Log time for Thu 15 Oct". Today when null.
+  final DateTime? initialDate;
+
+  const LogTimeScreen({super.key, this.initialDate});
 
   @override
   State<LogTimeScreen> createState() => _LogTimeScreenState();
@@ -45,7 +51,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   final _notesController = TextEditingController();
   final _workItemIdController = TextEditingController();
 
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate = widget.initialDate ?? DateTime.now();
   AdoInstance? _selectedAdoInstance;
   bool _hasAdoRef = false;
   Timer? _debounce;
@@ -105,6 +111,13 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   }
 
   @override
+  void didUpdateWidget(LogTimeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final date = widget.initialDate;
+    if (date != null && date != oldWidget.initialDate) _setDate(date);
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _notesController.dispose();
@@ -114,23 +127,28 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
   // ── Dates and clock times ──────────────────────────────────────────────
 
-  static DateTime _dayOf(DateTime d) => DateTime(d.year, d.month, d.day);
+  int get _daysFromToday => daysFromToday(_selectedDate, DateTime.now());
 
-  bool get _isToday => _dayOf(_selectedDate) == _dayOf(DateTime.now());
+  bool get _isToday => _daysFromToday == 0;
 
-  bool get _isYesterday =>
-      _dayOf(_selectedDate) ==
-      _dayOf(DateTime.now()).subtract(const Duration(days: 1));
+  bool get _isYesterday => _daysFromToday == -1;
+
+  bool get _isTomorrow => _daysFromToday == 1;
+
+  /// Logging ahead: no gap chip and no timer, since Harvest only times today.
+  bool get _isFuture => _daysFromToday > 0;
 
   static int _nowMinutes() {
     final now = DateTime.now();
     return now.hour * 60 + now.minute;
   }
 
-  /// "today", "yesterday" or "Fri 9 Oct" — how the action bar names the date.
+  /// "today", "yesterday", "tomorrow" or "Fri 9 Oct" — how the action bar
+  /// names the date.
   String get _dateWord {
     if (_isToday) return 'today';
     if (_isYesterday) return 'yesterday';
+    if (_isTomorrow) return 'tomorrow';
     return DateFormat('EEE d MMM').format(_selectedDate);
   }
 
@@ -405,11 +423,12 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   }
 
   Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: clampToSelectable(_selectedDate, now),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: latestSelectableDate(now),
     );
     if (picked != null) _setDate(picked);
   }
@@ -655,13 +674,17 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
           _DateChips(
             date: _selectedDate,
-            isToday: _isToday,
-            isYesterday: _isYesterday,
-            onToday: () => _setDate(DateTime.now()),
-            onYesterday: () => _setDate(
-                _dayOf(DateTime.now()).subtract(const Duration(days: 1))),
+            daysFromToday: _daysFromToday,
+            onDay: (offset) {
+              final now = DateTime.now();
+              _setDate(DateTime(now.year, now.month, now.day + offset));
+            },
             onPick: () => _pickDate(context),
           ),
+          if (_isFuture) ...[
+            const SizedBox(height: 8),
+            const _LoggingAheadLine(),
+          ],
           const SizedBox(height: 14),
 
           // Mode toggle
@@ -923,10 +946,14 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
           // Start a running timer instead of logging a fixed duration. The
           // duration inputs are ignored — Harvest counts from now until you
           // stop it.
-          onStartTimer: running != null ? null : () => _startTimer(context),
-          timerTooltip: running == null
-              ? 'Start a timer'
-              : 'Timer already running on ${running.projectName}',
+          onStartTimer: running != null || _isFuture
+              ? null
+              : () => _startTimer(context),
+          timerTooltip: _isFuture
+              ? 'Timers only run for today'
+              : running == null
+                  ? 'Start a timer'
+                  : 'Timer already running on ${running.projectName}',
         ),
       ],
     );
@@ -947,61 +974,101 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   }
 }
 
-/// Today / Yesterday / Pick, with the date itself at the right.
+/// Yesterday / Today / Tomorrow / Pick, with the date itself at the right.
+/// Pick reaches back to 2020 and forward to [latestSelectableDate].
 class _DateChips extends StatelessWidget {
   final DateTime date;
-  final bool isToday;
-  final bool isYesterday;
-  final VoidCallback onToday;
-  final VoidCallback onYesterday;
+
+  /// −1 yesterday, 0 today, 1 tomorrow; anything else selects Pick.
+  final int daysFromToday;
+
+  /// Called with the chosen offset from today.
+  final ValueChanged<int> onDay;
   final VoidCallback onPick;
 
   const _DateChips({
     required this.date,
-    required this.isToday,
-    required this.isYesterday,
-    required this.onToday,
-    required this.onYesterday,
+    required this.daysFromToday,
+    required this.onDay,
     required this.onPick,
   });
 
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
+    // Compact, so all four fit one row beside the date.
+    const density = VisualDensity(horizontal: -2, vertical: -2);
+    const labelPadding = EdgeInsets.symmetric(horizontal: 4);
+    const padding = EdgeInsets.symmetric(horizontal: 4, vertical: 6);
+    Widget day(String label, int offset) => ChoiceChip(
+          label: Text(label),
+          selected: daysFromToday == offset,
+          onSelected: (_) => onDay(offset),
+          showCheckmark: false,
+          visualDensity: density,
+          labelPadding: labelPadding,
+          padding: padding,
+        );
+    // One row: the date keeps its width and the chips share the rest,
+    // shrinking on a very narrow phone rather than wrapping onto a second
+    // line.
     return Row(
       children: [
-        Expanded(
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('Today'),
-                selected: isToday,
-                onSelected: (_) => onToday(),
-                showCheckmark: false,
-              ),
-              ChoiceChip(
-                label: const Text('Yesterday'),
-                selected: isYesterday,
-                onSelected: (_) => onYesterday(),
-                showCheckmark: false,
-              ),
-              ChoiceChip(
-                avatar: const Icon(Icons.calendar_today, size: 16),
-                label: const Text('Pick'),
-                selected: !isToday && !isYesterday,
-                onSelected: (_) => onPick(),
-                showCheckmark: false,
-                tooltip: 'Pick a date',
-              ),
-            ],
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                day('Yesterday', -1),
+                const SizedBox(width: 6),
+                day('Today', 0),
+                const SizedBox(width: 6),
+                day('Tomorrow', 1),
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: Icon(Icons.calendar_today,
+                      size: 16, semanticLabel: 'Pick a date'),
+                  selected: daysFromToday.abs() > 1,
+                  onSelected: (_) => onPick(),
+                  showCheckmark: false,
+                  tooltip: 'Pick a date',
+                  visualDensity: density,
+                  labelPadding: labelPadding,
+                  padding: padding,
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Text(
           DateFormat('EEE d MMM').format(date),
           style: TextStyle(fontSize: 12, color: palette.text3),
+        ),
+      ],
+    );
+  }
+}
+
+/// "UPCOMING · Logging ahead. Timers only run for today."
+class _LoggingAheadLine extends StatelessWidget {
+  const _LoggingAheadLine();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Row(
+      key: const ValueKey('logging-ahead'),
+      children: [
+        const UpcomingTag(),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Logging ahead. Timers only run for today.',
+            style: TextStyle(fontSize: 12, color: palette.text2),
+          ),
         ),
       ],
     );
@@ -1058,7 +1125,8 @@ class _GapChip extends StatelessWidget {
   }
 }
 
-/// One end of Start & End: −5 · HH:MM · +5, tapping the time for the dial.
+/// One end of Start & End: −1 · HH:MM · +1, tapping the time for the dial.
+/// The nudges speed up while held, like the duration ±.
 class _ClockBox extends StatelessWidget {
   final String label;
   final int minutes;
@@ -1080,24 +1148,26 @@ class _ClockBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
 
-    Widget nudge(int delta, bool enabled) => SizedBox(
-          width: 40,
-          height: 32,
-          child: TextButton(
-            onPressed: enabled ? () => onNudge(delta) : null,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(36, 32),
-              backgroundColor: enabled ? palette.brandTint : Colors.transparent,
-              foregroundColor: palette.brand600,
-              textStyle:
-                  const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6)),
+    Widget nudge(bool up, bool enabled) => HoldToRepeat(
+          enabled: enabled,
+          semanticLabel: '$label ${up ? 'plus' : 'minus'} 1 minute',
+          onStep: (step) => onNudge(up ? step : -step),
+          child: Container(
+            width: 40,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: enabled ? palette.brandTint : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(delta < 0 ? '−${-delta}' : '+$delta',
-                semanticsLabel:
-                    '$label ${delta < 0 ? 'minus' : 'plus'} ${delta.abs()} minutes'),
+            child: Text(
+              up ? '+1' : '−1',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: enabled ? palette.brand600 : palette.text4,
+              ),
+            ),
           ),
         );
 
@@ -1113,7 +1183,7 @@ class _ClockBox extends StatelessWidget {
           const SizedBox(height: 2),
           Row(
             children: [
-              nudge(-kDurationStepMinutes, minutes > 0),
+              nudge(false, minutes > 0),
               Expanded(
                 child: InkWell(
                   onTap: onTap,
@@ -1132,7 +1202,7 @@ class _ClockBox extends StatelessWidget {
                   ),
                 ),
               ),
-              nudge(kDurationStepMinutes, canNudgeUp),
+              nudge(true, canNudgeUp),
             ],
           ),
           SizedBox(

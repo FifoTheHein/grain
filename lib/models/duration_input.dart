@@ -7,8 +7,30 @@ library;
 /// The longest duration the control accepts: a full day.
 const int kMaxDurationMinutes = 24 * 60;
 
-/// What the ± buttons move by.
-const int kDurationStepMinutes = 5;
+/// What a tap on ± moves by. Holding speeds up; see [holdStepMinutes].
+const int kDurationStepMinutes = 1;
+
+/// How long a ± press waits before it starts repeating, and how often it
+/// repeats after that.
+const Duration kHoldRepeatDelay = Duration(milliseconds: 350);
+const Duration kHoldRepeatInterval = Duration(milliseconds: 90);
+
+/// The step a held ± takes after it has been down for [held]: 1 minute at
+/// first, 5 from 1.5 s, 15 from 4 s. Each step snaps onto its own grid (see
+/// [stepDuration]), so a hold that started at 1h 23m runs 1h 24m, … 1h 25m,
+/// 1h 30m, … 1h 45m, 2h.
+int holdStepMinutes(Duration held) {
+  if (held >= const Duration(milliseconds: 4000)) return 15;
+  if (held >= const Duration(milliseconds: 1500)) return 5;
+  return 1;
+}
+
+/// How long a press has been held at its [tick]th repeat (1-based): the
+/// repeat starts [kHoldRepeatDelay] after the press and ticks every
+/// [kHoldRepeatInterval] from there. Counted from ticks rather than read from
+/// a clock, so the widget and its tests agree exactly.
+Duration holdElapsedAtTick(int tick) =>
+    kHoldRepeatDelay + kHoldRepeatInterval * tick;
 
 /// The quick chips under the stepper, in minutes.
 const List<int> kQuickDurations = [15, 30, 45, 60, 90, 120];
@@ -101,9 +123,9 @@ String formatQuickDuration(int minutes) {
 }
 
 /// One press of + ([up]) or −. Moves to the next multiple of [step] in that
-/// direction, so an odd value such as a filled gap of 1h 23m snaps onto the
-/// grid (1h 25m, then 1h 30m) rather than staying off it. Clamped to
-/// `0..max`.
+/// direction, so an odd value met by a bigger step, such as 1h 23m under a
+/// held 5, snaps onto the grid (1h 25m, then 1h 30m) rather than staying off
+/// it. Clamped to `0..max`.
 int stepDuration(
   int minutes, {
   required bool up,

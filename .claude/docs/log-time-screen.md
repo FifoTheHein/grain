@@ -12,10 +12,13 @@ layout's content column): `LogActionBar`.
 controlled widget (`minutes` in, `onChanged` out) so Edit Time can adopt it
 without restructuring.
 
-- `− [1h 45m] +`, decimal hours underneath. ± step 5 minutes, snapping an
-  off-grid value onto the grid (1h 23m → 1h 25m), and repeat while held (a
-  `Listener` on raw pointer events, so the first step lands on press). − is
-  disabled at 0, + at 24h.
+- `− [1h 45m] +`, decimal hours underneath, and "tap ±1 min · hold 1 → 5 →
+  15" under that. A tap moves 1 minute. Holding repeats (`HoldToRepeat`, a
+  `Listener` on raw pointer events, so the first step lands on press) and
+  speeds up on `holdStepMinutes`: 1-minute steps, then 5 from 1.5 s, then 15
+  from 4 s, each snapping onto its own grid (1h 23m → 1h 25m under a 5). The
+  schedule is counted in ticks (`holdElapsedAtTick`), not read from a clock,
+  so the widget test replays it exactly. − is disabled at 0, + at 24h.
 - Quick chips 15m · 30m · 45m · 1h · 1½h · 2h set the value and are selected
   while it matches.
 - Tapping the number swaps in a text field with a live "= 1h 45m" read-back.
@@ -23,7 +26,7 @@ without restructuring.
   leaves the value alone.
 
 **Parsing (`lib/models/duration_input.dart`)** — pure Dart, tested in
-`test/duration_input_test.dart`. `parseDurationInput` takes `1:45`, `1.75`,
+`test/duration_input_test.dart` (the acceleration schedule too). `parseDurationInput` takes `1:45`, `1.75`,
 `1,75`, `1h45`, `1h 45m`, `1.5h`, `2 hrs`, `105m`, `45 min` and bare numbers.
 **A bare whole number is minutes** (`90` → 1h 30m, `2` → 2m); a decimal is
 hours (`2.0` → 2h). Over 24h is rejected. Also `formatDurationLabel`,
@@ -54,8 +57,9 @@ own, not Recent's. A day outside that week reads as empty.
 
 **Start & End** — the times follow the defaults (and so keep up with "now"
 and with entries that arrive later) until touched; a nudge or a pick pins
-both. Each box is `−5 · HH:MM · +5` (`nudgeClock`), tapping the time opens the
-24h picker, and End can't nudge past now on today. A caption says where the
+both. Each box is `−1 · HH:MM · +1` (`nudgeClock`), the nudges holding to
+repeat on the same 1 → 5 → 15 schedule as the stepper; tapping the time opens
+the 24h picker, and End can't nudge past now on today. A caption says where the
 default came from ("after Standup", "work day start", "now"). "= 1h 20m"
 shows live underneath, replaced by "End time must be after start time" when it
 is. Clock times are still only sent when `tracksByStartEnd`.
@@ -70,8 +74,17 @@ while one runs, tooltip naming the project holding it.
 
 **Tidy-ups**
 
-- Date: Today / Yesterday / Pick (`showDatePicker`) chips, the date at the
-  right. Changing it resets Start & End to the new day's defaults.
+- Date: Yesterday / Today / Tomorrow / Pick (an icon chip, `showDatePicker`
+  up to `latestSelectableDate`, today + 7) chips, the date at the right.
+  Changing it resets Start & End to the new day's defaults. `initialDate`
+  opens the screen on another day — Recent's empty future day hands one over
+  through `HomeNavigation`.
+- **Logging ahead** (a date after today): an "UPCOMING · Logging ahead.
+  Timers only run for today." line under the chips, no gap chip, and the ▶
+  disabled with that tooltip. Start & End default as on any other day that
+  isn't today — after what the day already holds, so the work-day start to an
+  hour later on an empty one. Harvest takes a future `spent_date` as-is; the
+  create path needs nothing special.
 - The Duration / Start & End choice persists in `log_time_start_end`.
 - A `#123` or `AB#123` in the notes (`workItemIdFromTitle` from `meeting.dart`)
   while nothing is linked shows a card: the item's title when cached (fetched
@@ -87,5 +100,6 @@ hours/minutes inputs.
 
 **Tests** — `test/duration_stepper_test.dart` (stepper and action bar),
 `test/log_time_screen_test.dart` (the screen behind a `MockClient`: disabled
-bar and error, chips, date word, Start & End persistence and nudges, the Link
+bar and error, chips, date word, Start & End persistence and nudges, Tomorrow
+and its disabled timer, Start & End on a future day, `initialDate`, the Link
 card with a single instance).

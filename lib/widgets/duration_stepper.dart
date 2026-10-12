@@ -11,9 +11,10 @@ import '../theme/harvest_tokens.dart';
 ///
 /// Controlled: it shows [minutes] and reports every change through
 /// [onChanged], holding no value of its own, so Log Time and (later) Edit
-/// Time can each own the number. ± move by [step] minutes and repeat while
-/// held; tapping the number switches to typed entry, read by
-/// [parseDurationInput]. Covered by `test/duration_stepper_test.dart`.
+/// Time can each own the number. A tap on ± moves 1 minute; holding repeats
+/// and speeds up to 5, then 15 ([holdStepMinutes]). Tapping the number
+/// switches to typed entry, read by [parseDurationInput]. Covered by
+/// `test/duration_stepper_test.dart`.
 class DurationStepper extends StatefulWidget {
   final int minutes;
   final ValueChanged<int> onChanged;
@@ -23,7 +24,6 @@ class DurationStepper extends StatefulWidget {
   final String? errorText;
 
   final List<int> quickDurations;
-  final int step;
   final int max;
 
   const DurationStepper({
@@ -32,7 +32,6 @@ class DurationStepper extends StatefulWidget {
     required this.onChanged,
     this.errorText,
     this.quickDurations = kQuickDurations,
-    this.step = kDurationStepMinutes,
     this.max = kMaxDurationMinutes,
   });
 
@@ -44,7 +43,6 @@ class _DurationStepperState extends State<DurationStepper> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
   bool _typing = false;
-  Timer? _repeat;
 
   @override
   void initState() {
@@ -56,32 +54,17 @@ class _DurationStepperState extends State<DurationStepper> {
 
   @override
   void dispose() {
-    _repeat?.cancel();
     _controller.dispose();
     _focus.dispose();
     super.dispose();
   }
 
-  void _step(bool up) {
-    final next = stepDuration(widget.minutes,
-        up: up, step: widget.step, max: widget.max);
+  // Reads widget.minutes on every call, which the parent has rebuilt with
+  // the previous step while a hold repeats.
+  void _step(bool up, int step) {
+    final next =
+        stepDuration(widget.minutes, up: up, step: step, max: widget.max);
     if (next != widget.minutes) widget.onChanged(next);
-  }
-
-  // Hold to repeat: a short pause, then a steady tick. Reads widget.minutes
-  // on every tick, which the parent has rebuilt with the previous step.
-  void _startRepeat(bool up) {
-    _repeat?.cancel();
-    _step(up);
-    _repeat = Timer(const Duration(milliseconds: 350), () {
-      _repeat = Timer.periodic(
-          const Duration(milliseconds: 90), (_) => _step(up));
-    });
-  }
-
-  void _stopRepeat() {
-    _repeat?.cancel();
-    _repeat = null;
   }
 
   void _startTyping() {
@@ -124,9 +107,7 @@ class _DurationStepperState extends State<DurationStepper> {
               icon: Icons.remove,
               semanticLabel: 'Decrease duration',
               enabled: !atZero,
-              onStart: () => _startRepeat(false),
-              onStepOnce: () => _step(false),
-              onStop: _stopRepeat,
+              onStep: (step) => _step(false, step),
             ),
             const SizedBox(width: 12),
             Expanded(child: _typing ? _buildField(palette) : _buildDisplay(palette)),
@@ -135,13 +116,13 @@ class _DurationStepperState extends State<DurationStepper> {
               icon: Icons.add,
               semanticLabel: 'Increase duration',
               enabled: !atMax,
-              onStart: () => _startRepeat(true),
-              onStepOnce: () => _step(true),
-              onStop: _stopRepeat,
+              onStep: (step) => _step(true, step),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
+        const _AccelHint(),
+        const SizedBox(height: 10),
         Row(
           children: [
             for (var i = 0; i < widget.quickDurations.length; i++) ...[
@@ -211,9 +192,7 @@ class _DurationStepperState extends State<DurationStepper> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  zero
-                      ? 'tap to type · hold ± to repeat'
-                      : formatDecimalHours(widget.minutes),
+                  zero ? 'tap to type' : formatDecimalHours(widget.minutes),
                   style: TextStyle(fontSize: 11, color: palette.text3),
                 ),
               ],
@@ -273,51 +252,158 @@ class _DurationStepperState extends State<DurationStepper> {
   }
 }
 
-/// A round ± button that steps once on tap and repeats while held.
+/// Steps once on press, then repeats while held, speeding up on the
+/// [holdStepMinutes] schedule. [onStep] receives the step in minutes:
+/// [kDurationStepMinutes] for the press, then whatever the schedule says for
+/// each repeat.
+///
+/// Raw pointer events rather than tap/long-press recognisers: the first step
+/// lands on press, and the repeat stops however the press ends — a
+/// long-press recogniser would cancel the tap mid-hold. Shared by the
+/// duration ± and Log Time's Start & End nudges.
+class HoldToRepeat extends StatefulWidget {
+  final bool enabled;
+  final ValueChanged<int> onStep;
+  final String semanticLabel;
+  final Widget child;
+
+  const HoldToRepeat({
+    super.key,
+    required this.enabled,
+    required this.onStep,
+    required this.semanticLabel,
+    required this.child,
+  });
+
+  @override
+  State<HoldToRepeat> createState() => _HoldToRepeatState();
+}
+
+class _HoldToRepeatState extends State<HoldToRepeat> {
+  Timer? _repeat;
+  int _ticks = 0;
+
+  @override
+  void didUpdateWidget(HoldToRepeat oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reached the end of the range mid-hold: stop rather than tick on nothing.
+    if (!widget.enabled) _stop();
+  }
+
+  @override
+  void dispose() {
+    _stop();
+    super.dispose();
+  }
+
+  void _start() {
+    _stop();
+    widget.onStep(kDurationStepMinutes);
+    _repeat = Timer(kHoldRepeatDelay, () {
+      _repeat = Timer.periodic(kHoldRepeatInterval, (_) {
+        _ticks++;
+        // widget, not a captured callback: the parent rebuilds this with
+        // the latest value between ticks.
+        widget.onStep(holdStepMinutes(holdElapsedAtTick(_ticks)));
+      });
+    });
+  }
+
+  void _stop() {
+    _repeat?.cancel();
+    _repeat = null;
+    _ticks = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: widget.semanticLabel,
+      onTap: widget.enabled ? () => widget.onStep(kDurationStepMinutes) : null,
+      excludeSemantics: true,
+      child: Listener(
+        onPointerDown: widget.enabled ? (_) => _start() : null,
+        onPointerUp: (_) => _stop(),
+        onPointerCancel: (_) => _stop(),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// A round ± button: 1 minute per tap, faster while held.
 class _RoundStepButton extends StatelessWidget {
   final IconData icon;
   final String semanticLabel;
   final bool enabled;
-  final VoidCallback onStart;
-  final VoidCallback onStop;
-  final VoidCallback onStepOnce;
+  final ValueChanged<int> onStep;
 
   const _RoundStepButton({
-    required this.onStepOnce,
     required this.icon,
     required this.semanticLabel,
     required this.enabled,
-    required this.onStart,
-    required this.onStop,
+    required this.onStep,
   });
 
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
     final color = enabled ? palette.text : palette.text4;
-    return Semantics(
-      button: true,
+    return HoldToRepeat(
       enabled: enabled,
-      label: semanticLabel,
-      onTap: enabled ? onStepOnce : null,
-      excludeSemantics: true,
-      // Raw pointer events rather than tap/long-press recognisers: the first
-      // step lands on press, and the repeat stops however the press ends — a
-      // long-press recogniser would cancel the tap mid-hold.
-      child: Listener(
-        onPointerDown: enabled ? (_) => onStart() : null,
-        onPointerUp: (_) => onStop(),
-        onPointerCancel: (_) => onStop(),
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-                color: enabled ? palette.borderStrong : palette.border),
-          ),
-          child: Icon(icon, color: color, size: 26),
+      semanticLabel: semanticLabel,
+      onStep: onStep,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: enabled ? palette.borderStrong : palette.border),
         ),
+        child: Icon(icon, color: color, size: 26),
+      ),
+    );
+  }
+}
+
+/// "tap ±1 min · hold 1 → 5 → 15" under the stepper.
+class _AccelHint extends StatelessWidget {
+  const _AccelHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final style = TextStyle(fontSize: 11, color: palette.text3);
+    Widget step(String n) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+          decoration: BoxDecoration(
+            color: palette.surface2,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(n, style: TextStyle(fontSize: 11, color: palette.text2)),
+        );
+    // An icon, not "→": the web build's bundled font has no arrow glyph.
+    Widget arrow() => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Icon(Icons.arrow_forward, size: 11, color: palette.text3),
+        );
+    return Semantics(
+      label: 'Tap plus or minus for 1 minute. Hold to step by 1, then 5, '
+          'then 15 minutes.',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('tap ±1 min · hold ', style: style),
+          step('1'),
+          arrow(),
+          step('5'),
+          arrow(),
+          step('15'),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/future_days.dart';
 import '../models/time_entry.dart';
 import '../services/ado_service.dart';
 import '../services/harvest_service.dart';
@@ -172,7 +173,11 @@ class TimeEntryProvider extends ChangeNotifier {
     } finally {
       if (requestId == _loadRecentEntriesRequestId) {
         if (!silent) isLoading = false;
-        if (silent && !isSelectedDateToday) _showNewDayBanner = true;
+        // The day rolled over while an earlier day was showing. A day ahead
+        // was chosen on purpose and is not stale.
+        if (silent && daysFromToday(selectedDate, DateTime.now()) < 0) {
+          _showNewDayBanner = true;
+        }
         notifyListeners();
       }
     }

@@ -44,6 +44,21 @@ class HarvestPalette extends ThemeExtension<HarvestPalette> {
     required this.onBrand,
   });
 
+  /// The accent to use as *text* on [background] — [brand] or [brand600],
+  /// whichever contrasts more. Neither wins everywhere: Grain's light canvas
+  /// needs the darker 600, its dark week card the brighter brand. Used for
+  /// today's date on Recent's week strip; `test/theme_palette_test.dart`
+  /// holds it to 3:1 on the canvas and on `surface2`.
+  Color brandInkOn(Color background) {
+    double contrast(Color c) {
+      final a = c.computeLuminance();
+      final b = background.computeLuminance();
+      return a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05);
+    }
+
+    return contrast(brand600) >= contrast(brand) ? brand600 : brand;
+  }
+
   static const light = HarvestPalette(
     bg: Color(0xFFF6F3EE),
     surface: Color(0xFFFFFFFF),
