@@ -20,8 +20,10 @@ import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Harvest behind a MockClient: one project with one task, no entries.
-http.Client harvestMock() => MockClient((req) async {
+/// Harvest behind a MockClient: one project with one task, and [entries]
+/// (none by default) for every time entry fetch.
+http.Client harvestMock({List<Map<String, Object?>> entries = const []}) =>
+    MockClient((req) async {
       if (req.url.path.endsWith('/project_assignments')) {
         return http.Response(
           jsonEncode({
@@ -41,19 +43,26 @@ http.Client harvestMock() => MockClient((req) async {
         );
       }
       return http.Response(
-          jsonEncode({'time_entries': [], 'next_page': null}), 200);
+          jsonEncode({'time_entries': entries, 'next_page': null}), 200);
     });
 
 Future<void> pumpLogTime(WidgetTester tester,
-    {List<AdoInstance> instances = const [], DateTime? initialDate}) async {
+    {List<AdoInstance> instances = const [],
+    DateTime? initialDate,
+    http.Client? client,
+    DateTime? loadWeekOf}) async {
   tester.view.physicalSize = const Size(420, 1400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  final harvest = HarvestService(client: harvestMock());
+  final harvest = HarvestService(client: client ?? harvestMock());
   final assignments = AssignmentProvider(harvest);
   final adoInstances = AdoInstanceProvider()..instances = instances;
+  final entries = TimeEntryProvider(harvest);
   await tester.runAsync(assignments.load);
+  if (loadWeekOf != null) {
+    await tester.runAsync(() => entries.loadRecentEntries(date: loadWeekOf));
+  }
 
   await tester.pumpWidget(MultiProvider(
     providers: [
@@ -62,7 +71,7 @@ Future<void> pumpLogTime(WidgetTester tester,
               client: MockClient((_) async => http.Response('{}', 404)))),
       ChangeNotifierProvider.value(value: adoInstances),
       ChangeNotifierProvider.value(value: assignments),
-      ChangeNotifierProvider(create: (_) => TimeEntryProvider(harvest)),
+      ChangeNotifierProvider.value(value: entries),
       ChangeNotifierProvider(create: (_) => ProjectCategoryProvider()),
       ChangeNotifierProvider(create: (_) => MappingRuleProvider()),
       ChangeNotifierProvider(create: (_) => QuickTemplateProvider()),
@@ -162,6 +171,31 @@ void main() {
     expect(find.text('09:30'), findsOneWidget);
     expect(find.text('NWR001 · Development · tomorrow 08:30–09:30'),
         findsOneWidget);
+  });
+
+  testWidgets('a future day ignores what it already holds', (tester) async {
+    // Tomorrow already has 1h 30m logged by duration; Start & End still
+    // opens at the work-day start rather than after it.
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final spent = DateFormat('yyyy-MM-dd').format(tomorrow);
+    await pumpLogTime(tester,
+        client: harvestMock(entries: [
+          {
+            'id': 9,
+            'spent_date': spent,
+            'hours': 1.5,
+            'project': {'id': 1, 'name': 'Northwind Retail'},
+            'task': {'id': 2, 'name': 'Development'},
+          }
+        ]),
+        loadWeekOf: tomorrow);
+    await tester.tap(find.text('Tomorrow'));
+    await tester.tap(find.text('Start & End'));
+    await tester.pumpAndSettle();
+    expect(find.text('08:30'), findsOneWidget);
+    expect(find.text('09:30'), findsOneWidget);
+    expect(find.text('work day start'), findsOneWidget);
   });
 
   testWidgets('opens on a date handed over from Recent', (tester) async {

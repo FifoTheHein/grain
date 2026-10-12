@@ -150,6 +150,24 @@ void main() {
       expect(d.startSource, StartSource.loggedTotal);
     });
 
+    test('a future day starts at the work-day start whatever it holds', () {
+      final d = startEndDefaults(
+        [
+          entry(hours: 1.5),
+          entry(id: 2, started: '13:00', ended: '15:15'),
+        ],
+        workDayStart: workDay,
+        isToday: false,
+        isFuture: true,
+        nowMinutes: at(16, 0),
+      );
+      expect(d.start, workDay);
+      expect(d.end, workDay + 60);
+      expect(d.startSource, StartSource.workDayStart);
+      expect(d.after, isNull);
+      expect(d.endIsNow, isFalse);
+    });
+
     test('on today a start at or past now pulls back an hour', () {
       final d = startEndDefaults([],
           workDayStart: workDay, isToday: true, nowMinutes: at(8, 0));

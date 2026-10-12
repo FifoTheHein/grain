@@ -171,6 +171,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       entries.entriesOn(_selectedDate),
       workDayStart: workDayStart.hour * 60 + workDayStart.minute,
       isToday: _isToday,
+      isFuture: _isFuture,
       nowMinutes: _nowMinutes(),
     );
   }

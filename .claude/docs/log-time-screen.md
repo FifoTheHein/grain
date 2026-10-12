@@ -81,9 +81,10 @@ while one runs, tooltip naming the project holding it.
   through `HomeNavigation`.
 - **Logging ahead** (a date after today): an "UPCOMING · Logging ahead.
   Timers only run for today." line under the chips, no gap chip, and the ▶
-  disabled with that tooltip. Start & End default as on any other day that
-  isn't today — after what the day already holds, so the work-day start to an
-  hour later on an empty one. Harvest takes a future `spent_date` as-is; the
+  disabled with that tooltip. Start & End always default to the work-day
+  start and an hour later (`startEndDefaults(isFuture: true)`), whatever the
+  day already holds — time logged ahead is planned, not a record of when work
+  happened. Harvest takes a future `spent_date` as-is; the
   create path needs nothing special.
 - The Duration / Start & End choice persists in `log_time_start_end`.
 - A `#123` or `AB#123` in the notes (`workItemIdFromTitle` from `meeting.dart`)

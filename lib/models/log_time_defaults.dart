@@ -114,12 +114,25 @@ const int _lastMinute = 23 * 60 + 59;
 /// End is [nowMinutes] when [isToday] and start + 1h otherwise. On today a
 /// start already at or past now is pulled back an hour, so the defaults are
 /// never an end-before-start error waiting to happen.
+///
+/// A day ahead ([isFuture]) always starts at [workDayStart], whatever it
+/// already holds: time logged ahead is planned, not a record of when the
+/// day's work happened.
 StartEndDefaults startEndDefaults(
   Iterable<TimeEntry> entries, {
   required int workDayStart,
   required bool isToday,
   required int nowMinutes,
+  bool isFuture = false,
 }) {
+  if (isFuture) {
+    final start = workDayStart.clamp(0, _lastMinute);
+    return StartEndDefaults(
+      start: start,
+      end: (start + 60).clamp(0, _lastMinute),
+      startSource: StartSource.workDayStart,
+    );
+  }
   final last = lastTimedEntry(entries);
   int start;
   StartSource source;
