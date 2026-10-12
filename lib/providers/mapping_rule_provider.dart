@@ -7,8 +7,14 @@ import '../models/mapping_rule.dart';
 /// Stores the work item → Harvest project/task mapping rules and resolves a
 /// work item against them. Rules live in localStorage like every other setting.
 class MappingRuleProvider extends ChangeNotifier {
-  static const _rulesKey = 'mapping_rules_v1';
-  static const _enabledKey = 'mapping_rules_enabled';
+  final String _rulesKey;
+  final String _enabledKey;
+
+  MappingRuleProvider({
+    String rulesKey = 'mapping_rules_v1',
+    String enabledKey = 'mapping_rules_enabled',
+  })  : _rulesKey = rulesKey,
+        _enabledKey = enabledKey;
 
   final List<MappingRule> _rules = [];
   bool _autoApply = true;
@@ -48,6 +54,11 @@ class MappingRuleProvider extends ChangeNotifier {
   /// rule can be tested while auto-apply is switched off.
   MappingMatch? matchIgnoringToggle(AdoWorkItem item) =>
       resolveMapping(_rules, item.matchContext);
+
+  /// Resolves an arbitrary [context] — how meeting rules match a calendar
+  /// event rather than a work item. Respects [autoApply].
+  MappingMatch? matchContext(MatchContext context) =>
+      _autoApply ? resolveMapping(_rules, context) : null;
 
   Future<void> setAutoApply(bool value) async {
     _autoApply = value;

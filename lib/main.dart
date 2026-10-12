@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/ado_instance_provider.dart';
 import 'providers/assignment_provider.dart';
+import 'providers/calendar_import_provider.dart';
 import 'services/ado_service.dart';
 import 'providers/time_entry_provider.dart';
 import 'providers/mapping_rule_provider.dart';
+import 'providers/meeting_rule_provider.dart';
 import 'providers/project_category_provider.dart';
 import 'providers/quick_template_provider.dart';
 import 'providers/theme_mode_provider.dart';
@@ -46,6 +48,23 @@ class HarvestApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => MappingRuleProvider()..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MeetingRuleProvider()..load(),
+        ),
+        // Not lazy: it listens for entry refreshes to auto-log meetings, so it
+        // has to exist before anyone opens the screen that shows it.
+        ChangeNotifierProvider(
+          lazy: false,
+          create: (context) => CalendarImportProvider(
+            harvest: service,
+            entries: context.read<TimeEntryProvider>(),
+            ado: context.read<AdoService>(),
+            adoInstances: context.read<AdoInstanceProvider>(),
+            assignments: context.read<AssignmentProvider>(),
+            workItemRules: context.read<MappingRuleProvider>(),
+            meetingRules: context.read<MeetingRuleProvider>(),
+          )..load(),
         ),
         ChangeNotifierProvider(
           create: (_) => QuickTemplateProvider()..load(),

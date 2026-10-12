@@ -284,6 +284,27 @@ class AdoService extends ChangeNotifier {
     return fetchProjectGuid(instance);
   }
 
+  /// The Harvest external reference for a work item, and the note prefix that
+  /// goes with it (`Transport Azure DevOps Task #123`). Shared by Log Time and
+  /// the meeting import so both link work items the same way. Falls back to
+  /// the bare id when no GUID is known, as Harvest still accepts that.
+  Future<({ExternalReference ref, String notePrefix})> workItemReference(
+      AdoInstance instance, String workItemId) async {
+    final projectGuid = await getHarvestConnectionGuid(instance);
+    final workItemType =
+        getCached(instance.label, workItemId)?.workItemType ?? 'Work Item';
+    final refId = projectGuid != null
+        ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
+        : workItemId;
+    return (
+      ref: ExternalReference(
+        id: refId,
+        permalink: instance.permalinkFor(workItemId),
+      ),
+      notePrefix: '${instance.label} Azure DevOps $workItemType #$workItemId',
+    );
+  }
+
   static String parseWorkItemId(String refId) {
     // Composite format: AzureDevOps_{guid}_{type}_{numericId}
     // Note: type can contain spaces, so we need to extract the numeric ID from the end

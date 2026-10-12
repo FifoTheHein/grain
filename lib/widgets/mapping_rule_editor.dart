@@ -2,20 +2,118 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/mapping_rule.dart';
+import '../models/meeting.dart';
 import '../models/project_assignment.dart';
 import '../providers/assignment_provider.dart';
 import '../providers/mapping_rule_provider.dart';
+import '../providers/meeting_rule_provider.dart';
 import '../theme/harvest_tokens.dart';
+
+/// What a rule list edits: the field set, its wording, and which provider
+/// holds the rules. Work item rules and meeting rules share every widget here.
+class RuleKind {
+  final List<String> fields;
+  final String Function(String field) labelFor;
+  final MappingCondition firstCondition;
+  final MappingCondition addedCondition;
+  final String autoApplyTitle;
+  final String autoApplySubtitle;
+  final String emptyText;
+  final String matchesEverything;
+  final String newRuleTitle;
+  final String nameHint;
+  final String noteHint;
+  final String notePlaceholders;
+  final MappingRuleProvider Function(BuildContext context, bool listen)
+      _provider;
+
+  const RuleKind._({
+    required this.fields,
+    required this.labelFor,
+    required this.firstCondition,
+    required this.addedCondition,
+    required this.autoApplyTitle,
+    required this.autoApplySubtitle,
+    required this.emptyText,
+    required this.matchesEverything,
+    required this.newRuleTitle,
+    required this.nameHint,
+    required this.noteHint,
+    required this.notePlaceholders,
+    required MappingRuleProvider Function(BuildContext, bool) provider,
+  }) : _provider = provider;
+
+  MappingRuleProvider watch(BuildContext context) => _provider(context, true);
+  MappingRuleProvider read(BuildContext context) => _provider(context, false);
+
+  static final workItem = RuleKind._(
+    fields: WorkItemField.all,
+    labelFor: WorkItemField.labelFor,
+    firstCondition: const MappingCondition(
+      field: WorkItemField.areaPath,
+      operator: ConditionOperator.underPath,
+      value: '',
+    ),
+    addedCondition: const MappingCondition(
+      field: WorkItemField.workItemType,
+      operator: ConditionOperator.equals,
+      value: '',
+    ),
+    autoApplyTitle: 'Auto-select project & task from work items',
+    autoApplySubtitle: 'Applies the first matching rule when a work item loads',
+    emptyText: 'No rules yet. Add one to have Grain pick the Harvest project '
+        'and task for a work item automatically.',
+    matchesEverything: 'Matches every work item',
+    newRuleTitle: 'New mapping rule',
+    nameHint: 'Platform team bugs',
+    noteHint: 'Investigating {type} {id}: {title}',
+    notePlaceholders: 'Placeholders: {id} {title} {type} {state} {project} '
+        '{areaPath} {iterationPath} {assignedTo}',
+    provider: (c, listen) =>
+        Provider.of<MappingRuleProvider>(c, listen: listen),
+  );
+
+  static final meeting = RuleKind._(
+    fields: MeetingField.all,
+    labelFor: MeetingField.labelFor,
+    firstCondition: const MappingCondition(
+      field: MeetingField.title,
+      operator: ConditionOperator.contains,
+      value: '',
+    ),
+    addedCondition: const MappingCondition(
+      field: MeetingField.location,
+      operator: ConditionOperator.contains,
+      value: '',
+    ),
+    autoApplyTitle: 'Use meeting rules',
+    autoApplySubtitle:
+        'Off sends every meeting to the default project, or leaves it pending',
+    emptyText: 'No meeting rules yet. Add one to send, say, every '
+        '"Daily Scrum" to its client project instead of the default.',
+    matchesEverything: 'Matches every meeting',
+    newRuleTitle: 'New meeting rule',
+    nameHint: 'TFN scrums',
+    noteHint: 'Meeting: {title}',
+    notePlaceholders:
+        'Placeholders: {title} {location} {organizer}. Empty uses the subject.',
+    provider: (c, listen) =>
+        Provider.of<MeetingRuleProvider>(c, listen: listen),
+  );
+}
 
 /// Settings list of mapping rules: an auto-apply switch, then the rules in
 /// evaluation order. Dragging a row changes which rule wins a tie.
 class MappingRuleList extends StatelessWidget {
-  const MappingRuleList({super.key});
+  final RuleKind kind;
+
+  MappingRuleList({super.key, RuleKind? kind})
+      : kind = kind ?? RuleKind.workItem;
 
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
-    final provider = context.watch<MappingRuleProvider>();
+    final provider = kind.watch(context);
     final projects = context.watch<AssignmentProvider>().projects;
     final rules = provider.rules;
 
@@ -24,11 +122,9 @@ class MappingRuleList extends StatelessWidget {
       children: [
         SwitchListTile(
           value: provider.autoApply,
-          onChanged: (v) =>
-              context.read<MappingRuleProvider>().setAutoApply(v),
-          title: const Text('Auto-select project & task from work items'),
-          subtitle: const Text(
-              'Applies the first matching rule when a work item loads'),
+          onChanged: (v) => kind.read(context).setAutoApply(v),
+          title: Text(kind.autoApplyTitle),
+          subtitle: Text(kind.autoApplySubtitle),
           contentPadding: EdgeInsets.zero,
           dense: true,
           activeThumbColor: palette.brand,
@@ -37,8 +133,7 @@ class MappingRuleList extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
-              'No rules yet. Add one to have Grain pick the Harvest project and '
-              'task for a work item automatically.',
+              kind.emptyText,
               style: TextStyle(fontSize: 12, color: palette.text3),
             ),
           )
@@ -51,9 +146,8 @@ class MappingRuleList extends StatelessWidget {
             // onReorderItem replaces this on Flutter > 3.41, which is newer
             // than the SDK floor in pubspec.yaml — keep the compatible one.
             // ignore: deprecated_member_use
-            onReorder: (oldIndex, newIndex) => context
-                .read<MappingRuleProvider>()
-                .reorder(oldIndex, newIndex),
+            onReorder: (oldIndex, newIndex) =>
+                kind.read(context).reorder(oldIndex, newIndex),
             itemBuilder: (context, index) {
               final rule = rules[index];
               return _MappingRuleRow(
@@ -61,6 +155,7 @@ class MappingRuleList extends StatelessWidget {
                 index: index,
                 rule: rule,
                 projects: projects,
+                kind: kind,
               );
             },
           ),
@@ -81,12 +176,14 @@ class _MappingRuleRow extends StatelessWidget {
   final int index;
   final MappingRule rule;
   final List<HarvestProject> projects;
+  final RuleKind kind;
 
   const _MappingRuleRow({
     super.key,
     required this.index,
     required this.rule,
     required this.projects,
+    required this.kind,
   });
 
   @override
@@ -97,8 +194,10 @@ class _MappingRuleRow extends StatelessWidget {
     final targetMissing = projects.isNotEmpty && (project == null || task == null);
 
     final conditionSummary = rule.conditions.isEmpty
-        ? 'Matches every work item'
-        : rule.conditions.map((c) => c.summary).join('  ·  ');
+        ? kind.matchesEverything
+        : rule.conditions
+            .map((c) => c.summaryWith(kind.labelFor))
+            .join('  ·  ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -165,15 +264,15 @@ class _MappingRuleRow extends StatelessWidget {
           ),
           Switch(
             value: rule.enabled,
-            onChanged: (v) =>
-                context.read<MappingRuleProvider>().setEnabled(rule.id, v),
+            onChanged: (v) => kind.read(context).setEnabled(rule.id, v),
             activeThumbColor: palette.brand,
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),
             tooltip: 'Edit rule',
             visualDensity: VisualDensity.compact,
-            onPressed: () => showMappingRuleDialog(context, existing: rule),
+            onPressed: () =>
+                showMappingRuleDialog(context, existing: rule, kind: kind),
           ),
         ],
       ),
@@ -181,11 +280,14 @@ class _MappingRuleRow extends StatelessWidget {
   }
 }
 
-/// Opens the add/edit dialog. Pass [existing] to edit a rule in place.
+/// Opens the add/edit dialog. Pass [existing] to edit a rule in place, and
+/// [kind] for a list other than the work item rules.
 Future<void> showMappingRuleDialog(
   BuildContext context, {
   MappingRule? existing,
+  RuleKind? kind,
 }) async {
+  final ruleKind = kind ?? RuleKind.workItem;
   final projects = context.read<AssignmentProvider>().projects;
   if (projects.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -195,17 +297,30 @@ Future<void> showMappingRuleDialog(
     );
     return;
   }
+  final provider = ruleKind.read(context);
   await showDialog<void>(
     context: context,
-    builder: (_) => _MappingRuleDialog(existing: existing, projects: projects),
+    builder: (_) => _MappingRuleDialog(
+      existing: existing,
+      projects: projects,
+      kind: ruleKind,
+      provider: provider,
+    ),
   );
 }
 
 class _MappingRuleDialog extends StatefulWidget {
   final MappingRule? existing;
   final List<HarvestProject> projects;
+  final RuleKind kind;
+  final MappingRuleProvider provider;
 
-  const _MappingRuleDialog({required this.existing, required this.projects});
+  const _MappingRuleDialog({
+    required this.existing,
+    required this.projects,
+    required this.kind,
+    required this.provider,
+  });
 
   @override
   State<_MappingRuleDialog> createState() => _MappingRuleDialogState();
@@ -225,14 +340,8 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
     final existing = widget.existing;
     _nameController = TextEditingController(text: existing?.name ?? '');
     _noteController = TextEditingController(text: existing?.noteTemplate ?? '');
-    _conditions = List.of(existing?.conditions ??
-        const [
-          MappingCondition(
-            field: WorkItemField.areaPath,
-            operator: ConditionOperator.underPath,
-            value: '',
-          ),
-        ]);
+    _conditions =
+        List.of(existing?.conditions ?? [widget.kind.firstCondition]);
 
     final fallback = widget.projects.first;
     final project = existing == null
@@ -262,7 +371,7 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
     if (_taskId == null) return 'This project has no tasks assigned';
     for (final c in _conditions) {
       if (c.value.trim().isEmpty) {
-        return '"${WorkItemField.labelFor(c.field)}" has no value';
+        return '"${widget.kind.labelFor(c.field)}" has no value';
       }
       if (c.operator == ConditionOperator.regex) {
         try {
@@ -281,7 +390,7 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
       setState(() => _error = error);
       return;
     }
-    final provider = context.read<MappingRuleProvider>();
+    final provider = widget.provider;
     final navigator = Navigator.of(context);
     final note = _noteController.text.trim();
     final existing = widget.existing;
@@ -309,7 +418,7 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
   Future<void> _delete() async {
     final existing = widget.existing;
     if (existing == null) return;
-    final provider = context.read<MappingRuleProvider>();
+    final provider = widget.provider;
     final navigator = Navigator.of(context);
     await provider.delete(existing.id);
     navigator.pop();
@@ -319,9 +428,10 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
     final tasks = _project.tasks;
+    final kind = widget.kind;
 
     return AlertDialog(
-      title: Text(widget.existing == null ? 'New mapping rule' : 'Edit rule'),
+      title: Text(widget.existing == null ? kind.newRuleTitle : 'Edit rule'),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -331,10 +441,10 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
             children: [
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Rule name',
-                  border: OutlineInputBorder(),
-                  hintText: 'Platform team bugs',
+                  border: const OutlineInputBorder(),
+                  hintText: kind.nameHint,
                 ),
                 textCapitalization: TextCapitalization.sentences,
               ),
@@ -350,7 +460,8 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'No conditions — this rule matches every work item.',
+                    'No conditions — this rule '
+                    '${kind.matchesEverything.toLowerCase()}.',
                     style: TextStyle(fontSize: 11, color: HarvestTokens.warn),
                   ),
                 ),
@@ -358,6 +469,7 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
                 _ConditionRow(
                   key: ValueKey(i),
                   condition: _conditions[i],
+                  kind: kind,
                   onChanged: (c) => setState(() => _conditions[i] = c),
                   onRemove: () => setState(() => _conditions.removeAt(i)),
                 ),
@@ -366,13 +478,8 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
                 child: TextButton.icon(
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Add condition'),
-                  onPressed: () => setState(() => _conditions.add(
-                        const MappingCondition(
-                          field: WorkItemField.workItemType,
-                          operator: ConditionOperator.equals,
-                          value: '',
-                        ),
-                      )),
+                  onPressed: () =>
+                      setState(() => _conditions.add(kind.addedCondition)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -428,13 +535,11 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
 
               TextField(
                 controller: _noteController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Note template (optional)',
-                  border: OutlineInputBorder(),
-                  hintText: 'Investigating {type} {id}: {title}',
-                  helperText:
-                      'Placeholders: {id} {title} {type} {state} {project} '
-                      '{areaPath} {iterationPath} {assignedTo}',
+                  border: const OutlineInputBorder(),
+                  hintText: kind.noteHint,
+                  helperText: kind.notePlaceholders,
                   helperMaxLines: 2,
                 ),
                 maxLines: 2,
@@ -470,12 +575,14 @@ class _MappingRuleDialogState extends State<_MappingRuleDialog> {
 
 class _ConditionRow extends StatelessWidget {
   final MappingCondition condition;
+  final RuleKind kind;
   final ValueChanged<MappingCondition> onChanged;
   final VoidCallback onRemove;
 
   const _ConditionRow({
     super.key,
     required this.condition,
+    required this.kind,
     required this.onChanged,
     required this.onRemove,
   });
@@ -492,13 +599,17 @@ class _ConditionRow extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: DropdownButtonFormField<String>(
-                  initialValue: condition.field,
+                  // A field outside this kind's set has no menu item and
+                  // would assert — show the first field instead.
+                  initialValue: kind.fields.contains(condition.field)
+                      ? condition.field
+                      : kind.fields.first,
                   isExpanded: true,
                   decoration: _denseDecoration('Field'),
-                  items: WorkItemField.all
+                  items: kind.fields
                       .map((f) => DropdownMenuItem(
                             value: f,
-                            child: Text(WorkItemField.labelFor(f),
+                            child: Text(kind.labelFor(f),
                                 style: const TextStyle(fontSize: 13),
                                 overflow: TextOverflow.ellipsis),
                           ))

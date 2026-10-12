@@ -14,6 +14,7 @@ import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
 import '../theme/theme_palettes.dart';
+import '../widgets/calendar_import_settings.dart';
 import '../widgets/mapping_rule_editor.dart';
 import '../widgets/quick_template_editor.dart';
 
@@ -1268,7 +1269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const MappingRuleList(),
+          MappingRuleList(),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),
@@ -1282,6 +1283,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           const QuickTemplateList(),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          _SectionHeader(title: 'Calendar Import'),
+          const SizedBox(height: 8),
+          const CalendarImportSettings(),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),
