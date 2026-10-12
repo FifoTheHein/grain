@@ -3,6 +3,21 @@
 <title>Grain — Edit Entry</title>
 <link rel="stylesheet" href="grain.css">
 <script src="icons.js"></script>
+<style>
+  /* The same stepper as Log Time (log-time.html). */
+  .stepper { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .sbtn { width: 52px; height: 52px; border-radius: 26px; border: 1px solid var(--borderStrong);
+          display: grid; place-items: center; font-size: 26px; font-weight: 300; color: var(--text); flex: 0 0 52px; }
+  .dur { flex: 1; text-align: center; border: 1px solid var(--borderStrong); border-radius: 12px; padding: 8px 0 7px; }
+  .dur .big { font-size: 30px; font-weight: 700; letter-spacing: -.5px; }
+  .dur .big small { font-size: 18px; font-weight: 600; color: var(--text2); margin: 0 2px 0 1px; }
+  .dur .sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .qchips { display: flex; gap: 6px; margin-top: 12px; margin-bottom: 16px; }
+  .q { padding: 7px 0; flex: 1; text-align: center; border-radius: 16px; border: 1px solid var(--borderStrong); font-size: 13px; color: var(--text2); }
+  .q.on { background: var(--brand); border-color: var(--brand); color: var(--onBrand); font-weight: 600; }
+  .accel { display: flex; justify-content: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--text3); align-items: center; }
+  .accel span { padding: 1px 7px; border-radius: 10px; background: var(--surface2); color: var(--text2); }
+</style>
 <body class="grain-dark">
 <!-- Edit Time opens as its own route, so there is no navigation rail here. -->
 <div class="shell">
@@ -17,9 +32,9 @@
     <div class="body"><div class="scroll"><div class="wrap" style="max-width:700px">
 
       <div class="ctxbanner">
-        <span class="pill running" style="width:38px;height:38px;flex:0 0 38px;font-size:11px">5m<span class="badge" style="width:13px;height:13px"><svg class="i i-14" style="stroke-width:0"><use href="#ic-play-solid"/></svg></span></span>
+        <span class="pill" style="width:38px;height:38px;flex:0 0 38px;font-size:10px;line-height:1.05;text-align:center">1h<br>18m</span>
         <div>
-          <div class="lab">TIMER RUNNING</div>
+          <div class="lab">EDITING ENTRY</div>
           <div class="id">#1234567890 · Fri 21 Aug 2026</div>
         </div>
       </div>
@@ -28,14 +43,13 @@
       <div class="field"><span class="lab">Task</span><span class="val">Development</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
       <div class="field"><span class="lab">Date</span><span class="val">Fri, 21 Aug 2026</span><svg class="i i-22" style="color:var(--brand)"><use href="#ic-calendar"/></svg></div>
 
-      <div class="runpanel">
-        <div class="t">
-          <div class="lab">Timing now</div>
-          <div class="big">0:04:47</div>
-          <div class="hint">Stop the timer to edit the duration. Everything else can be changed while it runs.</div>
-        </div>
-        <span class="stop"><svg class="i i-16"><use href="#ic-stop-solid"/></svg>Stop</span>
+      <div class="stepper">
+        <span class="sbtn">−</span>
+        <div class="dur"><div class="big">1<small>h</small> 18<small>m</small></div><div class="sub">1.3 hours</div></div>
+        <span class="sbtn">+</span>
       </div>
+      <div class="accel">tap ±1 min · hold <span>1</span>→<span>5</span>→<span>15</span></div>
+      <div class="qchips"><span class="q">15m</span><span class="q">30m</span><span class="q">45m</span><span class="q">1h</span><span class="q">1½h</span><span class="q">2h</span></div>
 
       <div class="field tall"><span class="lab">Notes</span><span class="val">Northwind Azure DevOps Task #2233</span></div>
 

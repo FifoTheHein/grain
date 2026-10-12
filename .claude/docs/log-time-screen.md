@@ -9,8 +9,8 @@ Pinned below the scroll area, above the bottom nav (or at the foot of the wide
 layout's content column): `LogActionBar`.
 
 **Duration (`DurationStepper`, `lib/widgets/duration_stepper.dart`)** — a
-controlled widget (`minutes` in, `onChanged` out) so Edit Time can adopt it
-without restructuring.
+controlled widget (`minutes` in, `onChanged` out), shared with Edit Time (see
+below).
 
 - `− [1h 45m] +`, decimal hours underneath, and "tap ±1 min · hold 1 → 5 →
   15" under that. A tap moves 1 minute. Holding repeats (`HoldToRepeat`, a
@@ -95,11 +95,23 @@ while one runs, tooltip naming the project holding it.
   ticking the box with one selects it.
 
 Unchanged: quick templates, the mapping-rule banner and Undo, the work item
-picker and preview, the Completed Work push. Edit Time still uses its own
-hours/minutes inputs.
+picker and preview, the Completed Work push.
+
+**Edit Time uses the same stepper.** `EditTimeScreen` owns `_durationMinutes`,
+seeded from the entry's hours rounded to the minute (the old 5-minute
+dropdowns rounded 1h 18m to 1h 20m). Saving with the minutes untouched sends
+the entry's own `hours` back rather than the rounded value, so a notes-only
+edit of a 1.33h entry neither rounds it nor pushes a sliver of a minute to ADO
+Completed Work. Zero is refused with the same "Duration must be greater than
+0" after a tap on Update. Edit Time stays duration-only: no Start & End
+toggle, no gap chip, no pinned action bar. While a timer runs the stepper
+gives way to `_RunningPanel` (see `timers.md`).
 
 **Tests** — `test/duration_stepper_test.dart` (stepper and action bar),
 `test/log_time_screen_test.dart` (the screen behind a `MockClient`: disabled
 bar and error, chips, date word, Start & End persistence and nudges, Tomorrow
 and its disabled timer, Start & End on a future day, `initialDate`, the Link
-card with a single instance).
+card with a single instance). `test/edit_time_screen_test.dart` covers Edit
+Time's stepper: seeded from the entry, ± and a chip change it, Update sends
+the new hours (or the untouched original), zero is refused, and a running
+entry shows the panel and sends no hours.

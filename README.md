@@ -75,9 +75,14 @@ rules that place each meeting. On the web the feed controls give way to an
 
 ### Recent Entries
 
+![Edit Time](docs/screenshots/edit-time.png)
+
+Edit Time uses Log Time's duration stepper, opening on the entry's hours to the
+minute.
+
 ![Edit Time with a running timer](docs/screenshots/edit-time-timer.png)
 
-Edit Time while the timer runs: the duration inputs give way to the live total
+Edit Time while the timer runs: the duration stepper gives way to the live total
 and a Stop, everything else stays editable, and Completed Work can be pushed to
 ADO by hand.
 
