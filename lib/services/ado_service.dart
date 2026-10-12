@@ -413,7 +413,7 @@ class AdoService extends ChangeNotifier {
   ) async {
     for (final entry in entries) {
       final ref = entry.externalReference;
-      if (ref == null) continue;
+      if (ref == null || ref.isAdoWorkItem != true) continue;
       final rawId = ref.id as String;
       final workItemId = parseWorkItemId(rawId);
       final permalink = ref.permalink as String? ?? '';
