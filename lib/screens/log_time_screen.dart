@@ -312,21 +312,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       return (extRef: null, notes: userNotes.isEmpty ? null : userNotes);
     }
 
-    final projectGuid = await adoService.getHarvestConnectionGuid(instance);
-    final workItemType =
-        adoService.getCached(instance.label, workItemId)?.workItemType ??
-            'Work Item';
-    final refId = projectGuid != null
-        ? 'AzureDevOps_${projectGuid}_${workItemType}_$workItemId'
-        : workItemId;
-
-    final prefix =
-        '${instance.label} Azure DevOps $workItemType #$workItemId';
+    final link = await adoService.workItemReference(instance, workItemId);
+    final prefix = link.notePrefix;
     return (
-      extRef: ExternalReference(
-        id: refId,
-        permalink: instance.permalinkFor(workItemId),
-      ),
+      extRef: link.ref,
       notes: userNotes.isEmpty ? prefix : '$prefix - $userNotes',
     );
   }

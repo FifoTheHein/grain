@@ -3,11 +3,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/ado_instance_provider.dart';
+import '../providers/calendar_import_provider.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/pending_meetings_sheet.dart';
 import '../widgets/time_entry_card.dart';
 import '../widgets/weekly_progress_ring.dart';
 
@@ -73,6 +75,7 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<TimeEntryProvider>();
     final isToday = provider.isSelectedDateToday;
+    final pendingMeetings = context.watch<CalendarImportProvider>().pending.length;
 
     final sortedEntries = [...provider.entries]..sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
 
@@ -80,6 +83,11 @@ class _RecentEntriesScreenState extends State<RecentEntriesScreen> {
       children: [
         if (provider.showNewDayBanner)
           _NewDayBanner(onGoToToday: () => provider.loadRecentEntries(date: DateTime.now())),
+        if (pendingMeetings > 0)
+          _PendingMeetingsBanner(
+            count: pendingMeetings,
+            onReview: () => showPendingMeetingsSheet(context),
+          ),
         // Date picker header
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
@@ -571,6 +579,49 @@ class _NewDayBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Shown while the calendar import holds meetings no rule or default placed.
+class _PendingMeetingsBanner extends StatelessWidget {
+  final int count;
+  final VoidCallback onReview;
+  const _PendingMeetingsBanner({required this.count, required this.onReview});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      decoration: BoxDecoration(
+        color: palette.brandTint,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: palette.brand.withValues(alpha: 0.40)),
+      ),
+      child: InkWell(
+        onTap: onReview,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.event_note_outlined, size: 16, color: palette.brand),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$count meeting${count == 1 ? '' : 's'} need a project',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: palette.text),
+                ),
+              ),
+              Text(
+                'Review',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: palette.brand),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

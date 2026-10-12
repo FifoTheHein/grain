@@ -136,9 +136,12 @@ class MappingCondition {
       );
 
   /// Human-readable summary, e.g. `Area path is under Contoso\Web`.
-  String get summary {
+  String get summary => summaryWith(WorkItemField.labelFor);
+
+  /// [summary] with field names from another field set.
+  String summaryWith(String Function(String field) labelFor) {
     final not = negate ? 'not ' : '';
-    return '${WorkItemField.labelFor(field)} $not${operator.label} "$value"';
+    return '${labelFor(field)} $not${operator.label} "$value"';
   }
 }
 
@@ -314,8 +317,9 @@ MappingMatch? resolveMapping(
 
 /// Expands `{id}`, `{title}`, `{type}`, `{state}`, `{project}`, `{areaPath}`,
 /// `{iterationPath}` and `{assignedTo}` in a rule's note template using
-/// [context]. Unknown placeholders are left untouched so a stray brace in a
-/// note never silently disappears.
+/// [context], plus any other `{key}` present in it — which is how meeting
+/// rules get `{location}` and `{organizer}`. Unknown placeholders are left
+/// untouched so a stray brace in a note never silently disappears.
 String renderNoteTemplate(String template, MatchContext context) {
   const aliases = {
     'id': WorkItemField.id,
@@ -328,9 +332,8 @@ String renderNoteTemplate(String template, MatchContext context) {
     'assignedTo': WorkItemField.assignedTo,
   };
   return template.replaceAllMapped(RegExp(r'\{(\w+)\}'), (m) {
-    final field = aliases[m.group(1)];
-    if (field == null) return m.group(0)!;
-    final value = context[field];
+    final key = m.group(1)!;
+    final value = context[aliases[key] ?? key];
     if (value == null) return m.group(0)!;
     if (value is List) return value.whereType<String>().join(', ');
     return value.toString();
