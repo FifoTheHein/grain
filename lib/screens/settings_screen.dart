@@ -1261,7 +1261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(),
           const SizedBox(height: 8),
           _SectionHeader(
-            title: 'Work Item Mapping Rules',
+            title: 'Work Item Rules',
             action: TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Add'),
@@ -1289,6 +1289,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SectionHeader(title: 'Calendar Import'),
           const SizedBox(height: 8),
           const CalendarImportSettings(),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          _SectionHeader(
+            title: 'Meeting Rules',
+            action: TextButton.icon(
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+              onPressed: () =>
+                  showMappingRuleDialog(context, kind: RuleKind.meeting),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pick the project for an imported calendar meeting. First match '
+            'wins; then a work item number in the title (#123) is tried '
+            'through the work item rules, then the Calendar Import default.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          MappingRuleList(kind: RuleKind.meeting),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 8),

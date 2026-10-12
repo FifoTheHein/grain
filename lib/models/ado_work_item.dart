@@ -73,5 +73,14 @@ class AdoWorkItem {
         WorkItemField.iterationPath: iterationPath,
         WorkItemField.assignedTo: assignedToName,
         WorkItemField.tags: tags,
+        WorkItemField.anyText: [
+          title,
+          ...tags,
+          ?areaPath,
+          ?iterationPath,
+          ?project,
+          ?workItemType,
+          state,
+        ],
       };
 }

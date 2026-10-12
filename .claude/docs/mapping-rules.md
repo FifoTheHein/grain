@@ -1,4 +1,8 @@
-# Work Item Mapping Rules
+# Work Item Rules
+
+(Settings calls these **Work Item Rules**. **Meeting Rules**, their sibling
+section for imported calendar meetings, share the model and editor; see
+`calendar-import.md`.)
 
 Auto-selects the Harvest project/task from the linked ADO work item, so a
 recurring "this area path always goes to that project" decision is made once in
@@ -8,8 +12,13 @@ Settings instead of on every entry.
 in `test/mapping_rule_test.dart`.
 
 - `MappingCondition { field, operator, value, negate }`. `field` is one of the
-  `WorkItemField` constants (`project`, `iterationPath`, `areaPath`,
-  `workItemType`, `state`, `tags`, `title`, `assignedTo`, `id`).
+  `WorkItemField` constants (`anyText`, `project`, `iterationPath`,
+  `areaPath`, `workItemType`, `state`, `tags`, `title`, `assignedTo`, `id`).
+- **Any text** (`kAnyTextField`, shared with meeting rules) is a list of every
+  text the item carries: title, tags, paths, project, type and state. A single
+  `contains` finds a word wherever it appears, and the matcher needs nothing
+  special because a list matches when any element does. Tested in
+  `test/rule_any_text_test.dart`.
 - `ConditionOperator`: `equals`, `contains`, `startsWith`, `regex`, `inList`
   (comma-separated), `underPath` (segment-wise path prefix, `\` or `/`). All
   comparisons are case-insensitive and trimmed; a malformed regex never matches.

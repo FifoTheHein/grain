@@ -119,7 +119,7 @@ templates that back the Log Time chips.
 - **Project Categories** — view and customise the colour and short code assigned to each project; 12-colour palette with an edit dialog
 - **Weekly Goal** — set your target hours per week (used by the progress ring and emphasized strip)
 - **Work Day** — configure start time (default 08:30), end time (default 17:00), and break hours (default 0.5 h); the daily goal is derived automatically as `(end − start) − break`; also sets the gap threshold Insights reports against (default 15 min)
-- **Work Item Mapping Rules** — named, prioritised rules that pick the Harvest project and task from a linked work item. Conditions match on project, area or iteration path, type, state, tags, title, assignee or id, with `equals` / `contains` / `starts with` / `regex` / `is one of` / `is under path` operators, each negatable; conditions are ANDed and the first matching enabled rule wins. An optional note template prefills the notes field, expanding `{id} {title} {type} {state}` and friends. Drag to reorder, toggle rules individually, or switch auto-apply off entirely
+- **Work Item Rules** — named, prioritised rules that pick the Harvest project and task from a linked work item. Conditions match on any text, project, area or iteration path, type, state, tags, title, assignee or id, with `equals` / `contains` / `starts with` / `regex` / `is one of` / `is under path` operators, each negatable; conditions are ANDed and the first matching enabled rule wins. An optional note template prefills the notes field, expanding `{id} {title} {type} {state}` and friends. Drag to reorder, toggle rules individually, or switch auto-apply off entirely
 - **Quick Templates** — manage the Log Time chips: label, project, task, default notes, icon and colour, with a live preview and drag-to-reorder
 - **Background Refresh** — configure how often the app silently re-fetches the current week's entries
 - **Clear Cache & Refresh** — force-reloads time entries from the Harvest API
@@ -306,7 +306,7 @@ All settings persist in browser `localStorage`:
 | Break Hours              | Total break time per day (default 0.5 h); subtracted from the work day span to get the daily goal |
 | Report Gaps Of At Least  | Smallest uncovered stretch Insights lists as a gap (5 / 10 / 15 / 30 / 60 min; default 15 min)   |
 | Project Categories       | Customise the colour and short code badge for each project                                       |
-| Work Item Mapping Rules  | Rules that pick the Harvest project/task from a linked ADO work item; drag to reorder, toggle individually, or switch auto-apply off |
+| Work Item Rules          | Rules that pick the Harvest project/task from a linked ADO work item; drag to reorder, toggle individually, or switch auto-apply off |
 | Quick Templates          | One-tap Log Time presets — label, project, task, notes, icon and colour; drag to reorder          |
 | Background Refresh       | How often the app silently re-fetches the current week (5 / 15 / 30 / 60 min; default 15 min)  |
 | ADO Instances            | Add, edit, or remove Azure DevOps project URLs                                                   |
