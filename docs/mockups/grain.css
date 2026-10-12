@@ -397,6 +397,7 @@ svg { display: block; }
 .settings .group .chev { color: var(--text3); }
 .settings .group.on { background: var(--brandTint); }
 .settings .group.on .n, .settings .group.on .gi { color: var(--brand); }
+.settings .appver { text-align: center; font-size: 11px; color: var(--text3); padding: 12px 16px 8px; }
 .settings .gdiv { height: 1px; background: var(--divider); margin: 6px 16px; }
 .settings .page { flex: 1; min-width: 0; max-width: 760px; padding: 0 16px; }
 

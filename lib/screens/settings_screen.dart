@@ -11,6 +11,7 @@ import '../providers/theme_mode_provider.dart';
 import '../providers/theme_palette_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../theme/harvest_tokens.dart';
+import '../widgets/app_version_label.dart';
 import 'settings/account_settings.dart';
 import 'settings/ado_settings.dart';
 import 'settings/appearance_settings.dart';
@@ -138,6 +139,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: () => setState(() => _selected = group),
       ));
     }
+    // Under the list rather than on a page, so it is one glance away on a
+    // phone and always visible in the wide sidebar.
+    tiles.add(const AppVersionLabel());
     return tiles;
   }
 

@@ -137,6 +137,8 @@ Settings opens on a short list of groups, each with a one-line summary of where 
 - **Appearance** — theme mode, colour palette, and the colour and short code of each project (12-colour palette with an edit dialog)
 - **Maintenance** — **Clear cache & refresh** force-reloads entries; **Migrate ADO references** upgrades current-week entries from plain numeric external reference IDs to the native composite format, repairs wrong-GUID or corrupted IDs, and scans the past 28 days to learn the GUID; **Reset to defaults** restores credentials, the Log Time default, refresh interval and Completed Work, after asking first
 
+The installed version ("Grain 1.2.5 (build 8)") sits under the group list, so you can tell which release a phone or browser is running.
+
 ## Project Structure
 
 ```

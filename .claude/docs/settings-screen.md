@@ -12,6 +12,12 @@ this file) defines the order, titles, icons and the page each one builds.
 - **Wide:** the list is a 240 px sidebar beside the selected page, which
   defaults to Harvest account.
 
+The list ends with `AppVersionLabel` (`lib/widgets/app_version_label.dart`),
+"Grain 1.2.5 (build 8)" from `package_info_plus`: the Android package on a
+phone, the web build's `version.json` in a browser. Both come from
+`pubspec.yaml` at build time, so a version bump needs no other edit. It
+renders nothing until the lookup returns, or if it fails.
+
 Each list row shows a live one-line summary built in `_summaryFor` from the
 providers ("2 instances · 2 rules", "Auto-log on · 3 meeting rules"), so the
 list says where things stand without opening anything.
@@ -52,5 +58,5 @@ page-wide Save button any more.
    "this device" on Android.
 
 **Tests** — `test/widget_test.dart` pumps the screen with every provider it
-reads (Harvest and ADO behind a `MockClient`) and checks the list, opening and
+reads (Harvest and ADO behind a `MockClient`) and checks the list, the version line, opening and
 backing out of every group, the Reset confirmation, and the wide sidebar.
