@@ -16,7 +16,10 @@ The list ends with `AppVersionLabel` (`lib/widgets/app_version_label.dart`),
 "Grain 1.2.5 (build 8)" from `package_info_plus`: the Android package on a
 phone, the web build's `version.json` in a browser. Both come from
 `pubspec.yaml` at build time, so a version bump needs no other edit. It
-renders nothing until the lookup returns, or if it fails.
+renders nothing until the lookup returns, or if it fails. On Android the
+build number is the APK's versionCode, which `--split-per-abi` offsets by 1000
+per processor type (arm64-v8a's build 9 is 2009), so `formatAppVersion` drops
+the thousands there.
 
 Each list row shows a live one-line summary built in `_summaryFor` from the
 providers ("2 instances · 2 rules", "Auto-log on · 3 meeting rules"), so the
