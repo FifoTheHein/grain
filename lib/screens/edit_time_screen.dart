@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../models/duration_input.dart';
 import '../models/future_days.dart';
 import '../models/project_assignment.dart';
 import '../models/time_entry.dart';
@@ -14,6 +15,7 @@ import '../services/ado_service.dart';
 import '../theme/harvest_tokens.dart';
 import '../widgets/completed_work_sync.dart';
 import '../widgets/duration_pill.dart';
+import '../widgets/duration_stepper.dart';
 import '../widgets/project_task_selector.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/work_item_picker.dart';
@@ -30,12 +32,16 @@ class EditTimeScreen extends StatefulWidget {
 
 class _EditTimeScreenState extends State<EditTimeScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _hoursController = TextEditingController();
-  final _minutesController = TextEditingController();
   final _notesController = TextEditingController();
   final _workItemIdController = TextEditingController();
 
   late DateTime _selectedDate;
+
+  /// The duration in whole minutes, owned here and shown by [DurationStepper].
+  int _durationMinutes = 0;
+
+  /// The zero-duration error only shows once a save has been tried.
+  bool _submitAttempted = false;
   AdoInstance? _selectedAdoInstance;
   bool _hasAdoRef = false;
   Timer? _debounce;
@@ -63,14 +69,9 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
   void _prefillFromEntry() {
     final entry = widget.entry;
 
-    // Hours / Minutes
-    final totalMinutes = (entry.hours * 60).round();
-    final h = totalMinutes ~/ 60;
-    final m = totalMinutes % 60;
-    // Round minutes to nearest 5 to match the dropdown options
-    final mRounded = ((m / 5).round() * 5) % 60;
-    _hoursController.text = '$h';
-    _minutesController.text = '$mRounded';
+    // Duration, to the minute — the stepper steps by 1, so nothing is
+    // rounded away the way the old 5-minute dropdown did.
+    _durationMinutes = _minutesOf(entry.hours);
 
     // Notes (raw, including any ADO prefix)
     _notesController.text = entry.notes ?? '';
@@ -97,13 +98,22 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     final assignments = _assignments = context.read<AssignmentProvider>();
     _savedProject = assignments.selectedProject;
     _savedTask = assignments.selectedTask;
-    assignments.selectProjectById(entry.projectId, taskId: entry.taskId);
+    // After the first frame: selecting notifies the provider above this
+    // route, which may not be marked dirty while this screen is building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        assignments.selectProjectById(entry.projectId, taskId: entry.taskId);
+      }
+    });
 
     // Trigger work item preview if ADO ref exists
     if (_hasAdoRef && _selectedAdoInstance != null) {
       _onWorkItemChanged();
     }
   }
+
+  static int _minutesOf(double hours) =>
+      (hours * 60).round().clamp(0, kMaxDurationMinutes);
 
   /// Repaints the live total while a timer runs on this entry.
   Timer? _ticker;
@@ -124,13 +134,18 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
   void dispose() {
     _ticker?.cancel();
     _debounce?.cancel();
-    _hoursController.dispose();
-    _minutesController.dispose();
     _notesController.dispose();
     _workItemIdController.dispose();
 
-    // Restore the original AssignmentProvider selection so Log Time is unaffected
-    _assignments?.restoreSelection(_savedProject, _savedTask);
+    // Restore the original AssignmentProvider selection so Log Time is
+    // unaffected — in a microtask, since dispose runs while the tree is being
+    // finalised and the provider above may not be marked dirty then.
+    final assignments = _assignments;
+    final project = _savedProject;
+    final task = _savedTask;
+    if (assignments != null) {
+      Future.microtask(() => assignments.restoreSelection(project, task));
+    }
 
     super.dispose();
   }
@@ -221,7 +236,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     }
   }
 
-  /// Stops the timer from here, then refills the duration inputs with the
+  /// Stops the timer from here, then refills the stepper with the
   /// total Harvest settled on, so the form is immediately editable.
   Future<void> _stopTimer(BuildContext context) async {
     final entryProvider = context.read<TimeEntryProvider>();
@@ -231,11 +246,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     final stopped = entryProvider.entries
         .firstWhereOrNull((e) => e.id == widget.entry.id);
     if (ok && stopped != null) {
-      final totalMinutes = (stopped.hours * 60).round();
-      setState(() {
-        _hoursController.text = '${totalMinutes ~/ 60}';
-        _minutesController.text = '${((totalMinutes % 60) / 5).round() * 5 % 60}';
-      });
+      setState(() => _durationMinutes = _minutesOf(stopped.hours));
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -260,10 +271,8 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
             ?.isRunning ??
         false;
 
-    if (!isRunning &&
-        int.parse(_hoursController.text) == 0 &&
-        int.parse(_minutesController.text) == 0) {
-      setState(() {});
+    if (!isRunning && _durationMinutes == 0) {
+      setState(() => _submitAttempted = true);
       return;
     }
 
@@ -324,10 +333,14 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
       }
     }
 
+    // Untouched minutes send the entry's own hours back, not the rounded
+    // value — otherwise a notes-only edit of 1.33h would push a sliver of a
+    // minute to ADO Completed Work as a delta.
     final newHours = isRunning
         ? null
-        : int.parse(_hoursController.text) +
-            int.parse(_minutesController.text) / 60.0;
+        : _durationMinutes == _minutesOf(widget.entry.hours)
+            ? widget.entry.hours
+            : _durationMinutes / 60.0;
     final request = UpdateTimeEntryRequest(
       projectId: project.id,
       taskId: task.id,
@@ -511,73 +524,12 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
                       onStop: () => _stopTimer(context),
                     )
                   else
-                  // Hours + Minutes
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Hours',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _hoursController.text,
-                              isDense: true,
-                              items: List.generate(25, (i) => '$i')
-                                  .map((h) => DropdownMenuItem(
-                                        value: h,
-                                        child: Text(h),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _hoursController.text = v!),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Minutes',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _minutesController.text,
-                              isDense: true,
-                              items: List.generate(12, (i) => '${i * 5}')
-                                  .map((m) => DropdownMenuItem(
-                                        value: m,
-                                        child: Text(m),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _minutesController.text = v!),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!isRunning &&
-                      int.parse(_hoursController.text) == 0 &&
-                      int.parse(_minutesController.text) == 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6, left: 12),
-                      child: Text(
-                        'Duration must be greater than 0',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          fontSize: 12,
-                        ),
-                      ),
+                    DurationStepper(
+                      minutes: _durationMinutes,
+                      onChanged: (m) => setState(() => _durationMinutes = m),
+                      errorText: _submitAttempted && _durationMinutes == 0
+                          ? 'Duration must be greater than 0'
+                          : null,
                     ),
                   const SizedBox(height: 16),
 

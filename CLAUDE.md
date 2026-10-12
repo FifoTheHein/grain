@@ -46,7 +46,8 @@ assert contrast ratios. `test/widget_test.dart` covers Settings navigation
 (group list, every page, the wide sidebar); `test/duration_stepper_test.dart`
 the duration stepper and Log Time's action bar; `test/log_time_screen_test.dart`
 the Log Time screen itself; `test/recent_entries_screen_test.dart` Recent's
-future days; `test/time_entry_card_test.dart` the entry card.
+future days; `test/time_entry_card_test.dart` the entry card; `test/edit_time_screen_test.dart`
+Edit Time's duration stepper and its running-timer panel.
 
 ## Setup Requirement
 

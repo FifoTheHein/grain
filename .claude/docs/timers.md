@@ -47,11 +47,11 @@ for the running card.
   means resuming would silently stop it.
 - `EditTimeScreen` — reads the entry from the provider rather than trusting the
   snapshot it was pushed with, so it sees the timer state. While one runs the
-  banner reads TIMER RUNNING, a `_RunningPanel` replaces the hours/minutes
-  inputs with the live total and a Stop, and `UpdateTimeEntryRequest.hours` is
+  banner reads TIMER RUNNING, a `_RunningPanel` replaces the duration
+  stepper with the live total and a Stop, and `UpdateTimeEntryRequest.hours` is
   left null so a save keeps whatever the timer has accrued. Project, task,
   notes, date and the ADO link stay editable throughout. Stopping from here
-  refills the inputs with the settled total.
+  refills the stepper with the settled total, to the minute.
 
 **ADO Completed Work is pushed explicitly, not automatically.** The automatic
 paths can send a delta because they know what they already sent: create pushes

@@ -64,8 +64,20 @@ class AssignmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   /// Restores a previously saved selection (used by EditTimeScreen on dispose).
+  /// EditTimeScreen defers this past the frame that unmounts it, by which time
+  /// a tree torn down whole has disposed this provider too — so it is a no-op
+  /// then.
   void restoreSelection(HarvestProject? project, HarvestTask? task) {
+    if (_disposed) return;
     selectedProject = project;
     selectedTask = task;
     notifyListeners();
