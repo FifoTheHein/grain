@@ -1,0 +1,97 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Grain — Settings · Calendar</title>
+<link rel="stylesheet" href="grain.css">
+<script src="icons.js"></script>
+<body class="grain-dark">
+<div class="shell wide">
+
+  <nav class="rail">
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-recent"/></svg></span><span class="rail-label">Recent</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-plus"/></svg></span><span class="rail-label">Log Time</span></div>
+    <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-insights"/></svg></span><span class="rail-label">Insights</span></div>
+    <div class="rail-item on"><span class="rail-icon"><svg class="i i-22"><use href="#ic-settings"/></svg></span><span class="rail-label">Settings</span></div>
+  </nav>
+
+  <div class="pane">
+    <header class="appbar">
+      <span class="logo"><img src="../../assets/icon.svg" alt=""></span>
+      <div><h1>Grain</h1><div class="sub">A better Harvest</div></div>
+    </header>
+
+    <div class="body"><div class="settings">
+
+      <div class="groups">
+        <div class="group"><svg class="i i-22 gi"><use href="#ic-person"/></svg><span class="t"><span class="n">Harvest account</span><span class="s">6 projects · refresh every 15 min</span></span><svg class="i i-18 chev"><use href="#ic-right"/></svg></div>
+        <div class="group"><svg class="i i-22 gi"><use href="#ic-clock"/></svg><span class="t"><span class="n">Time tracking</span><span class="s">40h week · 8:30 AM–5:00 PM · 2 templates</span></span><svg class="i i-18 chev"><use href="#ic-right"/></svg></div>
+        <div class="group"><svg class="i i-22 gi"><use href="#ic-link"/></svg><span class="t"><span class="n">Azure DevOps</span><span class="s">1 instance · 2 rules</span></span><svg class="i i-18 chev"><use href="#ic-right"/></svg></div>
+        <div class="group on"><svg class="i i-22 gi"><use href="#ic-calendar"/></svg><span class="t"><span class="n">Calendar</span><span class="s">Auto-log on · 2 meeting rules</span></span><svg class="i i-18 chev"><use href="#ic-right"/></svg></div>
+        <div class="group"><svg class="i i-22 gi"><use href="#ic-palette"/></svg><span class="t"><span class="n">Appearance</span><span class="s">Grain · Dark</span></span><svg class="i i-18 chev"><use href="#ic-right"/></svg></div>
+        <div class="gdiv"></div>
+        <div class="group"><svg class="i i-22 gi"><use href="#ic-wrench"/></svg><span class="t"><span class="n">Maintenance</span><span class="s">Clear cache, migrate references, reset</span></span><svg class="i i-18 chev"><use href="#ic-right"/></svg></div>
+      </div>
+
+      <div class="page">
+        <div class="section first">Calendar Import</div>
+        <div class="hint" style="margin:-4px 0 12px">Logs finished meetings from your published calendar to Harvest, skipping declined, cancelled, free and private ones.</div>
+
+        <div class="field"><span class="lab">ICS calendar URL</span><span class="val" style="letter-spacing:1px;color:var(--text2)">••••••••••••••••••••••••••••••••••••••••••••••••••</span><svg class="i i-20" style="color:var(--text3)"><use href="#ic-eye"/></svg></div>
+        <div class="hint" style="margin:6px 0 8px 12px">Outlook → Settings → Calendar → Shared calendars → Publish</div>
+
+        <div class="srow">
+          <span class="t">
+            <span class="n">Log meetings automatically</span>
+            <span class="s">Runs whenever entries refresh</span>
+          </span>
+          <span class="toggle"><i></i></span>
+        </div>
+        <div class="srow" style="padding-top:0">
+          <span class="t"><span class="s">Auto-log picks up meetings since 12 Oct, 08:00. Sync now uses the full look-back.</span></span>
+          <span class="addbtn">From start of today</span>
+        </div>
+
+        <div class="field"><span class="lab">Default project</span><span class="val">NWR001 — Northwind Retail | Platform</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+        <div class="pair">
+          <div class="field"><span class="lab">Look back</span><span class="val">1 day</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+          <div class="field"><span class="lab">#123 in titles links to</span><span class="val">Northwind</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+        </div>
+        <span class="btn filled" style="display:flex;justify-content:center;margin-top:4px"><svg class="i i-18"><use href="#ic-refresh"/></svg>Sync now</span>
+        <div class="hint">Last sync 10:15: Logged 3, 2 already in Harvest, 1 declined</div>
+
+        <div class="divider"></div>
+
+        <div class="rowhead">
+          <span class="section" style="margin:0">Meeting Rules</span>
+          <span class="addbtn"><svg class="i i-16"><use href="#ic-plus"/></svg>Add</span>
+        </div>
+        <div class="hint" style="margin:8px 0 10px">Pick the project for an imported calendar meeting. First match wins; then a work item number in the title (#123) is tried through the work item rules, then the Calendar Import default.</div>
+
+        <div class="rulecard">
+          <svg class="i i-18" style="color:var(--text4)"><use href="#ic-drag"/></svg>
+          <span class="t">
+            <span class="n">Helpdesk standup</span>
+            <span class="c">Title contains "Helpdesk"</span>
+            <span class="m">→ Northwind Retail | Helpdesk · Meetings</span>
+          </span>
+          <span class="toggle"><i></i></span>
+          <svg class="i i-18" style="color:var(--text2)"><use href="#ic-pencil"/></svg>
+        </div>
+
+        <div class="rulecard">
+          <svg class="i i-18" style="color:var(--text4)"><use href="#ic-drag"/></svg>
+          <span class="t">
+            <span class="n">Company check-ins</span>
+            <span class="c">Title is one of "Morning Check-in, Afternoon Check-in"</span>
+            <span class="m">→ Contoso Operations · Meetings</span>
+          </span>
+          <span class="toggle"><i></i></span>
+          <svg class="i i-18" style="color:var(--text2)"><use href="#ic-pencil"/></svg>
+        </div>
+
+        <div class="hint">Rules are evaluated top to bottom; the first match wins.</div>
+        <div style="height:22px"></div>
+      </div>
+
+    </div></div>
+  </div>
+</div>

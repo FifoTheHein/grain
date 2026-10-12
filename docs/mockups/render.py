@@ -16,7 +16,9 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE.parent / "screenshots"
 CHROME = os.environ.get("CHROME_PATH", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
 
-# page, output name, body class, viewport height
+# page, output name, body class, viewport height[, viewport width]
+# Settings shots are wider: on a wide window the real Settings tab puts its
+# group sidebar beside the page, so its shell is 1200 px (.shell.wide).
 SHOTS = [
     ("recent.html", "recent-light", "grain-light", 1010),
     ("recent.html", "recent-dark", "grain-dark", 1010),
@@ -24,8 +26,9 @@ SHOTS = [
     ("log-time.html", "log-time", "grain-dark", 920),
     ("work-item-picker.html", "work-item-picker", "grain-dark", 840),
     ("edit-time.html", "edit-time-timer", "grain-dark", 960),
-    ("settings-appearance.html", "settings-appearance", "grain-light", 950),
-    ("settings-rules.html", "settings-rules", "grain-dark", 845),
+    ("settings-appearance.html", "settings-appearance", "grain-light", 760, 1200),
+    ("settings-rules.html", "settings-rules", "grain-dark", 720, 1200),
+    ("settings-calendar.html", "settings-calendar", "grain-dark", 900, 1200),
 ]
 
 
@@ -33,7 +36,8 @@ def main(only):
     OUT.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=CHROME)
-        for page_file, name, body_class, height in SHOTS:
+        for page_file, name, body_class, height, *rest in SHOTS:
+            width = rest[0] if rest else 900
             if only and name not in only:
                 continue
             src = HERE / page_file
@@ -41,7 +45,7 @@ def main(only):
                 print(f"skip {name}: {page_file} missing")
                 continue
             page = browser.new_page(
-                viewport={"width": 900, "height": height},
+                viewport={"width": width, "height": height},
                 device_scale_factor=2,
             )
             page.goto(src.as_uri())
