@@ -7,9 +7,11 @@ and recurring series are actually expanded. The script never expanded them,
 so any occurrence without an override was silently missed.
 
 **Web vs Android.** Outlook's published feed sends no CORS headers, so a
-browser cannot read it. `CalendarImportProvider.canFetchUrl` is `!kIsWeb`.
-Android fetches the URL and auto-logs. Web offers **Upload .ics**, which runs
-the same pipeline on the file (it works on Android too).
+browser cannot read it (the `calendar.html` view and its OWA API are blocked
+the same way). `CalendarImportProvider.canFetchUrl` is `!kIsWeb`, and the
+Settings section shows one way in per platform: Android gets the URL field,
+auto-log and **Sync now**; the web gets only **Upload .ics**, which runs the
+same pipeline on the file.
 
 **Parser (`lib/models/ics_parser.dart`)** is pure Dart, unit tested in
 `test/ics_parser_test.dart`. `parseIcs(text, windowStart, windowEnd)` returns
