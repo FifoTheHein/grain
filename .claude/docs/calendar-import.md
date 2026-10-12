@@ -80,7 +80,9 @@ with a `MockClient` in `test/calendar_import_test.dart`.
   days.
 - **`calendar_import_since`** is set to "now" when auto-log is first turned
   on, so enabling it never back-fills history. Settings offers "From start of
-  today". An upload ignores it and uses only the lookback.
+  today". It only holds back the automatic sync: Sync now and an upload are
+  explicit and use the full look-back (`importWindowStart`, tested in
+  `test/calendar_import_test.dart`).
 - **The trigger:** it listens to `TimeEntryProvider` and syncs when
   `fetchedAt` advances, at most every 5 minutes. It also syncs once after its
   own settings load at startup.

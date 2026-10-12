@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:harvest/models/calendar_event.dart';
 import 'package:harvest/models/meeting.dart';
+import 'package:harvest/providers/calendar_import_provider.dart';
 import 'package:harvest/services/calendar_service.dart';
 import 'package:harvest/services/harvest_service.dart';
 import 'package:harvest/services/meeting_importer.dart';
@@ -235,6 +236,41 @@ void main() {
           client: MockClient((_) async => http.Response('', 404)));
       expect(() => service.fetchIcs('https://example.com/x.ics'),
           throwsA(isA<CalendarFetchException>()));
+    });
+  });
+
+  group('importWindowStart', () {
+    final now = DateTime.utc(2026, 10, 12, 10);
+    final lookback = now.subtract(const Duration(hours: 24));
+    final enabledAt = DateTime.utc(2026, 10, 12, 9, 45);
+
+    test('the automatic sync never reaches back past when auto-log was enabled',
+        () {
+      expect(
+          importWindowStart(
+              now: now, lookbackHours: 24, importSince: enabledAt, explicit: false),
+          enabledAt);
+    });
+
+    test('Sync now and uploads use the full look-back', () {
+      expect(
+          importWindowStart(
+              now: now, lookbackHours: 24, importSince: enabledAt, explicit: true),
+          lookback);
+    });
+
+    test('an import-since older than the look-back changes nothing', () {
+      expect(
+          importWindowStart(
+              now: now,
+              lookbackHours: 24,
+              importSince: DateTime.utc(2026, 10, 1),
+              explicit: false),
+          lookback);
+      expect(
+          importWindowStart(
+              now: now, lookbackHours: 24, importSince: null, explicit: false),
+          lookback);
     });
   });
 }
