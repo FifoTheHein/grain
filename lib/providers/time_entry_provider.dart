@@ -12,6 +12,10 @@ class TimeEntryProvider extends ChangeNotifier {
   TimeEntryProvider(this._service);
 
   List<TimeEntry> entries = [];
+
+  /// Every entry in the fetched Monday–Sunday week, not just [selectedDate].
+  /// Log Time keeps its own date, so it reads its day from here.
+  List<TimeEntry> weekEntries = [];
   Map<String, double> weeklyTotals = {};
 
   /// True when the Harvest account records clock times on entries. Learned
@@ -31,6 +35,13 @@ class TimeEntryProvider extends ChangeNotifier {
   int _loadRecentEntriesRequestId = 0;
   bool _showNewDayBanner = false;
   bool get showNewDayBanner => _showNewDayBanner;
+
+  /// Entries logged on [date], read from the fetched week. A day outside
+  /// that week comes back empty — Log Time then falls back to its defaults.
+  List<TimeEntry> entriesOn(DateTime date) {
+    final key = DateFormat('yyyy-MM-dd').format(date);
+    return weekEntries.where((e) => e.spentDate == key).toList();
+  }
 
   bool get isSelectedDateToday {
     final now = DateTime.now();
@@ -114,6 +125,7 @@ class TimeEntryProvider extends ChangeNotifier {
       isLoading = true;
       error = null;
       entries = [];
+      weekEntries = [];
       weeklyTotals = {};
       _showNewDayBanner = false;
       notifyListeners();
@@ -144,6 +156,7 @@ class TimeEntryProvider extends ChangeNotifier {
         totals[e.spentDate] = (totals[e.spentDate] ?? 0) + e.hours;
       }
       weeklyTotals = totals;
+      weekEntries = all;
 
       _fetchedAt = DateTime.now();
 

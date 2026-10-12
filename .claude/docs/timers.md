@@ -39,9 +39,9 @@ for the running card.
 
 **UI**
 
-- `LogTimeScreen` — a "Start Timer" button under Log Time. It ignores the
-  duration inputs, disables itself while another timer runs, and names the
-  project holding it.
+- `LogTimeScreen` — the ▶ button beside Log in the pinned action bar. It
+  ignores the duration inputs, disables itself while another timer runs, and
+  its tooltip names the project holding it.
 - `TimeEntryCard` — Stop on the running entry, Continue on any other. Continue
   is disabled while something else is running, since Harvest's one-timer rule
   means resuming would silently stop it.

@@ -18,14 +18,18 @@ A personal Flutter app for logging time entries to [Harvest](https://www.getharv
 
 ![Log Time](docs/screenshots/log-time.png)
 
-Quick-start chips, a resolved work item preview, and the banner naming the
-mapping rule that picked the project and task.
+The duration stepper at 1h 45m, the unlogged gap since the last entry, a
+`#2207` in the notes offering to link the work item, and the pinned bar that
+says exactly what will be sent.
 
 - **Project & task selection** — loads your assigned projects and tasks from the Harvest API; responsive layout places the two dropdowns side-by-side on wide screens
 - **Default project & task** — configure defaults in Settings → Time tracking so the form is pre-filled on load
-- **Hours & minutes input** — pick hours (0–24) and minutes in 5-minute intervals
-- **Duration or Start & End** — log a plain duration, or pick start and end times; when your Harvest account tracks time by clock times, those are sent through and power the Insights gap analysis
-- **Date picker** — log time against any past date, defaulting to today
+- **Duration stepper** — `−` / `+` in 5-minute steps (hold to repeat), quick chips for 15m–2h, or tap the number and type `1:45`, `1.75`, `1h 45m` or `105m` (a bare whole number is minutes). Starts at zero rather than guessing 1h
+- **Fill the gap** — on today, offers the time since your last timed entry ended ("1h 20m unlogged since Standup ended at 10:40") with one tap to use it
+- **Duration or Start & End** — log a plain duration, or start and end times that default to where your last entry ended and to now, with ±5 nudges; when your Harvest account tracks time by clock times, those are sent through and power the Insights gap analysis. The mode you pick is remembered
+- **Pinned Log button** — always on screen, and it reads what will be sent: "Log 1h 45m · NWR001 · Development · today"
+- **Today / Yesterday / Pick** — date chips instead of a date field
+- **Work item spotting** — a `#123` or `AB#123` typed into the notes offers to link that work item
 - **Start a timer** — instead of logging a fixed duration, start Harvest's own timer and stop it when you're done; because it is Harvest's timer and not a local one, it shows as running in Harvest's web and mobile apps too. Works on duration-tracking accounts — hours accrue while it runs
 - **Quick templates** — one-tap chips for the work you log most often ("PR Reviews", "Standup"), each with a preset project, task and default notes; tapping one fills the form without submitting anything
 - **Work item mapping rules** — when a linked ADO work item resolves, the first matching rule selects the Harvest project and task for you, with a banner naming the rule and an Undo
@@ -159,6 +163,8 @@ lib/
 │   ├── ado_work_item.dart
 │   ├── calendar_event.dart               # one concrete meeting occurrence
 │   ├── day_insights.dart                 # pure day analytics — gaps, coverage, context switches
+│   ├── duration_input.dart               # Log Time duration parsing, formatting, stepping (pure)
+│   ├── log_time_defaults.dart            # gap suggestion and Start & End defaults (pure)
 │   ├── ics_parser.dart                   # ICS reader — VTIMEZONE, RRULE/EXDATE/RECURRENCE-ID (pure)
 │   ├── mapping_rule.dart                 # project/task rules + matcher, shared by work items and meetings (pure)
 │   ├── meeting.dart                      # meeting filters, dedup keys, placement order (pure)
@@ -186,7 +192,7 @@ lib/
 │   ├── home_screen.dart                  # NavigationRail (wide) / NavigationBar (narrow)
 │   ├── edit_time_screen.dart             # pre-filled edit form with orange context banner
 │   ├── insights_screen.dart              # day analytics — stat tiles, breakdown, gaps
-│   ├── log_time_screen.dart
+│   ├── log_time_screen.dart              # stepper, gap suggestion, pinned action bar
 │   ├── recent_entries_screen.dart        # day picker, week strip, entry list
 │   ├── settings_screen.dart              # group list (narrow) / sidebar + page (wide)
 │   └── settings/                         # one page per settings group
@@ -209,7 +215,9 @@ lib/
 └── widgets/
     ├── calendar_import_settings.dart     # Calendar Import section (per-platform controls)
     ├── duration_pill.dart                # circular hours pill (leading slot of entry card)
+    ├── duration_stepper.dart             # − [1h 45m] + with quick chips and typed entry
     ├── error_banner.dart
+    ├── log_action_bar.dart               # Log Time's pinned Log / ▶ bar
     ├── mapping_rule_editor.dart          # rule list + add/edit dialog, for work item and meeting rules
     ├── pending_meetings_sheet.dart       # Log / Skip for meetings no rule placed
     ├── project_task_selector.dart        # responsive project + task dropdowns
