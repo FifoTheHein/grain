@@ -4,7 +4,7 @@ Stateless apart from its provider listener: listens to `TimeEntryProvider` via `
 
 **Layout (top → bottom):**
 1. `_DateHeader` — `chevron_left` (+ a **Today** jump whenever another day is showing) / tappable label opening the picker / `chevron_right`. The label comes from `dayHeading`: "Today", "Tomorrow" or the weekday over "Mon 12 Oct 2026", with an `UpcomingTag` from tomorrow on and " · in N days" from two days out
-2. `_WeekSummaryStrip` — Mon–Sun day tiles + `WeeklyProgressRing`. Two variants: `_buildCompact` (narrow: abbreviation, date number, hours) and `_buildEmphasized` (≥ `HarvestTokens.kWideBreakpoint`, adding a per-day `LinearProgressIndicator` against `ProjectCategoryProvider.dailyGoalHours`). Both take their colours from `_DayStyle`: the selected day (today or earlier) is a solid `brand` tile with `onBrand` ink; today, unselected, has its number in `palette.brandInkOn(background)` and a dot under it; future days fade to `kFutureDayOpacity` (0.38), and a selected one gets a `DashedBorder` instead of the fill
+2. `_WeekSummaryStrip` — Mon–Sun day tiles + `WeeklyProgressRing`. Two variants: `_buildCompact` (narrow: abbreviation, date number, hours) and `_buildEmphasized` (≥ `HarvestTokens.kWideBreakpoint`, adding a per-day `LinearProgressIndicator` against `ProjectCategoryProvider.dailyGoalHours`). Both take their colours from `_DayStyle`: the selected day (today or earlier) is a solid `brand` tile with `onBrand` ink; today, unselected, has its number in `palette.brandInkOn(background)` and a dot under it; future days fade to `kFutureDayOpacity` (0.38) and days past the cap to `kBeyondCapDayOpacity` (0.16), both by colour rather than an `Opacity` layer (which clipped label tops on Android); a selected future day gets a `DashedBorder` instead of the fill
 3. Entry list — flat `SliverList` of `TimeEntryCard`, sorted by `createdAt` desc. Per-project totals live on the Insights screen, not here. On a future day a dashed "Logged ahead" note sits above the entries, and an empty future day shows `_EmptyFutureDay` with **Log time for Thu 15 Oct**
 4. `_DailyProgressBar` — sticky bottom bar; goal from `ProjectCategoryProvider.dailyGoalHours`, `HarvestTokens.warn` color when over; when viewing today shows a tick marker at the expected position + "Expected: Xh Ym" label (proportional: `elapsedRatio × dailyGoalHours`). On a future day it reads "Logged ahead: 2h · 6h 30m to goal", the fill at half strength and no tick
 
@@ -18,7 +18,7 @@ day away) and `clampToSelectable` (a picker's `initialDate`) go with it.
 
 - › walks one calendar day at a time up to the cap, into next week too: the
   provider always fetches the selected date's Monday–Sunday, so leaving the
-  week refetches. A strip day past the cap is drawn, faded, but not tappable.
+  week refetches. A strip day past the cap is drawn fainter still, and is not tappable.
 - Entries on a future day get a dashed `DurationPill(planned: true)` and a
   disabled ▶ ("Timers only run for today") in `TimeEntryCard`.
 - **Log time for …** calls `HomeNavigation.maybeOf(context)?.logTimeFor(date)`:
