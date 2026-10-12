@@ -208,16 +208,20 @@ class CalendarImportProvider extends ChangeNotifier {
       return;
     }
     _lastAutoSync = DateTime.now();
-    sync();
+    sync(explicit: false);
   }
 
   /// Fetches the feed (or uses [icsText] from an upload) and logs every
   /// finished meeting not already in Harvest. Returns the result, or null when
   /// it could not run.
   ///
-  /// An upload is explicit, so it imports whatever the file holds inside the
-  /// lookback, without waiting for [importSince].
-  Future<MeetingImportResult?> sync({String? icsText}) async {
+  /// [explicit] is a sync the user asked for — Sync now or an upload — and
+  /// uses the whole look-back. Only the automatic sync on refresh holds back
+  /// to [importSince]; see [importWindowStart].
+  Future<MeetingImportResult?> sync({
+    String? icsText,
+    bool explicit = true,
+  }) async {
     if (_isSyncing) return null;
     _isSyncing = true;
     _error = null;
@@ -225,11 +229,12 @@ class CalendarImportProvider extends ChangeNotifier {
     try {
       final text = icsText ?? await _calendar.fetchIcs(_icsUrl);
       final now = DateTime.now().toUtc();
-      var windowStart = now.subtract(Duration(hours: _lookbackHours));
-      final since = _importSince;
-      if (icsText == null && since != null && since.isAfter(windowStart)) {
-        windowStart = since;
-      }
+      final windowStart = importWindowStart(
+        now: now,
+        lookbackHours: _lookbackHours,
+        importSince: _importSince,
+        explicit: explicit,
+      );
       final events = await compute(_parseInBackground,
           (text: text, from: windowStart, to: now));
 
@@ -409,6 +414,24 @@ class CalendarImportProvider extends ChangeNotifier {
     _entries.removeListener(_onEntriesChanged);
     super.dispose();
   }
+}
+
+/// Where an import window opens: [lookbackHours] before [now], held back to
+/// [importSince] for the automatic sync so switching auto-log on never
+/// back-fills. An [explicit] sync — Sync now or an upload — is the user asking
+/// for the look-back, so it gets all of it; duplicates are still caught by the
+/// ledger and Harvest-side checks.
+DateTime importWindowStart({
+  required DateTime now,
+  required int lookbackHours,
+  required DateTime? importSince,
+  required bool explicit,
+}) {
+  final lookback = now.subtract(Duration(hours: lookbackHours));
+  if (explicit || importSince == null || !importSince.isAfter(lookback)) {
+    return lookback;
+  }
+  return importSince;
 }
 
 /// Parsing a several-megabyte feed takes a second or more, so it runs off the

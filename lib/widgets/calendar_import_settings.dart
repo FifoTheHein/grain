@@ -147,7 +147,9 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
             children: [
               Expanded(
                 child: Text(
-                  'Meetings since ${DateFormat('d MMM, HH:mm').format(since.toLocal())}',
+                  'Auto-log picks up meetings since '
+                  '${DateFormat('d MMM, HH:mm').format(since.toLocal())}. '
+                  'Sync now uses the full look-back.',
                   style: small,
                 ),
               ),
