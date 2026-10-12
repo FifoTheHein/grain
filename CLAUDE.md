@@ -31,7 +31,7 @@ Run tests with `flutter test`. Coverage is the pure logic — mapping rules
 (`test/mapping_rule_test.dart`), day analytics (`test/day_insights_test.dart`),
 quick templates (`test/quick_template_test.dart`), work item search
 (`test/work_item_search_test.dart`), the ICS parser (`test/ics_parser_test.dart`)
-and meeting filtering/dedup/placement (`test/meeting_test.dart`) — plus the
+meeting filtering/dedup/placement (`test/meeting_test.dart`) and the rules' Any text field (`test/rule_any_text_test.dart`) — plus the
 timer endpoints (`test/timer_test.dart`), the ADO Completed Work push
 (`test/completed_work_test.dart`) and the calendar import
 (`test/calendar_import_test.dart`), which drive the HTTP clients with a

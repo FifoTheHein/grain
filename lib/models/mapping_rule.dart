@@ -48,9 +48,16 @@ extension ConditionOperatorLabel on ConditionOperator {
       );
 }
 
+/// The "Any text" field, shared by work item and meeting rules: a list of every
+/// text the item carries, so one `contains` condition finds a word wherever it
+/// appears. Lists already match when any element does, so the matcher needs
+/// nothing special for it.
+const kAnyTextField = 'anyText';
+
 /// Canonical work item field names usable in a condition. These are the keys of
 /// the [MatchContext] built by `AdoWorkItem.matchContext`.
 abstract final class WorkItemField {
+  static const anyText = kAnyTextField;
   static const project = 'project';
   static const iterationPath = 'iterationPath';
   static const areaPath = 'areaPath';
@@ -62,6 +69,7 @@ abstract final class WorkItemField {
   static const id = 'id';
 
   static const all = [
+    anyText,
     project,
     iterationPath,
     areaPath,
@@ -74,6 +82,7 @@ abstract final class WorkItemField {
   ];
 
   static String labelFor(String field) => switch (field) {
+        anyText => 'Any text',
         project => 'Project',
         iterationPath => 'Iteration path',
         areaPath => 'Area path',

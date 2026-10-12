@@ -14,6 +14,7 @@ import 'time_entry.dart';
 /// Canonical meeting field names usable in a meeting rule condition — the keys
 /// of [meetingMatchContext].
 abstract final class MeetingField {
+  static const anyText = kAnyTextField;
   static const title = 'title';
   static const location = 'location';
   static const description = 'description';
@@ -21,9 +22,18 @@ abstract final class MeetingField {
   static const busyStatus = 'busyStatus';
   static const isTeams = 'isTeams';
 
-  static const all = [title, location, description, organizer, busyStatus, isTeams];
+  static const all = [
+    anyText,
+    title,
+    location,
+    description,
+    organizer,
+    busyStatus,
+    isTeams,
+  ];
 
   static String labelFor(String field) => switch (field) {
+        anyText => 'Any text',
         title => 'Title',
         location => 'Location',
         description => 'Description',
@@ -158,6 +168,13 @@ String? workItemIdFromTitle(String title) =>
 
 /// The fields a meeting rule matches against.
 MatchContext meetingMatchContext(CalendarEvent e) => {
+      MeetingField.anyText: [
+        meetingNotes(e),
+        ?e.location,
+        ?e.description,
+        ?e.organizerName,
+        ?e.organizerEmail,
+      ],
       MeetingField.title: meetingNotes(e),
       MeetingField.location: e.location,
       MeetingField.description: e.description,

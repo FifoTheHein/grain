@@ -11,7 +11,6 @@ import '../providers/assignment_provider.dart';
 import '../providers/calendar_import_provider.dart';
 import '../services/meeting_importer.dart';
 import '../theme/harvest_tokens.dart';
-import 'mapping_rule_editor.dart';
 import 'pending_meetings_sheet.dart';
 
 /// The Calendar Import section of Settings. Changes apply immediately, like the
@@ -296,30 +295,6 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
               label: Text('Review ${provider.pending.length} pending'),
             ),
           ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Text('Meeting rules',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: palette.text2)),
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-              onPressed: () =>
-                  showMappingRuleDialog(context, kind: RuleKind.meeting),
-            ),
-          ],
-        ),
-        Text(
-          'First match wins. A work item number in the title (#123) is tried '
-          'next, through the work item rules, then the default project.',
-          style: small,
-        ),
-        MappingRuleList(kind: RuleKind.meeting),
       ],
     );
   }

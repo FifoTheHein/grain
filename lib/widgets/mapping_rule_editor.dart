@@ -64,7 +64,7 @@ class RuleKind {
     emptyText: 'No rules yet. Add one to have Grain pick the Harvest project '
         'and task for a work item automatically.',
     matchesEverything: 'Matches every work item',
-    newRuleTitle: 'New mapping rule',
+    newRuleTitle: 'New work item rule',
     nameHint: 'Platform team bugs',
     noteHint: 'Investigating {type} {id}: {title}',
     notePlaceholders: 'Placeholders: {id} {title} {type} {state} {project} '
@@ -77,7 +77,7 @@ class RuleKind {
     fields: MeetingField.all,
     labelFor: MeetingField.labelFor,
     firstCondition: const MappingCondition(
-      field: MeetingField.title,
+      field: MeetingField.anyText,
       operator: ConditionOperator.contains,
       value: '',
     ),
@@ -102,7 +102,8 @@ class RuleKind {
   );
 }
 
-/// Settings list of mapping rules: an auto-apply switch, then the rules in
+/// Settings list of rules (work item or meeting, per [RuleKind]): an
+/// auto-apply switch, then the rules in
 /// evaluation order. Dragging a row changes which rule wins a tie.
 class MappingRuleList extends StatelessWidget {
   final RuleKind kind;

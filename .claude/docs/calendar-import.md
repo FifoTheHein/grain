@@ -38,8 +38,9 @@ with series expanded.
   than 5 / longer than 480 minutes. Tentative and out-of-office still log, as
   before.
 - **`meetingMatchContext`** is what meeting rules match on (`MeetingField`):
-  title, location, description, organizer, busy status, and isTeams
-  (`yes`/`no`). Outlook's published feed strips organizer and attendees, so
+  **Any text** (title, location, description and organizer together, and the
+  default for a new rule), title, location, description, organizer, busy
+  status, and isTeams (`yes`/`no`). Outlook's published feed strips organizer and attendees, so
   rules there mostly work on title and location.
 - **`isMeetingLogged`** checks three ways:
   - **the local ledger**, which also stops a meeting deleted in Harvest from
@@ -94,11 +95,11 @@ with a `MockClient` in `test/calendar_import_test.dart`.
   (`lib/widgets/calendar_import_settings.dart`):
   - the URL, the auto-log switch and the "since" line;
   - the default project/task, the lookback and the ADO instance;
-  - Sync now / Upload .ics and the last-sync summary (`describeImport`);
-  - the meeting rule list: `MappingRuleList(kind: RuleKind.meeting)`. The rule
-    editor is shared, and `RuleKind` carries the field set, wording and
-    provider. `MeetingRuleProvider` is a `MappingRuleProvider` on
-    `meeting_rules_v1`.
+  - Sync now / Upload .ics and the last-sync summary (`describeImport`).
+- **Settings → Meeting Rules** is its own section, right after Calendar Import:
+  `MappingRuleList(kind: RuleKind.meeting)`. The rule editor is shared with
+  Work Item Rules, and `RuleKind` carries the field set, wording and provider.
+  `MeetingRuleProvider` is a `MappingRuleProvider` on `meeting_rules_v1`.
 - **Recent** shows "N meetings need a project" while anything is pending. It
   opens `showPendingMeetingsSheet` (`lib/widgets/pending_meetings_sheet.dart`),
   which has a project/task picker plus Log / Skip per meeting.
