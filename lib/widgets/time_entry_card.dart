@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/entry_display.dart';
 import '../models/time_entry.dart';
 import '../utils/open_url.dart';
 import '../providers/ado_instance_provider.dart';
@@ -65,145 +66,169 @@ class TimeEntryCard extends StatelessWidget {
           .join(),
     );
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Leading: duration pill, counting up while the timer runs
-            Builder(builder: (context) {
-              if (!entry.isRunning) {
-                return DurationPill(hours: entry.hours);
-              }
-              final provider = context.watch<TimeEntryProvider>();
-              return _LiveDurationPill(
-                entry: entry,
-                fetchedAt: provider.fetchedAt,
-              );
-            }),
-            const SizedBox(width: 12),
+    final notesLine = hasAdoRef
+        ? workItemNotesLine(entry.notes, workItemId)
+        : (entry.notes?.trim().isEmpty ?? true)
+            ? null
+            : entry.notes!.trim();
+    final meetingStart = meetingStartLabel(entry);
 
-            // Body
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title row: project code chip + task name
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: cat.tint,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          cat.code,
-                          style: TextStyle(
-                            fontFamily: 'Courier New',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
-                            color: cat.color,
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      // The running entry stands out, since it can scroll out of view.
+      shape: entry.isRunning
+          ? RoundedRectangleBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              side: BorderSide(color: palette.brand, width: 1.5),
+            )
+          : null,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => EditTimeScreen(entry: entry)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 2, 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Leading: duration pill, counting up while the timer runs
+              Builder(builder: (context) {
+                if (!entry.isRunning) {
+                  return DurationPill(hours: entry.hours, size: 38);
+                }
+                final provider = context.watch<TimeEntryProvider>();
+                return _LiveDurationPill(
+                  entry: entry,
+                  fetchedAt: provider.fetchedAt,
+                );
+              }),
+              const SizedBox(width: 10),
+
+              // Body
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Head line: project code chip, task, meeting start
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: cat.tint,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            cat.code,
+                            style: TextStyle(
+                              fontFamily: 'Courier New',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                              color: cat.color,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          entry.taskName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: palette.text,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            entry.taskName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: palette.text,
+                            ),
                           ),
+                        ),
+                        if (meetingStart != null) ...[
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message: 'Imported meeting',
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.event_outlined,
+                                    size: 13, color: palette.text3),
+                                const SizedBox(width: 3),
+                                Text(
+                                  meetingStart,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: palette.text3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+
+                    // Notes, one line
+                    if (notesLine != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        notesLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: palette.text2,
+                          height: 1.35,
                         ),
                       ),
                     ],
-                  ),
 
-                  // Notes
-                  if (entry.notes != null && entry.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      entry.notes!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: palette.text2,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-
-                  // ADO chip
-                  if (hasAdoRef) ...[
-                    const SizedBox(height: 6),
-                    if (matchingInstance != null && adoService != null)
-                      WorkItemChip(
-                        workItemId: workItemId,
-                        cached: adoService.getCached(
-                            matchingInstance.label, workItemId),
-                        isLoading: adoService.isPending(
-                            matchingInstance.label, workItemId),
-                        permalink: entry.adoReference!.permalink,
-                      )
-                    else
-                      GestureDetector(
-                        onTap: (entry.adoReference!.permalink != null &&
-                                entry.adoReference!.permalink!.isNotEmpty)
-                            ? () => openUrl(entry.adoReference!.permalink!)
-                            : null,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.open_in_new,
-                              size: 13,
-                              color: palette.brand600,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'ADO #$workItemId',
-                              style: TextStyle(
-                                fontSize: 12,
+                    // ADO chip
+                    if (hasAdoRef) ...[
+                      const SizedBox(height: 6),
+                      if (matchingInstance != null && adoService != null)
+                        WorkItemChip(
+                          workItemId: workItemId,
+                          cached: adoService.getCached(
+                              matchingInstance.label, workItemId),
+                          isLoading: adoService.isPending(
+                              matchingInstance.label, workItemId),
+                          permalink: entry.adoReference!.permalink,
+                        )
+                      else
+                        GestureDetector(
+                          onTap: (entry.adoReference!.permalink != null &&
+                                  entry.adoReference!.permalink!.isNotEmpty)
+                              ? () => openUrl(entry.adoReference!.permalink!)
+                              : null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.open_in_new,
+                                size: 13,
                                 color: palette.brand600,
-                                decoration: TextDecoration.underline,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                'ADO #$workItemId',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: palette.brand600,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                    ],
                   ],
-                ],
-              ),
-            ),
-
-            // Trailing: timer control + edit button
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _TimerButton(entry: entry),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  tooltip: 'Edit entry',
-                  color: palette.text3,
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => EditTimeScreen(entry: entry),
-                    ),
-                  ),
                 ),
-              ],
-            ),
-          ],
+              ),
+
+              // Trailing: the one action. Tapping the card itself edits.
+              _TimerButton(entry: entry),
+            ],
+          ),
         ),
       ),
     );
@@ -245,6 +270,7 @@ class _LiveDurationPillState extends State<_LiveDurationPill> {
     return DurationPill(
       hours: widget.entry.liveHours(widget.fetchedAt, DateTime.now()),
       running: true,
+      size: 38,
     );
   }
 }
@@ -315,7 +341,8 @@ class _TimerButton extends StatelessWidget {
 
     if (entry.isRunning) {
       return IconButton(
-        icon: const Icon(Icons.stop_circle_outlined, size: 18),
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.stop_circle_outlined, size: 20),
         tooltip: 'Stop timer',
         color: palette.brand,
         onPressed: busy
@@ -329,7 +356,8 @@ class _TimerButton extends StatelessWidget {
     // would silently stop that one.
     final another = provider.runningEntry;
     return IconButton(
-      icon: const Icon(Icons.play_circle_outline, size: 18),
+      visualDensity: VisualDensity.compact,
+      icon: const Icon(Icons.play_circle_outline, size: 20),
       tooltip: another == null
           ? 'Continue timing this entry'
           : 'Stop the running timer first',

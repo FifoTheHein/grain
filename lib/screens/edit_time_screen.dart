@@ -44,6 +44,10 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
   HarvestProject? _savedProject;
   HarvestTask? _savedTask;
 
+  /// Held from setup so dispose can restore the selection without looking up
+  /// an ancestor through a context that is already deactivated.
+  AssignmentProvider? _assignments;
+
   bool _initialized = false;
 
   @override
@@ -89,7 +93,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     }
 
     // Project / Task — save current selection then switch to entry's values
-    final assignments = context.read<AssignmentProvider>();
+    final assignments = _assignments = context.read<AssignmentProvider>();
     _savedProject = assignments.selectedProject;
     _savedTask = assignments.selectedTask;
     assignments.selectProjectById(entry.projectId, taskId: entry.taskId);
@@ -125,8 +129,7 @@ class _EditTimeScreenState extends State<EditTimeScreen> {
     _workItemIdController.dispose();
 
     // Restore the original AssignmentProvider selection so Log Time is unaffected
-    final assignments = context.read<AssignmentProvider>();
-    assignments.restoreSelection(_savedProject, _savedTask);
+    _assignments?.restoreSelection(_savedProject, _savedTask);
 
     super.dispose();
   }
