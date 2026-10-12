@@ -55,7 +55,11 @@ was held back.
 
 ### Calendar Import
 
-Finished meetings from your published Outlook calendar are logged to Harvest for you, each placed in the right project.
+![Settings — Calendar](docs/screenshots/settings-calendar.png)
+
+The Calendar page on Android: the published feed, auto-log, and the meeting
+rules that place each meeting. On the web the feed controls give way to an
+**Upload .ics** button.
 
 - **Auto-log on Android** — point Grain at your calendar's published ICS link (Outlook → Settings → Calendar → Shared calendars → Publish) and every meeting that has ended is logged on the next refresh. **Sync now** imports the whole look-back on demand
 - **Upload on the web** — browsers can't read Outlook's feed (it sends no CORS headers), so the web build imports an uploaded `.ics` file through the same pipeline instead
@@ -101,8 +105,8 @@ Day analytics for whichever date is selected on Recent — navigating the date o
 
 ![Settings — Appearance](docs/screenshots/settings-appearance.png)
 
-Mode and palette are independent choices; each card previews its palette in the
-mode you are currently in.
+Settings → Appearance. Mode and palette are independent choices; each card
+previews its palette in the mode you are currently in.
 
 - **Grain logo** — custom SVG hourglass-and-grain icon; shown in the app bar header (rounded corners) and used as the Android launcher icon and web favicon
 - **Light & dark themes** — every palette ships both; switch between **System / Light / Dark** in Settings → Appearance, persisted across sessions
@@ -121,7 +125,7 @@ mode you are currently in.
 
 ### Settings
 
-![Settings — rules and templates](docs/screenshots/settings-rules.png)
+![Settings — Azure DevOps](docs/screenshots/settings-rules.png)
 
 Settings opens on a short list of groups, each with a one-line summary of where it stands ("2 instances · 2 rules", "Auto-log on · 3 meeting rules"). Tap one to open its page; on a wide window the list becomes a sidebar beside the open page. Everything saves as you change it, except the Harvest credentials, which wait for their own **Save & reconnect** button.
 

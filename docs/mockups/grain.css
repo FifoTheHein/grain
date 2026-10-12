@@ -134,6 +134,7 @@ body {
   padding: 2px 6px; border-radius: 4px;
   background: var(--cat-tint); color: var(--cat-color);
 }
+.cat-orange{ --cat-color: #FA5D24; --cat-tint: #FEE6DA; }
 .cat-green { --cat-color: #16A34A; --cat-tint: #DCFCE7; }
 .cat-cyan  { --cat-color: #0891B2; --cat-tint: #CFFAFE; }
 .cat-violet{ --cat-color: #7C5CFF; --cat-tint: #EEE9FF; }
@@ -370,3 +371,22 @@ svg { display: block; }
 .rulecard .m { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .tmpl { display: flex; align-items: center; gap: 10px; }
 .tmpl .ic { width: 26px; height: 26px; border-radius: 6px; display: grid; place-content: center; }
+
+/* Settings, wide layout: the group list as a sidebar beside the open page.
+   Mirrors lib/screens/settings_screen.dart (300 px sidebar, page capped at
+   760 px). The shell widens for these shots, as the real tab does. */
+.shell.wide { width: 1200px; }
+.settings { display: flex; height: 100%; }
+.settings .groups { width: 300px; flex-shrink: 0; padding: 8px 0; border-right: 1px solid var(--divider); }
+.settings .group { display: flex; align-items: center; gap: 16px; padding: 11px 16px; }
+.settings .group .gi { color: var(--text2); }
+.settings .group .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.settings .group .n { font-size: 14px; font-weight: 600; }
+.settings .group .s { font-size: 12px; color: var(--text3); line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.settings .group .chev { color: var(--text3); }
+.settings .group.on { background: var(--brandTint); }
+.settings .group.on .n, .settings .group.on .gi { color: var(--brand); }
+.settings .gdiv { height: 1px; background: var(--divider); margin: 6px 16px; }
+.settings .page { flex: 1; min-width: 0; max-width: 760px; padding: 0 16px; }
+
