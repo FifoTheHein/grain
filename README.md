@@ -85,8 +85,9 @@ ADO by hand.
 - **Weekly progress ring** — animated circular arc showing week total vs. goal; brand-orange fill, switches to amber when over goal; center label shows `Xh Ym / of 40h`; "THIS WEEK" caption with contextual helper text (`Xh to go`, `Goal met`, `+Xh over`); over-goal state moves the label beside the ring for visual emphasis
 - **Daily view** — browse entries by day with prev/next navigation and a date picker
 - **Daily progress bar** — visual indicator of daily progress toward a configurable goal (derived from work day start/end/break settings); shows overflow in amber; when viewing today, displays an **expected hours** tick marker on the bar and an "Expected: Xh Ym" label based on how much of the work day has elapsed
-- **Stop & continue** — a running entry counts up live on its card with a Stop button; any stopped entry can be resumed with Continue. Harvest allows one running timer per user, so Continue is disabled while another is going
-- **Edit entries** — tap the pencil icon to open a pre-filled edit form with an orange context banner showing the duration and entry ID; changes are saved via `PATCH` and reflected immediately
+- **Compact entry cards** — one row per entry: duration, project · task, and one line of notes, so a day fits on a phone screen without scrolling. Entries linked to a work item keep the full preview (title, number, state, type and avatar, tap to open in Azure DevOps), and the "… Azure DevOps Task #123" note that only repeats it is hidden — whatever you typed after it still shows. Meetings logged from your calendar carry a calendar icon and their start time
+- **Stop & continue** — a running entry counts up live on its card with a Stop button and an accent border; any stopped entry can be resumed with Continue. Harvest allows one running timer per user, so Continue is disabled while another is going
+- **Edit entries** — tap anywhere on an entry to open a pre-filled edit form with an orange context banner showing the duration and entry ID; changes are saved via `PATCH` and reflected immediately
 - **Delete entries** — tap the trash icon in the Edit Entry screen to permanently remove an entry after confirmation
 
 ### Insights
