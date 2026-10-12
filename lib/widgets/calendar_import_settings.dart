@@ -102,10 +102,21 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Logs finished meetings from your published calendar to Harvest, '
-          'skipping declined, cancelled, free and private ones.',
+          canFetch
+              ? 'Logs finished meetings from your published calendar to '
+                  'Harvest, skipping declined, cancelled, free and private ones.'
+              // The feed URL is useless here — browsers can't read it (no
+              // CORS) — so the web build only offers the upload.
+              : 'Logs finished meetings from an .ics export of your calendar '
+                  'to Harvest, skipping declined, cancelled, free and private '
+                  'ones. Download one by opening the .ics link of your '
+                  'published calendar, then upload it here. To log automatically, use the '
+                  'Android app.',
           style: small,
         ),
+        // Feed URL, auto-log and its "since" line only mean something where
+        // Grain can fetch the feed itself.
+        if (canFetch) ...[
         const SizedBox(height: 12),
         TextField(
           controller: _urlController,
@@ -113,10 +124,8 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
           decoration: InputDecoration(
             labelText: 'ICS calendar URL',
             border: const OutlineInputBorder(),
-            helperText: canFetch
-                ? 'Outlook → Settings → Calendar → Shared calendars → Publish'
-                : 'Browsers cannot read this feed (no CORS). It is used by '
-                    'the Android app — here, upload an .ics file instead.',
+            helperText:
+                'Outlook → Settings → Calendar → Shared calendars → Publish',
             helperMaxLines: 3,
             suffixIcon: IconButton(
               icon: Icon(_obscureUrl ? Icons.visibility : Icons.visibility_off),
@@ -133,11 +142,9 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
         const SizedBox(height: 8),
         SwitchListTile(
           value: provider.autoLog,
-          onChanged: canFetch ? provider.setAutoLog : null,
+          onChanged: provider.setAutoLog,
           title: const Text('Log meetings automatically'),
-          subtitle: Text(canFetch
-              ? 'Runs whenever entries refresh'
-              : 'Android only — use Upload .ics on the web'),
+          subtitle: const Text('Runs whenever entries refresh'),
           contentPadding: EdgeInsets.zero,
           dense: true,
           activeThumbColor: palette.brand,
@@ -162,6 +169,7 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
               ),
             ],
           ),
+        ],
         const SizedBox(height: 12),
         DropdownButtonFormField<int?>(
           initialValue: project?.id,
@@ -248,9 +256,11 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
           ],
         ),
         const SizedBox(height: 12),
+        // One way in per platform: Android fetches the feed, the web takes a
+        // file.
         Row(
           children: [
-            if (canFetch) ...[
+            if (canFetch)
               Expanded(
                 child: FilledButton.icon(
                   onPressed: provider.isSyncing || _urlController.text.trim().isEmpty
@@ -264,16 +274,15 @@ class _CalendarImportSettingsState extends State<CalendarImportSettings> {
                       : const Icon(Icons.sync),
                   label: const Text('Sync now'),
                 ),
+              )
+            else
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: provider.isSyncing ? null : () => _upload(context),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Upload .ics'),
+                ),
               ),
-              const SizedBox(width: 8),
-            ],
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: provider.isSyncing ? null : () => _upload(context),
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Upload .ics'),
-              ),
-            ),
           ],
         ),
         if (provider.lastSyncAt != null || provider.error != null) ...[
