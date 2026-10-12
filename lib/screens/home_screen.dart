@@ -45,6 +45,12 @@ class _HomeScreenState extends State<HomeScreen> {
     SettingsScreen(),
   ];
 
+  static const _settingsTab = 3;
+
+  /// Content width on a wide window. Entry lists read best narrow; Settings
+  /// puts a sidebar beside its page, so it gets room for both.
+  double get _wideMaxWidth => _tab == _settingsTab ? 1200 : 760;
+
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
@@ -128,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Center(
                             child: ConstrainedBox(
                               constraints:
-                                  const BoxConstraints(maxWidth: 760),
+                                  BoxConstraints(maxWidth: _wideMaxWidth),
                               child: _screens[_tab],
                             ),
                           ),
