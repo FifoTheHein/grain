@@ -19,9 +19,12 @@ flutter run -d web-server --web-port=8080
 # SW intercepts background API fetches but closes the message channel before responding
 MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strategy=none
 
-# 2. Android APK
-# Output: build\app\outputs\flutter-apk\app-release.apk
-flutter build apk --release
+# 2. Android APKs, one per processor type
+# A universal APK carries the Flutter engine and compiled app three times
+# (~54 MB); each split is ~20 MB. Attach all three to a GitHub release -
+# app-arm64-v8a-release.apk is the one for modern phones.
+# Output: build\app\outputs\flutter-apk\app-{arm64-v8a,armeabi-v7a,x86_64}-release.apk
+flutter build apk --release --split-per-abi
 
 # Lint / static analysis
 flutter analyze

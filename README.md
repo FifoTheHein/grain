@@ -285,14 +285,14 @@ Both targets should be built together:
 # --pwa-strategy=none disables the service worker (avoids fetch/message-channel conflicts)
 MSYS_NO_PATHCONV=1 flutter build web --release --base-href /grain/ --pwa-strategy=none
 
-# Android APK
-# Output: build/app/outputs/flutter-apk/app-release.apk
-flutter build apk --release
+# Android APKs, one per processor type (~20 MB each rather than one ~54 MB universal APK)
+# Output: build/app/outputs/flutter-apk/app-{arm64-v8a,armeabi-v7a,x86_64}-release.apk
+flutter build apk --release --split-per-abi
 ```
 
 Serve the `build/web` directory from any static host.
 
-The APK is debug-signed for side-loading — there is no Play Store signing config. Install it directly on a device (`adb install build/app/outputs/flutter-apk/app-release.apk`, or copy the file over and open it).
+The APK is debug-signed for side-loading — there is no Play Store signing config. Install it directly on a device (`adb install build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`, or copy the file over and open it). Almost every current phone wants **arm64-v8a**; `armeabi-v7a` is for old 32-bit phones and `x86_64` for emulators and Chromebooks. Each GitHub release attaches all three.
 
 ## Regenerating the screenshots
 
