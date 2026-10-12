@@ -385,9 +385,10 @@ class _AccelHint extends StatelessWidget {
           ),
           child: Text(n, style: TextStyle(fontSize: 11, color: palette.text2)),
         );
+    // An icon, not "→": the web build's bundled font has no arrow glyph.
     Widget arrow() => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text('→', style: style),
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Icon(Icons.arrow_forward, size: 11, color: palette.text3),
         );
     return Semantics(
       label: 'Tap plus or minus for 1 minute. Hold to step by 1, then 5, '
