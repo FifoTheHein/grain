@@ -320,6 +320,22 @@ void main() {
     expect(prefill.origin, 'open after CRT Daily Scrum');
   });
 
+  testWidgets('a running timer’s start time does not make it start/end',
+      (tester) async {
+    // Harvest reports a running timer's start on a duration account too.
+    final pumped = await _pumpInsights(tester, [
+      _meeting(1, 'CRT Daily Scrum', 9, 0, 0.5),
+      {
+        ..._entry(2, 'Development kick off', 2, started: '2:06pm'),
+        'is_running': true,
+      },
+    ]);
+
+    await tester.tap(find.text('Log this').first);
+    final prefill = pumped.handedOver.single.$2!;
+    expect(prefill.startEnd, isFalse);
+  });
+
   testWidgets('Log this is disabled once the goal is logged', (tester) async {
     final pumped = await _pumpInsights(tester, [
       _meeting(1, 'CRT Daily Scrum', 9, 0, 0.5),

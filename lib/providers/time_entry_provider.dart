@@ -148,7 +148,10 @@ class TimeEntryProvider extends ChangeNotifier {
 
       error = null;
       if (all.isNotEmpty) {
-        tracksByStartEnd = all.any((e) => e.startedTime != null);
+        // A finished entry with both clock times. A running timer has a
+        // start and no end on a duration account too, so a start alone
+        // proves nothing.
+        tracksByStartEnd = all.any((e) => !e.isRunning && e.hasClockTimes);
       }
 
       // Compute weekly totals

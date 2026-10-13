@@ -55,7 +55,8 @@ notes line, work-item prefix stripped, else the task), which names the open
 stretches. Timer entries are not guessed at from `updated_at`.
 
 `TimeEntryProvider.tracksByStartEnd` learns which mode the account is in
-from the fetched week, and `LogTimeScreen` only sends `started_time` /
+from the fetched week — a finished entry with both clock times, since Harvest
+reports a running timer's start on a duration account too — and `LogTimeScreen` only sends `started_time` /
 `ended_time` (from Start & End mode) when it is true — a duration account never
 receives fields it would ignore.
 
