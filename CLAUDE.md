@@ -36,7 +36,9 @@ quick templates (`test/quick_template_test.dart`), work item search
 (`test/work_item_search_test.dart`), the ICS parser (`test/ics_parser_test.dart`)
 meeting filtering/dedup/placement (`test/meeting_test.dart`), the rules' Any text field (`test/rule_any_text_test.dart`),
 Log Time's duration parsing and hold acceleration (`test/duration_input_test.dart`) and its gap and
-Start & End suggestions (`test/log_time_defaults_test.dart`), the week-ahead
+Start & End suggestions (`test/log_time_defaults_test.dart`), Insights' Log this prefill
+(`test/log_time_prefill_test.dart`), meeting load and work item grouping
+(`test/day_breakdown_test.dart`), the week-ahead
 cap and Recent's day labels (`test/future_days_test.dart`) — plus the
 timer endpoints (`test/timer_test.dart`), the ADO Completed Work push
 (`test/completed_work_test.dart`) and the calendar import
@@ -48,7 +50,8 @@ the duration stepper and Log Time's action bar; `test/log_time_screen_test.dart`
 the Log Time screen itself; `test/recent_entries_screen_test.dart` Recent's
 future days; `test/time_entry_card_test.dart` the entry card; `test/edit_time_screen_test.dart`
 Edit Time's duration stepper and its running-timer panel; `test/insights_screen_test.dart`
-Insights on a partial, fully timed and unplaceable day.
+Insights on a partial, fully timed and unplaceable day, plus Log this, the Meetings tile, the work
+item switch and the unlogged-meetings banner.
 
 ## Setup Requirement
 

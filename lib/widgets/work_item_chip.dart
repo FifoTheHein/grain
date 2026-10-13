@@ -3,6 +3,25 @@ import '../models/ado_work_item.dart';
 import '../theme/harvest_tokens.dart';
 import '../utils/open_url.dart';
 
+/// The colour for an ADO work item state, by family: done, active, removed,
+/// and new for anything else. Shared by the chip and Insights' work item
+/// breakdown.
+Color workItemStateColor(String state) {
+  final s = state.toLowerCase();
+  if (s.contains('done') || s.contains('closed') || s.contains('resolved')) {
+    return HarvestTokens.stateDone;
+  }
+  if (s.contains('active') ||
+      s.contains('progress') ||
+      s.contains('committed')) {
+    return HarvestTokens.stateActive;
+  }
+  if (s.contains('removed') || s.contains('cut')) {
+    return HarvestTokens.stateRemoved;
+  }
+  return HarvestTokens.stateNew;
+}
+
 class WorkItemChip extends StatelessWidget {
   final String workItemId;
   final AdoWorkItem? cached;
@@ -16,22 +35,6 @@ class WorkItemChip extends StatelessWidget {
     this.isLoading = false,
     this.permalink,
   });
-
-  Color _stateColor(String state) {
-    final s = state.toLowerCase();
-    if (s.contains('done') || s.contains('closed') || s.contains('resolved')) {
-      return HarvestTokens.stateDone;
-    }
-    if (s.contains('active') ||
-        s.contains('progress') ||
-        s.contains('committed')) {
-      return HarvestTokens.stateActive;
-    }
-    if (s.contains('removed') || s.contains('cut')) {
-      return HarvestTokens.stateRemoved;
-    }
-    return HarvestTokens.stateNew;
-  }
 
   bool get _canOpen => permalink != null && permalink!.trim().isNotEmpty;
 
@@ -98,7 +101,7 @@ class WorkItemChip extends StatelessWidget {
       );
     }
 
-    final sColor = _stateColor(cached!.state);
+    final sColor = workItemStateColor(cached!.state);
     final initials = _initials(cached!.createdByName);
 
     return Material(

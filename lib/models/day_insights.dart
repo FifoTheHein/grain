@@ -240,6 +240,22 @@ DayInsights computeDayInsights({
   );
 }
 
+/// The day's longest focus window: the longest uncovered stretch at or above
+/// the gap threshold, or null when there is none (or nothing is placed, so
+/// nothing marks where a stretch begins or ends). Ties go to the earlier one.
+///
+/// On a partial day the stretches between meetings still hold the work
+/// logged by duration, so this is time *without meetings* rather than time
+/// without work; on a full day it is the longest stretch with nothing logged.
+InsightGap? longestFocusWindow(DayInsights insights) {
+  if (insights.placement == DayPlacement.none) return null;
+  InsightGap? best;
+  for (final g in insights.gaps) {
+    if (best == null || g.minutes > best.minutes) best = g;
+  }
+  return best;
+}
+
 /// Parses a Harvest clock time into minutes from midnight.
 ///
 /// Harvest returns `started_time` / `ended_time` as display strings, which vary

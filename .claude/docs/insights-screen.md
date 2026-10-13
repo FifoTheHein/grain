@@ -29,6 +29,9 @@ in `test/day_insights_test.dart`. Works in minutes from midnight.
   logging twice.
 - On today the caller passes `now` as `windowEnd`, so the part of the afternoon
   that has not happened yet is not counted as dead.
+- `longestFocusWindow(insights)` is the longest gap (ties to the earlier),
+  null with nothing placed. Gaps are already ≥ `minGapMinutes`, and so is the
+  window. On a partial day it is time without meetings, not without work.
 - `parseClockMinutes` reads Harvest's display times (`8:30am`, `8:30 AM`,
   `08:30`); `formatDuration` / `formatClock` render them back.
 
@@ -56,14 +59,45 @@ from the fetched week, and `LogTimeScreen` only sends `started_time` /
 `ended_time` (from Start & End mode) when it is true — a duration account never
 receives fields it would ignore.
 
-**Layout (top → bottom):** date nav row · `_StatTiles` (Logged, Coverage,
-Unlogged/Over goal, and Switches on a full day) · `_TaskBreakdown` (per
-project·task totals, largest first, bars in the `ProjectCategoryProvider`
-colour) · then one of three, by `placement`:
+**Breakdowns (`lib/models/day_breakdown.dart`)** — pure Dart, tested in
+`test/day_breakdown_test.dart`.
+
+- `meetingLoad(entries)` — minutes, count and `percentOfLogged` of the
+  entries `isImportedMeeting` (reference id starting `kMeetingRefPrefix`),
+  placed or not. A meeting linked to a work item carries the work item's
+  reference instead, so it counts as work: nothing on it says meeting.
+- `groupByWorkItem(entries)` — one `WorkItemGroup` per `adoReference`, keyed
+  by the work item number plus the permalink host (so the composite and bare
+  id shapes merge, and #123 on two organisations doesn't), largest first,
+  then a "No work item" group for everything else (left out when empty).
+  Each carries its `permalink` and a `notesTitle` from `workItemNotesLine`.
+
+**Log this (`lib/models/log_time_prefill.dart`)** — pure Dart, tested in
+`test/log_time_prefill_test.dart`. `prefillForSlot` turns a gap into a
+`LogTimePrefill` for Log Time:
+
+- **Start/end account** (`tracksByStartEnd`) — Start & End with the slot's own
+  times, captioned "after <previous>" / "before <next>".
+- **Duration account** — Duration, `min(slot, unlogged)` where unlogged is the
+  Unlogged tile's goal − logged. Harvest ignores clock times there, and part
+  of the slot is already covered by work logged by duration, so logging the
+  whole slot would count that time twice. With nothing unlogged it returns
+  null and the button is disabled, the reason in its tooltip.
+
+The button sits on every "Open between meetings" row and every gap row on a
+full day, and calls `HomeNavigation.logTimeFor(date, prefill: …)`. See
+`log-time-screen.md` for what Log Time does with it.
+
+**Layout (top → bottom):** date nav row · `_PendingMeetingsBanner` · `_StatTiles`
+(Logged, Coverage, Unlogged/Over goal, Meetings when there are any, and
+Switches on a full day; one row when each tile gets 120 px, else three across,
+two on a phone) · `_WhereItWent` · then one of three, by `placement`:
 
 - **full** — "Gaps of 15m or more", the brand-filled timeline ("covered ·
   dead") and the gap list. Meetings placed from the calendar are merged in
-  with the timed entries.
+  with the timed entries. The longest gap is outlined (`focus-window`) and
+  read out: "Longest focus window: 11:30 – 17:00 · 5h 30m with nothing
+  logged".
 - **partial** (`_partialDay`) — "The day" with "Xh placed from your
   calendar"; `_PlacedTimeline`, placed spans in project colours over a
   hatched (`_HatchPainter`) background. A block carries its title (ellipsis
@@ -71,7 +105,9 @@ colour) · then one of three, by `placement`:
   hourly, two-hourly past six hours, each kept only where its measured label
   clears the end labels and the tick before it. The legend has one swatch per
   project on the timeline, named by the part after the last `|` ("CRT
-  Team"), then "Open: other work or nothing"; `_UnplacedCard`, a
+  Team"), then "Open: other work or nothing", then the focus line ("… with no meetings",
+  or "with nothing placed" when not everything placed is a meeting), the
+  window outlined on the timeline in success green; `_UnplacedCard`, a
   dashed card saying how much was logged by duration and how much of the work
   day that leaves unlogged (the Unlogged tile's figure, goal − logged), with a
   chip per unplaced entry (`entryLabel` · duration, largest first); and
@@ -82,9 +118,30 @@ colour) · then one of three, by `placement`:
 
 A future day shows "This day hasn't happened yet" instead of all of this.
 
+**Where it went** — a Project · task / Work item switch, remembered in
+`insights_breakdown_by_work_item`. Project · task is `_TaskBreakdown` (bars
+in the project colour); Work item is `_WorkItemBreakdown`: `#id`, the title
+from the `AdoService` cache (instance found by `matchesPermalink`) else the
+notes title else "Work item #id", the entry count and total, the left border
+and id in `workItemStateColor` (shared with `WorkItemChip`) when the item is
+cached. Insights reads the cache only; Recent's prefetch fills it.
+
+**Unlogged meetings** — `_PendingMeetingsBanner`: "2 meetings from yesterday
+aren't logged · Sprint retro and Vendor sync need a project", **Review**
+opening `showPendingMeetingsSheet`. It reads `CalendarImportProvider.pending`
+for the selected date (`meetingSpentDate`), so it is hidden with none, on a
+future day, and on the web until an upload has run. Only pending meetings: the
+ledger (`calendar_logged_v1`, key → spent date) is written the same way for a
+meeting logged and one skipped from the sheet, and holds no title, so skipped
+meetings can't be named.
+
 **Tests** — `test/day_insights_test.dart` (the model, `placedSpanOf`, partial
-days) and `test/insights_screen_test.dart` (the screen behind a `MockClient`
-in each of the three states).
+days, the focus window), `test/day_breakdown_test.dart`,
+`test/log_time_prefill_test.dart` and `test/insights_screen_test.dart` (the
+screen behind a `MockClient` in each of the three states; Log this handing
+over a capped duration, disabled at goal, and a full day's start/end; the
+Meetings tile and focus line; the work item switch and its memory; the banner,
+fed by a real upload, opening the sheet).
 
 **Settings** — the gap threshold lives in the Work Day section as "Report gaps
 of at least" (`ProjectCategoryProvider.minGapMinutes`, `min_gap_minutes` in

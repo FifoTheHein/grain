@@ -376,6 +376,50 @@ void main() {
       expect(partial().contextSwitches, 0);
       expect(partial(unplaced: 0).contextSwitches, 2);
     });
+
+    test('the longest focus window is the longest open stretch', () {
+      // 13:00–16:00 (3h) over 09:30–12:00 (2h 30m).
+      final focus = longestFocusWindow(partial())!;
+      expect(focus.start, 13 * 60);
+      expect(focus.end, 16 * 60);
+      expect(focus.previous?.label, 'Planning');
+      // The same on a fully timed day, where it is the longest gap.
+      expect(longestFocusWindow(partial(unplaced: 0))!.start, 13 * 60);
+    });
+
+    test('a focus window ties to the earlier stretch', () {
+      final insights = computeDayInsights(
+        spans: const [InsightSpan(start: 600, end: 660)],
+        windowStart: 540,
+        windowEnd: 720,
+        minGapMinutes: 15,
+      );
+      // 09:00–10:00 and 11:00–12:00, both an hour.
+      expect(longestFocusWindow(insights)!.start, 540);
+    });
+
+    test('no focus window under the gap threshold or with nothing placed',
+        () {
+      final short = computeDayInsights(
+        spans: const [
+          InsightSpan(start: 540, end: 600),
+          InsightSpan(start: 610, end: 700),
+        ],
+        windowStart: 540,
+        windowEnd: 700,
+        minGapMinutes: 15,
+      );
+      expect(longestFocusWindow(short), isNull);
+
+      final none = computeDayInsights(
+        spans: const [],
+        windowStart: dayStart,
+        windowEnd: dayEnd,
+        minGapMinutes: 15,
+        unplacedMinutes: 120,
+      );
+      expect(longestFocusWindow(none), isNull);
+    });
   });
 
   group('formatting', () {
