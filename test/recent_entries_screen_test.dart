@@ -112,7 +112,7 @@ Future<({TimeEntryProvider entries, _Harvest harvest, List<DateTime> handedOver}
       theme: buildGrainTheme(Brightness.dark, kThemePalettes.first),
       home: Scaffold(
         body: HomeNavigation(
-          logTimeFor: handedOver.add,
+          logTimeFor: (date, {prefill}) => handedOver.add(date),
           child: const RecentEntriesScreen(),
         ),
       ),

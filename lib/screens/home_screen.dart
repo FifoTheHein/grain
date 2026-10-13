@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import '../models/log_time_prefill.dart';
 import 'insights_screen.dart';
 import 'log_time_screen.dart';
 import 'recent_entries_screen.dart';
 import 'settings_screen.dart';
 import '../theme/harvest_tokens.dart';
 
+/// Switches to Log Time on a date, optionally with the form pre-filled.
+typedef LogTimeHandover = void Function(DateTime date,
+    {LogTimePrefill? prefill});
+
 /// Lets a screen under [HomeScreen] switch tabs, e.g. Recent's empty future
-/// day opening Log Time on that date.
+/// day opening Log Time on that date, or Insights' "Log this" opening it
+/// pre-filled with an open stretch.
 class HomeNavigation extends InheritedWidget {
-  /// Switches to Log Time with [date] preselected.
-  final ValueChanged<DateTime> logTimeFor;
+  /// Switches to Log Time with the date preselected and, when given, the
+  /// prefill applied.
+  final LogTimeHandover logTimeFor;
 
   const HomeNavigation({
     super.key,
@@ -38,17 +45,20 @@ class _HomeScreenState extends State<HomeScreen> {
   /// The date Log Time opens on when another screen handed one over. Cleared
   /// by any ordinary tab change, so a later visit opens on today as usual.
   DateTime? _logTimeDate;
+  LogTimePrefill? _logTimePrefill;
 
   static const _logTimeTab = 1;
 
   void _selectTab(int i) => setState(() {
         _tab = i;
         _logTimeDate = null;
+        _logTimePrefill = null;
       });
 
-  void _logTimeFor(DateTime date) => setState(() {
+  void _logTimeFor(DateTime date, {LogTimePrefill? prefill}) => setState(() {
         _tab = _logTimeTab;
         _logTimeDate = date;
+        _logTimePrefill = prefill;
       });
 
   static const _destinations = [
@@ -78,7 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
         logTimeFor: _logTimeFor,
         child: switch (_tab) {
           0 => const RecentEntriesScreen(),
-          _logTimeTab => LogTimeScreen(initialDate: _logTimeDate),
+          _logTimeTab => LogTimeScreen(
+              initialDate: _logTimeDate, prefill: _logTimePrefill),
           2 => const InsightsScreen(),
           _ => const SettingsScreen(),
         },

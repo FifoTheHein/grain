@@ -2,16 +2,32 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/ado_work_item.dart';
+import '../models/calendar_event.dart';
+import '../models/day_breakdown.dart';
 import '../models/day_insights.dart';
 import '../models/entry_display.dart';
 import '../models/future_days.dart';
+import '../models/log_time_prefill.dart';
+import '../models/meeting.dart' show meetingSpentDate;
 import '../models/time_entry.dart';
+import '../providers/ado_instance_provider.dart';
+import '../providers/calendar_import_provider.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
+import '../services/ado_service.dart';
 import '../theme/harvest_palette.dart';
 import '../theme/harvest_tokens.dart';
 import '../widgets/dashed_border.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/pending_meetings_sheet.dart';
+import '../widgets/work_item_chip.dart' show workItemStateColor;
+import 'home_screen.dart';
+
+/// SharedPreferences key remembering whether "Where it went" groups by work
+/// item (true) or by project and task (false).
+const kInsightsByWorkItemKey = 'insights_breakdown_by_work_item';
 
 /// Day analytics for the date selected on the Recent screen: how much of the
 /// work day is accounted for, where it went, and — when the Harvest account
@@ -57,6 +73,8 @@ class InsightsScreen extends StatelessWidget {
     required int windowStart,
     required int windowEnd,
     required int minGapMinutes,
+    required InsightGap? focus,
+    required Widget Function(InsightGap gap) openRow,
   }) {
     final palette = HarvestTokens.of(context);
     final heading = TextStyle(
@@ -81,7 +99,15 @@ class InsightsScreen extends StatelessWidget {
         windowStart: windowStart,
         windowEnd: windowEnd,
         projectNames: projectNames,
+        focus: focus,
       ),
+      if (focus != null) ...[
+        const SizedBox(height: 8),
+        _FocusLine(
+          gap: focus,
+          without: allCalendar ? 'with no meetings' : 'with nothing placed',
+        ),
+      ],
       const SizedBox(height: 14),
       _UnplacedCard(
         entries: unplaced,
@@ -112,8 +138,38 @@ class InsightsScreen extends StatelessWidget {
               'than the gap threshold in between.',
         )
       else
-        for (final gap in insights.gaps) _OpenRow(gap: gap),
+        for (final gap in insights.gaps) openRow(gap),
     ];
+  }
+
+  /// "Log this" for an open stretch: the Log Time form it would open, or the
+  /// reason it can't.
+  ({LogTimePrefill? prefill, String tooltip}) _logThis(
+    InsightGap gap, {
+    required DateTime date,
+    required bool tracksByStartEnd,
+    required int unloggedMinutes,
+  }) {
+    final prefill = prefillForSlot(
+      date: date,
+      gap: gap,
+      tracksByStartEnd: tracksByStartEnd,
+      unloggedMinutes: unloggedMinutes,
+    );
+    if (prefill == null) {
+      return (
+        prefill: null,
+        tooltip: 'Nothing left to log: the day’s goal is already covered '
+            'by what was logged',
+      );
+    }
+    return (
+      prefill: prefill,
+      tooltip: prefill.startEnd
+          ? 'Log ${formatClock(prefill.start)}–${formatClock(prefill.end)}'
+          : 'Log ${formatDuration(prefill.minutes)}'
+              '${prefill.minutes < gap.minutes ? ', what’s left unlogged' : ''}',
+    );
   }
 
   @override
@@ -164,6 +220,35 @@ class InsightsScreen extends StatelessWidget {
     final unloggedMinutes = goalMinutes - loggedMinutes;
     final coverage =
         goalMinutes > 0 ? (loggedMinutes / goalMinutes).clamp(0.0, 1.0) : 0.0;
+    final focus = longestFocusWindow(insights);
+
+    // Meetings the calendar import couldn't place, on this day.
+    final selectedDay =
+        DateFormat('yyyy-MM-dd').format(entryProvider.selectedDate);
+    final pendingOnDay = context
+        .watch<CalendarImportProvider>()
+        .pending
+        .where((e) => meetingSpentDate(e) == selectedDay)
+        .toList();
+
+    Widget slotRow(InsightGap gap, {required bool open}) {
+      final action = _logThis(
+        gap,
+        date: entryProvider.selectedDate,
+        tracksByStartEnd: entryProvider.tracksByStartEnd,
+        unloggedMinutes: unloggedMinutes,
+      );
+      final prefill = action.prefill;
+      final onLogThis = prefill == null
+          ? null
+          : () => HomeNavigation.maybeOf(context)
+              ?.logTimeFor(prefill.date, prefill: prefill);
+      return open
+          ? _OpenRow(
+              gap: gap, onLogThis: onLogThis, logThisTooltip: action.tooltip)
+          : _GapRow(
+              gap: gap, onLogThis: onLogThis, logThisTooltip: action.tooltip);
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -178,6 +263,14 @@ class InsightsScreen extends StatelessWidget {
           onTapDate: () => _pickDate(context),
         ),
         const SizedBox(height: 16),
+
+        if (!isFuture && pendingOnDay.isNotEmpty) ...[
+          _PendingMeetingsBanner(
+            meetings: pendingOnDay,
+            date: entryProvider.selectedDate,
+          ),
+          const SizedBox(height: 16),
+        ],
 
         if (entryProvider.isLoading)
           const Padding(
@@ -206,16 +299,11 @@ class InsightsScreen extends StatelessWidget {
             coverage: coverage,
             unloggedMinutes: unloggedMinutes,
             insights: insights,
+            meetings: meetingLoad(entries),
           ),
           const SizedBox(height: 20),
 
-          Text('Where it went',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: palette.text2)),
-          const SizedBox(height: 8),
-          _TaskBreakdown(entries: entries, totalMinutes: loggedMinutes),
+          _WhereItWent(entries: entries, totalMinutes: loggedMinutes),
           const SizedBox(height: 20),
 
           if (spans.isEmpty)
@@ -244,6 +332,8 @@ class InsightsScreen extends StatelessWidget {
               windowStart: windowStart,
               windowEnd: windowEnd,
               minGapMinutes: settings.minGapMinutes,
+              focus: focus,
+              openRow: (gap) => slotRow(gap, open: true),
             )
           else ...[
             Row(
@@ -266,7 +356,12 @@ class InsightsScreen extends StatelessWidget {
               spans: spans,
               windowStart: windowStart,
               windowEnd: windowEnd,
+              focus: focus,
             ),
+            if (focus != null) ...[
+              const SizedBox(height: 8),
+              _FocusLine(gap: focus, without: 'with nothing logged'),
+            ],
             const SizedBox(height: 12),
             if (insights.gaps.isEmpty)
               _EmptyCard(
@@ -276,7 +371,7 @@ class InsightsScreen extends StatelessWidget {
                     'for. Nicely focused.',
               )
             else
-              for (final gap in insights.gaps) _GapRow(gap: gap),
+              for (final gap in insights.gaps) slotRow(gap, open: false),
           ],
         ],
       ],
@@ -341,6 +436,7 @@ class _StatTiles extends StatelessWidget {
   final double coverage;
   final int unloggedMinutes;
   final DayInsights insights;
+  final MeetingLoad meetings;
 
   const _StatTiles({
     required this.loggedMinutes,
@@ -348,6 +444,7 @@ class _StatTiles extends StatelessWidget {
     required this.coverage,
     required this.unloggedMinutes,
     required this.insights,
+    required this.meetings,
   });
 
   @override
@@ -374,6 +471,13 @@ class _StatTiles extends StatelessWidget {
                 : 'still to account for',
         warn: unloggedMinutes < 0,
       ),
+      if (meetings.count > 0)
+        _StatTile(
+          label: 'Meetings',
+          value: formatDuration(meetings.minutes),
+          detail: '${meetings.percentOfLogged}% of logged · '
+              '${meetings.count} meeting${meetings.count == 1 ? '' : 's'}',
+        ),
       // Switches need the order of the whole day, so only a fully timed day
       // shows them.
       if (insights.placement == DayPlacement.full)
@@ -386,7 +490,13 @@ class _StatTiles extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 520 ? tiles.length : 2;
+        // One row when each tile has room for its detail line, else three
+        // across on a mid width and two on a phone.
+        final columns = constraints.maxWidth < 520
+            ? 2
+            : constraints.maxWidth / tiles.length >= 120
+                ? tiles.length
+                : 3;
         return GridView.count(
           crossAxisCount: columns,
           shrinkWrap: true,
@@ -550,11 +660,15 @@ class _DayTimeline extends StatelessWidget {
   final int windowStart;
   final int windowEnd;
 
+  /// The longest focus window, outlined.
+  final InsightGap? focus;
+
   const _DayTimeline({
     required this.insights,
     required this.spans,
     required this.windowStart,
     required this.windowEnd,
+    this.focus,
   });
 
   @override
@@ -599,6 +713,8 @@ class _DayTimeline extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (focus != null)
+                    _focusOutline(focus!, windowStart, span, width),
                 ],
               ),
             );
@@ -635,11 +751,15 @@ class _PlacedTimeline extends StatelessWidget {
   /// Harvest project names by id, for the legend.
   final Map<int, String> projectNames;
 
+  /// The longest focus window, outlined.
+  final InsightGap? focus;
+
   const _PlacedTimeline({
     required this.spans,
     required this.windowStart,
     required this.windowEnd,
     required this.projectNames,
+    this.focus,
   });
 
   static const _tickStyle = TextStyle(fontSize: 10);
@@ -740,6 +860,8 @@ class _PlacedTimeline extends StatelessWidget {
                             _block(s, x(s.start),
                                 (x(s.end) - x(s.start)).clamp(1.0, width),
                                 colourOf(_projectOf(s)), palette, scaler),
+                        if (focus != null)
+                          _focusOutline(focus!, windowStart, length, width),
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -915,6 +1037,18 @@ class _UnplacedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
     final categories = context.watch<ProjectCategoryProvider>();
+    final ado = context.watch<AdoService>();
+    final instances = context.watch<AdoInstanceProvider>().instances;
+    // A work item entry whose notes are only the reference would otherwise
+    // read as its task ("Development"); its cached title says more.
+    String? titleOf(TimeEntry e) {
+      final ref = e.adoReference;
+      if (ref == null) return null;
+      return _cachedWorkItem(
+              ado, instances, ref.permalink, ref.id.split('_').last)
+          ?.title;
+    }
+
     final strong = TextStyle(fontWeight: FontWeight.w600, color: palette.text);
     final chips = entries
         .map((e) => (entry: e, minutes: (e.hours * 60).round()))
@@ -997,15 +1131,22 @@ class _UnplacedCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 6),
+                              // The label gives way to a long title; the
+                              // duration always shows.
                               Flexible(
                                 child: Text(
-                                  '${entryLabel(c.entry)} · '
-                                  '${formatDuration(c.minutes)}',
+                                  entryLabel(c.entry,
+                                      workItemTitle: titleOf(c.entry)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                       fontSize: 11, color: palette.text2),
                                 ),
+                              ),
+                              Text(
+                                ' · ${formatDuration(c.minutes)}',
+                                style: TextStyle(
+                                    fontSize: 11, color: palette.text2),
                               ),
                             ],
                           ),
@@ -1028,7 +1169,15 @@ class _UnplacedCard extends StatelessWidget {
 class _OpenRow extends StatelessWidget {
   final InsightGap gap;
 
-  const _OpenRow({required this.gap});
+  /// Opens Log Time for this stretch; null disables "Log this".
+  final VoidCallback? onLogThis;
+  final String logThisTooltip;
+
+  const _OpenRow({
+    required this.gap,
+    required this.onLogThis,
+    required this.logThisTooltip,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1082,6 +1231,8 @@ class _OpenRow extends StatelessWidget {
             '${formatClock(gap.start)} – ${formatClock(gap.end)}',
             style: TextStyle(fontSize: 11, color: palette.text3),
           ),
+          const SizedBox(width: 8),
+          _LogThisButton(onPressed: onLogThis, tooltip: logThisTooltip),
         ],
       ),
     );
@@ -1091,7 +1242,15 @@ class _OpenRow extends StatelessWidget {
 class _GapRow extends StatelessWidget {
   final InsightGap gap;
 
-  const _GapRow({required this.gap});
+  /// Opens Log Time for this gap; null disables "Log this".
+  final VoidCallback? onLogThis;
+  final String logThisTooltip;
+
+  const _GapRow({
+    required this.gap,
+    required this.onLogThis,
+    required this.logThisTooltip,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1128,6 +1287,8 @@ class _GapRow extends StatelessWidget {
             '${formatClock(gap.start)} – ${formatClock(gap.end)}',
             style: TextStyle(fontSize: 11, color: palette.text3),
           ),
+          const SizedBox(width: 8),
+          _LogThisButton(onPressed: onLogThis, tooltip: logThisTooltip),
         ],
       ),
     );
@@ -1180,4 +1341,344 @@ class _EmptyCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The longest focus window drawn over a timeline bar: a success-coloured
+/// outline around the stretch, no fill, so what it surrounds still reads.
+Widget _focusOutline(InsightGap gap, int windowStart, int length, double width) {
+  final left = (gap.start - windowStart) / length * width;
+  final right = (gap.end - windowStart) / length * width;
+  return Positioned(
+    key: const ValueKey('focus-window'),
+    left: left,
+    width: (right - left).clamp(1.0, width),
+    top: 0,
+    bottom: 0,
+    child: IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: HarvestTokens.success, width: 2),
+        ),
+      ),
+    ),
+  );
+}
+
+/// "Longest focus window: 09:20 – 14:30 · 5h 10m with no meetings".
+class _FocusLine extends StatelessWidget {
+  final InsightGap gap;
+
+  /// How the stretch is free: "with no meetings", "with nothing logged".
+  final String without;
+
+  const _FocusLine({required this.gap, required this.without});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: HarvestTokens.success, width: 2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              const TextSpan(text: 'Longest focus window: '),
+              TextSpan(
+                text: '${formatClock(gap.start)} – ${formatClock(gap.end)} · '
+                    '${formatDuration(gap.minutes)}',
+                style:
+                    TextStyle(fontWeight: FontWeight.w600, color: palette.text),
+              ),
+              TextSpan(text: ' $without'),
+            ]),
+            style: TextStyle(fontSize: 11.5, color: palette.text2),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "Log this" on an open stretch or gap. Disabled with its reason in the
+/// tooltip when there is nothing to log.
+class _LogThisButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final String tooltip;
+
+  const _LogThisButton({required this.onPressed, required this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: palette.brand,
+          side: BorderSide(
+              color: onPressed == null ? palette.border : palette.brand),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          minimumSize: const Size(0, 28),
+          textStyle:
+              const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+        ),
+        child: const Text('Log this'),
+      ),
+    );
+  }
+}
+
+/// "2 meetings from today aren't logged · Sprint retro and Vendor sync need
+/// a project", with Review opening the pending sheet.
+class _PendingMeetingsBanner extends StatelessWidget {
+  final List<CalendarEvent> meetings;
+  final DateTime date;
+
+  const _PendingMeetingsBanner({required this.meetings, required this.date});
+
+  String get _dayWord {
+    final days = daysFromToday(date, DateTime.now());
+    if (days == 0) return 'today';
+    if (days == -1) return 'yesterday';
+    return DateFormat('EEE d MMM').format(date);
+  }
+
+  String get _who {
+    final titles = meetings.map((m) => m.summary.trim()).toList();
+    final verb = titles.length == 1 ? 'needs' : 'need';
+    final names = switch (titles.length) {
+      1 => titles[0],
+      2 => '${titles[0]} and ${titles[1]}',
+      _ => '${titles[0]}, ${titles[1]} and ${titles.length - 2} more',
+    };
+    return '$names $verb a project';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final count = meetings.length;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: HarvestTokens.warn.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: HarvestTokens.warn.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.event_busy_outlined,
+              size: 18, color: HarvestTokens.warn),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                  text: '$count meeting${count == 1 ? '' : 's'} from '
+                      '$_dayWord ${count == 1 ? 'isn’t' : 'aren’t'} logged',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, color: palette.text),
+                ),
+                TextSpan(text: ' · $_who'),
+              ]),
+              style: TextStyle(fontSize: 12, color: palette.text2),
+            ),
+          ),
+          TextButton(
+            onPressed: () => showPendingMeetingsSheet(context),
+            style: TextButton.styleFrom(foregroundColor: palette.brand),
+            child: const Text('Review'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Where it went" with its Project · task / Work item switch, remembered in
+/// [kInsightsByWorkItemKey].
+class _WhereItWent extends StatefulWidget {
+  final List<TimeEntry> entries;
+  final int totalMinutes;
+
+  const _WhereItWent({required this.entries, required this.totalMinutes});
+
+  @override
+  State<_WhereItWent> createState() => _WhereItWentState();
+}
+
+class _WhereItWentState extends State<_WhereItWent> {
+  bool _byWorkItem = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final byWorkItem = prefs.getBool(kInsightsByWorkItemKey) ?? false;
+    if (mounted && byWorkItem != _byWorkItem) {
+      setState(() => _byWorkItem = byWorkItem);
+    }
+  }
+
+  Future<void> _set(bool byWorkItem) async {
+    setState(() => _byWorkItem = byWorkItem);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(kInsightsByWorkItemKey, byWorkItem);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text('Where it went',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: palette.text2)),
+            ),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('Project · task')),
+                ButtonSegment(value: true, label: Text('Work item')),
+              ],
+              selected: {_byWorkItem},
+              onSelectionChanged: (s) => _set(s.first),
+              showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: const TextStyle(fontSize: 11),
+                // The chosen side filled with the accent and the other one
+                // quiet. A tint on the chosen side read backwards on palettes
+                // whose tint is darker than the canvas.
+                foregroundColor: palette.text3,
+                selectedBackgroundColor: palette.brand,
+                selectedForegroundColor: palette.onBrand,
+                side: BorderSide(color: palette.borderStrong),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_byWorkItem)
+          _WorkItemBreakdown(entries: widget.entries)
+        else
+          _TaskBreakdown(
+              entries: widget.entries, totalMinutes: widget.totalMinutes),
+      ],
+    );
+  }
+}
+
+/// Per work item totals for the day, largest first, then everything linked
+/// to none. Titles come from the ADO cache, else the entries' notes.
+class _WorkItemBreakdown extends StatelessWidget {
+  final List<TimeEntry> entries;
+
+  const _WorkItemBreakdown({required this.entries});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final ado = context.watch<AdoService>();
+    final instances = context.watch<AdoInstanceProvider>().instances;
+
+    return Column(
+      children: [
+        for (final group in groupByWorkItem(entries))
+          Builder(builder: (context) {
+            final id = group.workItemId;
+            final cached = id == null
+                ? null
+                : _cachedWorkItem(ado, instances, group.permalink, id);
+            final accent = cached != null
+                ? workItemStateColor(cached.state)
+                : palette.borderStrong;
+            final title = id == null
+                ? 'No work item'
+                : cached?.title ?? group.notesTitle ?? 'Work item #$id';
+            final count = group.entries.length;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.fromLTRB(10, 9, 12, 9),
+              decoration: BoxDecoration(
+                color: palette.surface2,
+                borderRadius: BorderRadius.circular(6),
+                border: Border(left: BorderSide(color: accent, width: 3)),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      id == null ? '—' : '#$id',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: cached != null ? accent : palette.text3,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: palette.text),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$count ${count == 1 ? 'entry' : 'entries'}',
+                    style: TextStyle(fontSize: 11, color: palette.text3),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    formatDuration(group.minutes),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: palette.text,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+}
+
+/// The cached ADO work item [id], looked up under the instance its
+/// [permalink] belongs to; null when no instance matches or the item hasn't
+/// been fetched. Insights only reads the cache — Recent's prefetch fills it.
+AdoWorkItem? _cachedWorkItem(AdoService ado, List<AdoInstance> instances,
+    String? permalink, String id) {
+  if (permalink == null || permalink.isEmpty) return null;
+  final instance =
+      instances.firstWhereOrNull((i) => i.matchesPermalink(permalink));
+  return instance == null ? null : ado.getCached(instance.label, id);
 }

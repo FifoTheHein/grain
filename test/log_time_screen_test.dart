@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:harvest/models/log_time_prefill.dart';
 import 'package:harvest/models/time_entry.dart';
 import 'package:harvest/providers/ado_instance_provider.dart';
 import 'package:harvest/providers/assignment_provider.dart';
@@ -49,6 +50,7 @@ http.Client harvestMock({List<Map<String, Object?>> entries = const []}) =>
 Future<void> pumpLogTime(WidgetTester tester,
     {List<AdoInstance> instances = const [],
     DateTime? initialDate,
+    LogTimePrefill? prefill,
     http.Client? client,
     DateTime? loadWeekOf}) async {
   tester.view.physicalSize = const Size(420, 1400);
@@ -78,7 +80,8 @@ Future<void> pumpLogTime(WidgetTester tester,
     ],
     child: MaterialApp(
       theme: buildGrainTheme(Brightness.dark, kThemePalettes.first),
-      home: Scaffold(body: LogTimeScreen(initialDate: initialDate)),
+      home: Scaffold(
+          body: LogTimeScreen(initialDate: initialDate, prefill: prefill)),
     ),
   ));
   await tester.pumpAndSettle();
@@ -215,6 +218,84 @@ void main() {
     await pumpLogTime(tester);
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('End'), findsOneWidget);
+  });
+
+  group('a prefill from Insights', () {
+    DateTime yesterday() {
+      final n = DateTime.now();
+      return DateTime(n.year, n.month, n.day - 1);
+    }
+
+    testWidgets('opens in Duration with the remembered mode left alone',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({kLogTimeStartEndKey: true});
+      final date = yesterday();
+      await pumpLogTime(tester,
+          initialDate: date,
+          prefill: LogTimePrefill(
+            date: date,
+            startEnd: false,
+            minutes: 95,
+            origin: 'open after CRT Daily Scrum',
+          ));
+
+      expect(find.text('From Insights · open after CRT Daily Scrum',
+          findRichText: true), findsOneWidget);
+      expect(find.text('Start'), findsNothing);
+      expect(find.text('Log 1h 35m'), findsOneWidget);
+      expect(find.text('NWR001 · Development · yesterday'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(kLogTimeStartEndKey), isTrue);
+
+      // Changing the date by hand drops the prefill and the mode returns to
+      // the remembered one.
+      await tester.tap(find.text('Today'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('From Insights', findRichText: true),
+          findsNothing);
+      expect(find.text('Start'), findsOneWidget);
+      expect(prefs.getBool(kLogTimeStartEndKey), isTrue);
+    });
+
+    testWidgets('opens in Start & End with the slot and its captions',
+        (tester) async {
+      final date = yesterday();
+      await pumpLogTime(tester,
+          initialDate: date,
+          prefill: LogTimePrefill(
+            date: date,
+            startEnd: true,
+            start: 9 * 60 + 20,
+            end: 14 * 60 + 30,
+            startCaption: 'after CRT Daily Scrum',
+            endCaption: 'before Release Planning',
+            origin: 'open after CRT Daily Scrum',
+          ));
+
+      expect(find.text('09:20'), findsOneWidget);
+      expect(find.text('14:30'), findsOneWidget);
+      expect(find.text('after CRT Daily Scrum'), findsOneWidget);
+      expect(find.text('before Release Planning'), findsOneWidget);
+      expect(find.text('Log 5h 10m'), findsOneWidget);
+      // Not remembered: the prefill chose the mode for this visit only.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(kLogTimeStartEndKey), isNull);
+
+      // A nudge keeps the line but the captions no longer describe the times.
+      await tester.tap(find.bySemanticsLabel('End plus 1 minute'));
+      await tester.pump();
+      expect(find.text('14:31'), findsOneWidget);
+      expect(find.text('before Release Planning'), findsNothing);
+      expect(find.textContaining('From Insights', findRichText: true),
+          findsOneWidget);
+
+      // Switching mode by hand clears it and is remembered as usual.
+      await tester.tap(find.text('Duration'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('From Insights', findRichText: true),
+          findsNothing);
+      expect(prefs.getBool(kLogTimeStartEndKey), isFalse);
+    });
   });
 
   testWidgets('a #id in the notes offers to link it', (tester) async {

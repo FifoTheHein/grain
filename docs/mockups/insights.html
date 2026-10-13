@@ -6,7 +6,32 @@
 <style>
   /* A duration account's day: imported meetings placed from the calendar,
      everything else counted but not drawn. */
-  .tiles.three { grid-template-columns: repeat(3, 1fr); }
+  .pending { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 8px 8px 8px 12px; border-radius: 8px;
+             background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 50%, transparent);
+             font-size: 12px; color: var(--text2); }
+  .pending b { color: var(--text); font-weight: 600; }
+  .pending .msg { flex: 1; }
+  .pending .review { color: var(--brand); font-weight: 600; padding: 4px 8px; }
+
+  .subhead.switch { display: flex; align-items: center; }
+  .subhead.switch > span:first-child { flex: 1; }
+  .minisw { display: inline-flex; border: 1px solid var(--borderStrong); border-radius: 14px; overflow: hidden; font-size: 11px; font-weight: 500; }
+  .minisw span { padding: 3px 10px; color: var(--text3); }
+  .minisw span.on { background: var(--brand); color: var(--onBrand); }
+
+  .wirow { display: flex; align-items: center; gap: 8px; padding: 9px 12px 9px 10px; margin-bottom: 6px; border-radius: 6px;
+           background: var(--surface2); border-left: 3px solid var(--borderStrong); font-size: 12px; }
+  .wirow .id { width: 64px; font-size: 11.5px; font-weight: 600; color: var(--text3); }
+  .wirow .t { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wirow .n { font-size: 11px; color: var(--text3); margin-right: 4px; }
+  .wirow .amt { font-weight: 700; }
+  .wirow.active { border-left-color: var(--stateActive); } .wirow.active .id { color: var(--stateActive); }
+  .wirow.new { border-left-color: var(--stateNew); } .wirow.new .id { color: var(--stateNew); }
+
+  .tl2 .focus { position: absolute; top: 0; bottom: 0; border: 2px solid var(--success); border-radius: 3px; box-sizing: border-box; }
+  .focusline { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 11.5px; color: var(--text2); }
+  .focusline .sw { width: 12px; height: 12px; border: 2px solid var(--success); border-radius: 3px; box-sizing: border-box; }
+  .focusline b { color: var(--text); font-weight: 600; }
 
   .tl2 { position: relative; height: 24px; border-radius: 5px; overflow: hidden;
          background: repeating-linear-gradient(135deg, var(--surface3) 0 5px, transparent 5px 10px);
@@ -34,6 +59,7 @@
   .open .m { font-size: 12px; font-weight: 600; width: 64px; }
   .open .h { font-size: 12px; color: var(--text3); flex: 1; }
   .open .tm { font-size: 11px; color: var(--text3); }
+  .open .log { font-size: 11.5px; font-weight: 600; color: var(--brand); border: 1px solid var(--brand); border-radius: 14px; padding: 3px 10px; }
 </style>
 <body class="grain-light">
 <div class="shell">
@@ -59,30 +85,23 @@
         <span class="iconbtn"><svg class="i i-22"><use href="#ic-right"/></svg></span>
       </div>
 
-      <div class="tiles three">
+      <div class="pending">
+        <svg class="i i-18" style="color:var(--warn)"><use href="#ic-calendar"/></svg>
+        <span class="msg"><b>2 meetings from Mon 12 Oct aren’t logged</b> · Sprint retro and Vendor sync need a project</span>
+        <span class="review">Review</span>
+      </div>
+
+      <div class="tiles">
         <div class="tile em"><div class="lab">Logged</div><div class="val">6h 25m</div><div class="det">of 8h goal</div></div>
         <div class="tile"><div class="lab">Coverage</div><div class="val">80%</div><div class="det">of the work day</div></div>
         <div class="tile"><div class="lab">Unlogged</div><div class="val">1h 35m</div><div class="det">from totals, no clock times needed</div></div>
+        <div class="tile"><div class="lab">Meetings</div><div class="val">1h 40m</div><div class="det">26% of logged · 5 meetings</div></div>
       </div>
 
-      <div class="subhead">Where it went</div>
-
-      <div class="brow cat-green">
-        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Platform · Development</span><span class="amt">4h 45m</span></div>
-        <div class="bar"><i style="width:100%"></i></div>
-      </div>
-      <div class="brow cat-green">
-        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Platform · Meetings</span><span class="amt">50m</span></div>
-        <div class="bar"><i style="width:18%"></i></div>
-      </div>
-      <div class="brow cat-orange">
-        <div class="top"><span class="swatch"></span><span class="name">Contoso Operations · Meetings</span><span class="amt">30m</span></div>
-        <div class="bar"><i style="width:11%"></i></div>
-      </div>
-      <div class="brow cat-cyan">
-        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Helpdesk · Meetings</span><span class="amt">20m</span></div>
-        <div class="bar"><i style="width:7%"></i></div>
-      </div>
+      <div class="subhead switch"><span>Where it went</span><span class="minisw"><span>Project · task</span><span class="on">Work item</span></span></div>
+      <div class="wirow active"><span class="id">#13483</span><span class="t">Checkout redesign</span><span class="n">2 entries</span><span class="amt">3h 2m</span></div>
+      <div class="wirow new"><span class="id">#13502</span><span class="t">Release notes for 4.2</span><span class="n">1 entry</span><span class="amt">47m</span></div>
+      <div class="wirow"><span class="id">—</span><span class="t">No work item</span><span class="n">6 entries</span><span class="amt">2h 36m</span></div>
 
       <div class="subhead row"><span>The day</span><span class="note">1h 40m placed from your calendar</span></div>
       <!-- window 08:30–17:00 = 510 min -->
@@ -92,9 +111,12 @@
         <i class="cat-green" style="left:5.88%;width:3.92%"></i>
         <i class="cat-green" style="left:70.59%;width:5.88%">Release Planning</i>
         <i class="cat-orange" style="left:88.24%;width:3.92%"></i>
+        <!-- longest focus window 09:20–14:30 -->
+        <span class="focus" style="left:9.80%;width:60.78%"></span>
       </div>
       <div class="ticks"><span style="left:0;transform:none">08:30</span><span style="left:17.65%">10:00</span><span style="left:41.18%">12:00</span><span style="left:64.71%">14:00</span><span style="left:88.24%">16:00</span><span style="left:auto;right:0;transform:none">17:00</span></div>
       <div class="legend"><span class="cat-orange"><span class="sw" style="background:var(--cat-color)"></span>Contoso Operations</span><span class="cat-cyan"><span class="sw" style="background:var(--cat-color)"></span>Helpdesk</span><span class="cat-green"><span class="sw" style="background:var(--cat-color)"></span>Platform</span><span><span class="sw hatch"></span>Open: other work or nothing</span></div>
+      <div class="focusline"><span class="sw"></span><span>Longest focus window: <b>09:20 – 14:30 · 5h 10m</b> with no meetings</span></div>
 
       <div class="unplaced">
         <svg class="i i-20" style="color:var(--text3);margin-top:1px"><use href="#ic-clock"/></svg>
@@ -110,9 +132,9 @@
       </div>
 
       <div class="subhead row"><span>Open between meetings</span><span class="note">15m or more · longest 5h 10m</span></div>
-      <div class="open"><span class="d"></span><span class="m">5h 10m</span><span class="h">after Daily Scrum</span><span class="tm">09:20 – 14:30</span></div>
-      <div class="open"><span class="d"></span><span class="m">1h</span><span class="h">after Release Planning</span><span class="tm">15:00 – 16:00</span></div>
-      <div class="open"><span class="d"></span><span class="m">40m</span><span class="h">after Afternoon Check-in</span><span class="tm">16:20 – 17:00</span></div>
+      <div class="open"><span class="d"></span><span class="m">5h 10m</span><span class="h">after Daily Scrum</span><span class="tm">09:20 – 14:30</span><span class="log">Log this</span></div>
+      <div class="open"><span class="d"></span><span class="m">1h</span><span class="h">after Release Planning</span><span class="tm">15:00 – 16:00</span><span class="log">Log this</span></div>
+      <div class="open"><span class="d"></span><span class="m">40m</span><span class="h">after Afternoon Check-in</span><span class="tm">16:20 – 17:00</span><span class="log">Log this</span></div>
 
     </div></div></div>
   </div>

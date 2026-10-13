@@ -10,6 +10,7 @@ import '../models/day_insights.dart';
 import '../models/duration_input.dart';
 import '../models/future_days.dart';
 import '../models/log_time_defaults.dart';
+import '../models/log_time_prefill.dart';
 import '../models/mapping_rule.dart';
 import '../models/meeting.dart' show workItemIdFromTitle;
 import '../models/project_assignment.dart';
@@ -40,7 +41,11 @@ class LogTimeScreen extends StatefulWidget {
   /// over "Log time for Thu 15 Oct". Today when null.
   final DateTime? initialDate;
 
-  const LogTimeScreen({super.key, this.initialDate});
+  /// The form as Insights' "Log this" hands it over: mode, duration or
+  /// times, and where the stretch was. Applied over [initialDate].
+  final LogTimePrefill? prefill;
+
+  const LogTimeScreen({super.key, this.initialDate, this.prefill});
 
   @override
   State<LogTimeScreen> createState() => _LogTimeScreenState();
@@ -52,6 +57,14 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   final _workItemIdController = TextEditingController();
 
   late DateTime _selectedDate = widget.initialDate ?? DateTime.now();
+
+  /// The handed-over prefill while it still describes the form. Cleared by a
+  /// manual change of date or mode, and after logging.
+  LogTimePrefill? _prefill;
+
+  /// The mode remembered in prefs, which a prefill overrides on screen
+  /// without replacing.
+  bool _savedStartEnd = false;
   AdoInstance? _selectedAdoInstance;
   bool _hasAdoRef = false;
   Timer? _debounce;
@@ -90,29 +103,65 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   @override
   void initState() {
     super.initState();
+    final prefill = widget.prefill;
+    if (prefill != null) _fillFrom(prefill);
     _loadMode();
   }
 
   Future<void> _loadMode() async {
     final prefs = await SharedPreferences.getInstance();
     final startEnd = prefs.getBool(kLogTimeStartEndKey) ?? false;
-    if (mounted && startEnd != _useStartEndTime) {
+    _savedStartEnd = startEnd;
+    // A prefill chose the mode for this visit; the saved one waits until it
+    // clears.
+    if (mounted && _prefill == null && startEnd != _useStartEndTime) {
       setState(() => _useStartEndTime = startEnd);
     }
   }
 
   Future<void> _setMode(bool startEnd) async {
     setState(() {
+      _prefill = null;
       _useStartEndTime = startEnd;
       _resetStartEnd();
     });
+    _savedStartEnd = startEnd;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(kLogTimeStartEndKey, startEnd);
+  }
+
+  /// Caller is responsible for being inside `setState` (or `initState`).
+  /// Start & End times count as touched, so the defaults don't replace them.
+  void _fillFrom(LogTimePrefill p) {
+    _prefill = p;
+    _selectedDate = p.date;
+    _useStartEndTime = p.startEnd;
+    _submitAttempted = false;
+    if (p.startEnd) {
+      _startOverride = p.start;
+      _endOverride = p.end;
+    } else {
+      _resetStartEnd();
+      _durationMinutes = p.minutes;
+    }
+  }
+
+  /// Caller is responsible for being inside `setState`. Drops the prefill
+  /// and returns to the saved mode.
+  void _clearPrefill() {
+    if (_prefill == null) return;
+    _prefill = null;
+    _useStartEndTime = _savedStartEnd;
   }
 
   @override
   void didUpdateWidget(LogTimeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final prefill = widget.prefill;
+    if (prefill != null && prefill != oldWidget.prefill) {
+      setState(() => _fillFrom(prefill));
+      return;
+    }
     final date = widget.initialDate;
     if (date != null && date != oldWidget.initialDate) _setDate(date);
   }
@@ -154,6 +203,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
   void _setDate(DateTime date) {
     setState(() {
+      _clearPrefill();
       _selectedDate = date;
       _resetStartEnd();
     });
@@ -589,6 +639,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
         _durationMinutes = 0;
         _submitAttempted = false;
         _resetStartEnd();
+        _clearPrefill();
         _clearAfterCreate();
       });
     }
@@ -653,6 +704,11 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
             ErrorBanner(message: 'Projects: ${assignments.error!}'),
           if (entryProvider.error != null)
             ErrorBanner(message: entryProvider.error!),
+
+          if (_prefill != null) ...[
+            _FromInsightsLine(origin: _prefill!.origin),
+            const SizedBox(height: 12),
+          ],
 
           QuickTemplateBar(onApply: _applyTemplate),
           if (context.watch<QuickTemplateProvider>().enabledTemplates.isNotEmpty)
@@ -735,7 +791,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                     label: 'Start',
                     minutes: range.start,
                     caption: _startOverride != null
-                        ? null
+                        ? (_prefillHolds ? _prefill!.startCaption : null)
                         : _startCaption(range.defaults),
                     canNudgeUp: range.start < 23 * 60 + 59,
                     onNudge: (d) =>
@@ -750,7 +806,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
                     minutes: range.end,
                     caption: _endOverride == null && range.defaults.endIsNow
                         ? 'now'
-                        : null,
+                        : (_prefillHolds ? _prefill!.endCaption : null),
                     canNudgeUp: range.end <
                         (_isToday ? _nowMinutes() : 23 * 60 + 59),
                     onNudge: (d) =>
@@ -960,6 +1016,16 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     );
   }
 
+  /// True while the clock boxes still hold the prefill's times, so its
+  /// captions ("after Standup") still describe them.
+  bool get _prefillHolds {
+    final p = _prefill;
+    return p != null &&
+        p.startEnd &&
+        _startOverride == p.start &&
+        _endOverride == p.end;
+  }
+
   String? _startCaption(StartEndDefaults d) {
     switch (d.startSource) {
       case StartSource.lastEntry:
@@ -1049,6 +1115,47 @@ class _DateChips extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: palette.text3),
         ),
       ],
+    );
+  }
+}
+
+/// "From Insights · open after Standup": the form was filled from a stretch
+/// on the Insights timeline.
+class _FromInsightsLine extends StatelessWidget {
+  final String origin;
+
+  const _FromInsightsLine({required this.origin});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.surface2,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.insights_outlined, size: 16, color: palette.text3),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'From Insights · '),
+                TextSpan(
+                  text: origin,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, color: palette.text),
+                ),
+              ]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: palette.text2),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

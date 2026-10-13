@@ -23,7 +23,7 @@ SHOTS = [
     ("recent.html", "recent-light", "grain-light", 1010),
     ("recent.html", "recent-dark", "grain-dark", 1010),
     ("recent-ahead.html", "recent-ahead", "grain-dark", 640),
-    ("insights.html", "insights", "grain-light", 800),
+    ("insights.html", "insights", "grain-light", 1060),
     ("log-time.html", "log-time", "grain-dark", 920),
     ("work-item-picker.html", "work-item-picker", "grain-dark", 840),
     ("edit-time.html", "edit-time", "grain-dark", 1000),

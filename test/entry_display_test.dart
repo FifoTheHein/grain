@@ -15,6 +15,42 @@ TimeEntry _entry({String? refId, String? startedTime}) => TimeEntry(
     );
 
 void main() {
+  group('entryLabel', () {
+    TimeEntry linked(String? notes) => TimeEntry(
+          id: 1,
+          spentDate: '2026-10-12',
+          hours: 1,
+          notes: notes,
+          projectId: 1,
+          projectName: 'Project',
+          taskId: 2,
+          taskName: 'Development',
+          externalReference: const ExternalReference(
+            id: 'AzureDevOps_guid_User Story_47994',
+            permalink: 'https://dev.azure.com/ab/TFN/_workitems/edit/47994',
+          ),
+        );
+    const prefixOnly = 'Agile Bridge Azure DevOps User Story #47994';
+
+    test('a prefix-only note reads as the work item title', () {
+      expect(entryLabel(linked(prefixOnly), workItemTitle: 'Recon process'),
+          'Recon process');
+    });
+
+    test('what was typed wins over the title', () {
+      expect(
+          entryLabel(linked('$prefixOnly - Pairing'),
+              workItemTitle: 'Recon process'),
+          'Pairing');
+    });
+
+    test('falls back to the task without a title', () {
+      expect(entryLabel(linked(prefixOnly)), 'Development');
+      expect(entryLabel(linked(prefixOnly), workItemTitle: '  '),
+          'Development');
+    });
+  });
+
   group('workItemNotesLine', () {
     const prefix = 'TFN Project Azure DevOps Task #13222';
 

@@ -87,6 +87,16 @@ while one runs, tooltip naming the project holding it.
   happened. Harvest takes a future `spent_date` as-is; the
   create path needs nothing special.
 - The Duration / Start & End choice persists in `log_time_start_end`.
+- **Prefill from Insights** (`prefill`, a `LogTimePrefill` handed over with
+  the date through `HomeNavigation.logTimeFor`; see `insights-screen.md`) —
+  sets the date and mode, then the stepper's minutes or both clock times as
+  touched, so the defaults don't replace them. The clock boxes keep the
+  prefill's "after …" / "before …" captions until a nudge or pick moves the
+  times. A "From Insights · open after Standup" line sits at the top. The mode
+  is shown, not saved: `_loadMode` doesn't override it, `log_time_start_end`
+  is untouched, and when the prefill clears — a manual date change, or after
+  logging — the saved mode returns. Changing the mode by hand clears it too,
+  and saves as usual.
 - A `#123` or `AB#123` in the notes (`workItemIdFromTitle` from `meeting.dart`)
   while nothing is linked shows a card: the item's title when cached (fetched
   from the selected instance, else the first with a PAT, else the first),
@@ -112,7 +122,9 @@ gives way to `_RunningPanel` (see `timers.md`).
 `test/log_time_screen_test.dart` (the screen behind a `MockClient`: disabled
 bar and error, chips, date word, Start & End persistence and nudges, Tomorrow
 and its disabled timer, Start & End on a future day, `initialDate`, the Link
-card with a single instance). `test/edit_time_screen_test.dart` covers Edit
+card with a single instance, and both prefill modes: Duration over a
+remembered Start & End, cleared by a date change; Start & End with captions,
+cleared by a mode change). `test/edit_time_screen_test.dart` covers Edit
 Time's stepper: seeded from the entry, ± and a chip change it, Update sends
 the new hours (or the untouched original), zero is refused, and a running
 entry shows the panel and sends no hours.

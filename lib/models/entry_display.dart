@@ -64,14 +64,17 @@ String? meetingStartLabel(TimeEntry entry) {
 
 /// How an entry is named in a sentence ("after Standup"): the first line of
 /// its notes when it has any worth reading (work item prefixes stripped),
-/// otherwise its task.
-String entryLabel(TimeEntry entry) {
+/// then [workItemTitle] (the linked item's title, when the caller has it
+/// cached), otherwise its task.
+String entryLabel(TimeEntry entry, {String? workItemTitle}) {
   final ref = entry.adoReference;
   final notes = ref != null
       ? workItemNotesLine(entry.notes, ref.id.split('_').last)
       : entry.notes?.trim();
   final firstLine = notes?.split('\n').first.trim() ?? '';
-  return firstLine.isEmpty ? entry.taskName : firstLine;
+  if (firstLine.isNotEmpty) return firstLine;
+  final title = workItemTitle?.trim() ?? '';
+  return title.isNotEmpty ? title : entry.taskName;
 }
 
 /// Where [entry] sits on its day, for Insights.
