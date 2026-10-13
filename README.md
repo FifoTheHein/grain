@@ -109,7 +109,8 @@ Day analytics for whichever date is selected on Recent — navigating the date o
 - **Where it went** — per project · task totals, largest first, with bars in each project's colour
 - **Gap analysis** — when your entries carry clock times, a timeline of the work day plus every uncovered stretch at or above a configurable threshold, with the longest called out. Overlapping entries are merged so double-logged time counts once, and on today the window stops at *now*, so an afternoon that hasn't happened yet isn't counted as dead time
 - **Context switches** — how many times you changed project or task, counted from actual changes rather than from simply logging twice
-- **Degrades honestly** — a Harvest account that tracks by duration records how long you worked but not when, so the totals, coverage and breakdown still work and the screen explains why the gap list is unavailable
+- **Meetings placed from your calendar** — on an account that tracks by duration, meetings logged by the calendar import still know when they happened, so they go on the day's timeline in their project colours. Work logged by duration is counted but not drawn — a card lists it — and the stretches between meetings are listed as *open* (other work or nothing, named after the meeting before them) rather than dead. Unlogged time comes from the totals, so it needs no clock times; context switches only show on a fully timed day
+- **Degrades honestly** — with no clock times and no imported meetings, the totals, coverage and breakdown still work and the screen explains why the gap list is unavailable
 
 ### Visual Design
 

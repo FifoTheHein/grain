@@ -39,6 +39,14 @@ DateTime? meetingStartFromRefId(String? refId) {
       .toLocal();
 }
 
+/// When an imported meeting started, from its reference id, or null when
+/// [entry] is not one (or the id is malformed).
+DateTime? _meetingStart(TimeEntry entry) {
+  final refId = entry.externalReference?.id;
+  if (refId == null || !refId.startsWith(kMeetingRefPrefix)) return null;
+  return meetingStartFromRefId(refId);
+}
+
 /// `HH:mm` start time for an imported meeting, or null when [entry] is not
 /// one. Harvest's own clock time wins when the account records it; otherwise
 /// the time comes from the reference id the importer wrote.
@@ -49,7 +57,60 @@ String? meetingStartLabel(TimeEntry entry) {
   final clock = parseClockMinutes(entry.startedTime);
   if (clock != null) return formatClock(clock);
 
-  final start = meetingStartFromRefId(refId);
+  final start = _meetingStart(entry);
   if (start == null) return null;
   return formatClock(start.hour * 60 + start.minute);
+}
+
+/// How an entry is named in a sentence ("after Standup"): the first line of
+/// its notes when it has any worth reading (work item prefixes stripped),
+/// otherwise its task.
+String entryLabel(TimeEntry entry) {
+  final ref = entry.adoReference;
+  final notes = ref != null
+      ? workItemNotesLine(entry.notes, ref.id.split('_').last)
+      : entry.notes?.trim();
+  final firstLine = notes?.split('\n').first.trim() ?? '';
+  return firstLine.isEmpty ? entry.taskName : firstLine;
+}
+
+/// Where [entry] sits on its day, for Insights.
+///
+/// An entry with clock times keeps [TimeEntry.span]. Failing that, an
+/// imported meeting is placed from its reference id — the series slot, read
+/// as local time — for the entry's hours, and marked
+/// [InsightSpan.fromCalendar]. Anything else is null: logged by duration, its
+/// time of day unknown. A meeting whose slot is not on the entry's
+/// `spentDate`, or whose hours would run past midnight, is not placed.
+InsightSpan? placedSpanOf(TimeEntry entry) {
+  final timed = entry.span;
+  if (timed != null) {
+    return InsightSpan(
+      start: timed.start,
+      end: timed.end,
+      key: timed.key,
+      label: entryLabel(entry),
+    );
+  }
+
+  final start = _meetingStart(entry);
+  if (start == null) return null;
+  final day = DateTime.tryParse(entry.spentDate);
+  if (day == null ||
+      start.year != day.year ||
+      start.month != day.month ||
+      start.day != day.day) {
+    return null;
+  }
+
+  final from = start.hour * 60 + start.minute;
+  final to = from + (entry.hours * 60).round();
+  if (to <= from || to > 24 * 60) return null;
+  return InsightSpan(
+    start: from,
+    end: to,
+    key: '${entry.projectId}:${entry.taskId}',
+    label: entryLabel(entry),
+    fromCalendar: true,
+  );
 }

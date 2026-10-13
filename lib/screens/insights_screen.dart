@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/day_insights.dart';
+import '../models/entry_display.dart';
 import '../models/future_days.dart';
 import '../models/time_entry.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
 import '../theme/harvest_tokens.dart';
+import '../widgets/dashed_border.dart';
 import '../widgets/error_banner.dart';
 
 /// Day analytics for the date selected on the Recent screen: how much of the
@@ -40,6 +42,80 @@ class InsightsScreen extends StatelessWidget {
     if (picked != null) provider.loadRecentEntries(date: picked);
   }
 
+  /// A day where some entries are placed (imported meetings, usually) and the
+  /// rest were logged by duration: the placed ones on a timeline, the rest
+  /// counted in a card, and the stretches between them listed as open — the
+  /// unplaced work is somewhere in them, so they are not dead.
+  List<Widget> _partialDay(
+    BuildContext context, {
+    required DayInsights insights,
+    required List<InsightSpan> spans,
+    required List<TimeEntry> unplaced,
+    required int unloggedMinutes,
+    required int windowStart,
+    required int windowEnd,
+    required int minGapMinutes,
+  }) {
+    final palette = HarvestTokens.of(context);
+    final heading = TextStyle(
+        fontSize: 13, fontWeight: FontWeight.w600, color: palette.text2);
+    final note = TextStyle(fontSize: 11, color: palette.text3);
+    final allCalendar = spans.every((s) => s.fromCalendar);
+
+    return [
+      Row(
+        children: [
+          Expanded(child: Text('The day', style: heading)),
+          Text(
+            '${formatDuration(insights.workedMinutes)} placed'
+            '${allCalendar ? ' from your calendar' : ''}',
+            style: note,
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      _PlacedTimeline(
+        spans: spans,
+        windowStart: windowStart,
+        windowEnd: windowEnd,
+        placedLabel: allCalendar
+            ? 'Meeting, from your calendar'
+            : 'Placed: meetings and timed entries',
+      ),
+      const SizedBox(height: 14),
+      _UnplacedCard(
+        entries: unplaced,
+        unplacedMinutes: insights.unplacedMinutes,
+        unloggedMinutes: unloggedMinutes,
+      ),
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+                allCalendar ? 'Open between meetings' : 'Open between entries',
+                style: heading),
+          ),
+          Text(
+            '${minGapMinutes}m or more'
+            '${insights.longestGapMinutes > 0 ? ' · longest ${formatDuration(insights.longestGapMinutes)}' : ''}',
+            style: note,
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      if (insights.gaps.isEmpty)
+        const _EmptyCard(
+          icon: Icons.check_circle_outline,
+          title: 'No open stretches',
+          message: 'What’s placed fills the work day, with nothing longer '
+              'than the gap threshold in between.',
+        )
+      else
+        for (final gap in insights.gaps) _OpenRow(gap: gap),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
@@ -52,9 +128,17 @@ class InsightsScreen extends StatelessWidget {
     // happened, so a future day gets a pointer back rather than analytics.
     final isFuture = isFutureDay(entryProvider.selectedDate, DateTime.now());
 
-    // Entries carrying clock times drive the gap analysis; the rest still
-    // count towards the day's total.
-    final spans = entries.map((e) => e.span).nonNulls.toList();
+    // Entries with a time of day — clock times, or an imported meeting's
+    // calendar slot — drive the timeline; the rest still count towards the
+    // day's total, by duration.
+    final spans = <InsightSpan>[];
+    final unplaced = <TimeEntry>[];
+    for (final e in entries) {
+      final s = placedSpanOf(e);
+      s == null ? unplaced.add(e) : spans.add(s);
+    }
+    final unplacedMinutes =
+        unplaced.fold<double>(0, (sum, e) => sum + e.hours * 60).round();
     final loggedMinutes =
         entries.fold<double>(0, (sum, e) => sum + e.hours * 60).round();
 
@@ -72,7 +156,9 @@ class InsightsScreen extends StatelessWidget {
       windowStart: windowStart,
       windowEnd: windowEnd,
       minGapMinutes: settings.minGapMinutes,
+      unplacedMinutes: unplacedMinutes,
     );
+    final partial = insights.placement == DayPlacement.partial;
 
     final goalMinutes = (settings.dailyGoalHours * 60).round();
     final unloggedMinutes = goalMinutes - loggedMinutes;
@@ -120,7 +206,6 @@ class InsightsScreen extends StatelessWidget {
             coverage: coverage,
             unloggedMinutes: unloggedMinutes,
             insights: insights,
-            hasSpans: spans.isNotEmpty,
           ),
           const SizedBox(height: 20),
 
@@ -145,6 +230,17 @@ class InsightsScreen extends StatelessWidget {
                       'record how long you worked but not when. Switch the '
                       'account to start/end times in Harvest to see where the '
                       'gaps in the day fall.',
+            )
+          else if (partial)
+            ..._partialDay(
+              context,
+              insights: insights,
+              spans: spans,
+              unplaced: unplaced,
+              unloggedMinutes: unloggedMinutes,
+              windowStart: windowStart,
+              windowEnd: windowEnd,
+              minGapMinutes: settings.minGapMinutes,
             )
           else ...[
             Row(
@@ -242,7 +338,6 @@ class _StatTiles extends StatelessWidget {
   final double coverage;
   final int unloggedMinutes;
   final DayInsights insights;
-  final bool hasSpans;
 
   const _StatTiles({
     required this.loggedMinutes,
@@ -250,7 +345,6 @@ class _StatTiles extends StatelessWidget {
     required this.coverage,
     required this.unloggedMinutes,
     required this.insights,
-    required this.hasSpans,
   });
 
   @override
@@ -270,10 +364,16 @@ class _StatTiles extends StatelessWidget {
       _StatTile(
         label: unloggedMinutes >= 0 ? 'Unlogged' : 'Over goal',
         value: formatDuration(unloggedMinutes.abs()),
-        detail: unloggedMinutes >= 0 ? 'still to account for' : 'past the goal',
+        detail: unloggedMinutes < 0
+            ? 'past the goal'
+            : insights.placement == DayPlacement.partial
+                ? 'from totals, no clock times needed'
+                : 'still to account for',
         warn: unloggedMinutes < 0,
       ),
-      if (hasSpans)
+      // Switches need the order of the whole day, so only a fully timed day
+      // shows them.
+      if (insights.placement == DayPlacement.full)
         _StatTile(
           label: 'Switches',
           value: '${insights.contextSwitches}',
@@ -517,6 +617,398 @@ class _DayTimeline extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// The partial day's timeline: placed spans in their project colours over a
+/// hatched background (open — other work or nothing), with hour ticks and a
+/// legend.
+class _PlacedTimeline extends StatelessWidget {
+  final List<InsightSpan> spans;
+  final int windowStart;
+  final int windowEnd;
+  final String placedLabel;
+
+  const _PlacedTimeline({
+    required this.spans,
+    required this.windowStart,
+    required this.windowEnd,
+    required this.placedLabel,
+  });
+
+  /// Whole hours between the window's ends, every two hours on a long day,
+  /// skipping any that would crowd an end label.
+  List<int> _ticks() {
+    final length = windowEnd - windowStart;
+    final step = length > 6 * 60 ? 120 : 60;
+    final ticks = <int>[];
+    var t = ((windowStart + 59) ~/ 60) * 60;
+    // Even hours on a two-hour step, so the ticks read 10:00, 12:00, 14:00.
+    if (step == 120 && (t ~/ 60).isOdd) t += 60;
+    for (; t < windowEnd; t += step) {
+      if (t - windowStart >= 45 && windowEnd - t >= 45) ticks.add(t);
+    }
+    return ticks;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final categories = context.watch<ProjectCategoryProvider>();
+    final length = windowEnd - windowStart;
+    if (length <= 0) return const SizedBox.shrink();
+
+    Color colourOf(InsightSpan s) {
+      final projectId = int.tryParse(s.key.split(':').first) ?? 0;
+      return categories.categoryFor(projectId, fallbackCode: '?').color;
+    }
+
+    final tickStyle = TextStyle(fontSize: 10, color: palette.text3);
+    final legendStyle = TextStyle(fontSize: 11, color: palette.text2);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            double x(int minutes) =>
+                (minutes.clamp(windowStart, windowEnd) - windowStart) /
+                length *
+                width;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  key: const ValueKey('placed-timeline'),
+                  borderRadius: BorderRadius.circular(5),
+                  child: SizedBox(
+                    height: 24,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _HatchPainter(color: palette.surface3),
+                          ),
+                        ),
+                        for (final s in spans)
+                          if (s.end > windowStart && s.start < windowEnd)
+                            Positioned(
+                              left: x(s.start),
+                              width: (x(s.end) - x(s.start)).clamp(1.0, width),
+                              top: 0,
+                              bottom: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: colourOf(s),
+                                  border: Border(
+                                      right: BorderSide(color: palette.bg)),
+                                ),
+                              ),
+                            ),
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: palette.border),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  height: 14,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: 0,
+                        child: Text(formatClock(windowStart), style: tickStyle),
+                      ),
+                      for (final t in _ticks())
+                        Positioned(
+                          left: x(t),
+                          child: FractionalTranslation(
+                            translation: const Offset(-0.5, 0),
+                            child: Text(formatClock(t), style: tickStyle),
+                          ),
+                        ),
+                      Positioned(
+                        right: 0,
+                        child: Text(formatClock(windowEnd), style: tickStyle),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 16,
+          runSpacing: 4,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: spans.isEmpty ? palette.brand : colourOf(spans.first),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(placedLabel, style: legendStyle),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration:
+                        BoxDecoration(border: Border.all(color: palette.border)),
+                    child: CustomPaint(
+                      painter:
+                          _HatchPainter(color: palette.surface3, spacing: 5),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text('Open: other work or nothing', style: legendStyle),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Diagonal stripes: time that is open rather than placed.
+class _HatchPainter extends CustomPainter {
+  final Color color;
+  final double spacing;
+
+  const _HatchPainter({required this.color, this.spacing = 10});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = spacing / 2
+      ..style = PaintingStyle.stroke;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    // Lines running up and to the right, stepped along the bottom edge.
+    for (var x = -size.height; x < size.width + size.height; x += spacing) {
+      canvas.drawLine(
+          Offset(x, size.height), Offset(x + size.height, 0), paint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_HatchPainter old) =>
+      old.color != color || old.spacing != spacing;
+}
+
+/// The work logged by duration on a partial day: how much, that it sits
+/// somewhere in the open stretches, and which entries it is.
+class _UnplacedCard extends StatelessWidget {
+  final List<TimeEntry> entries;
+  final int unplacedMinutes;
+  final int unloggedMinutes;
+
+  const _UnplacedCard({
+    required this.entries,
+    required this.unplacedMinutes,
+    required this.unloggedMinutes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final categories = context.watch<ProjectCategoryProvider>();
+    final strong = TextStyle(fontWeight: FontWeight.w600, color: palette.text);
+    final chips = entries
+        .map((e) => (entry: e, minutes: (e.hours * 60).round()))
+        .sorted((a, b) => b.minutes.compareTo(a.minutes));
+
+    return DashedBorder(
+      color: palette.borderStrong,
+      strokeWidth: 1,
+      radius: 10,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(Icons.schedule_outlined,
+                  size: 18, color: palette.text3),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      style: TextStyle(
+                          fontSize: 12.5, color: palette.text2, height: 1.45),
+                      children: [
+                        TextSpan(
+                          text: '${formatDuration(unplacedMinutes)} of other '
+                              'work isn’t on the timeline.',
+                          style: strong,
+                        ),
+                        const TextSpan(
+                          text: ' It was logged by duration, so it sits '
+                              'somewhere in the open stretches.',
+                        ),
+                        if (unloggedMinutes > 0) ...[
+                          const TextSpan(text: ' That leaves '),
+                          TextSpan(
+                            text: '${formatDuration(unloggedMinutes)} of the '
+                                'work day unlogged',
+                            style: strong,
+                          ),
+                          const TextSpan(text: '.'),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final c in chips)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: palette.surface2,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: categories
+                                      .categoryFor(c.entry.projectId,
+                                          fallbackCode: '?')
+                                      .color,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  '${entryLabel(c.entry)} · '
+                                  '${formatDuration(c.minutes)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 11, color: palette.text2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A stretch between placed spans on a partial day — open, not dead: named
+/// by the span before it ("after Standup"), or the one after it when it opens
+/// the day.
+class _OpenRow extends StatelessWidget {
+  final InsightGap gap;
+
+  const _OpenRow({required this.gap});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = HarvestTokens.of(context);
+    final previous = gap.previous;
+    final next = gap.next;
+    final where = previous != null
+        ? 'after ${previous.label}'
+        : next != null
+            ? 'before ${next.label}'
+            : '';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: palette.surface2,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: palette.text3, width: 1.5),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 64,
+            child: Text(
+              formatDuration(gap.minutes),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: palette.text,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              where,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: palette.text3),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${formatClock(gap.start)} – ${formatClock(gap.end)}',
+            style: TextStyle(fontSize: 11, color: palette.text3),
+          ),
+        ],
+      ),
     );
   }
 }

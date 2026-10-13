@@ -149,7 +149,8 @@ class TimeEntry {
 
   /// The entry as a span in minutes from midnight, or null when untimed.
   /// An end at or before the start (an entry crossing midnight) is dropped
-  /// rather than guessed at.
+  /// rather than guessed at. Insights reads `placedSpanOf` (entry_display.dart)
+  /// instead, which also places imported meetings from their reference.
   InsightSpan? get span {
     final start = parseClockMinutes(startedTime);
     final end = parseClockMinutes(endedTime);

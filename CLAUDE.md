@@ -31,7 +31,7 @@ flutter analyze
 ```
 
 Run tests with `flutter test`. Coverage is the pure logic — mapping rules
-(`test/mapping_rule_test.dart`), day analytics (`test/day_insights_test.dart`),
+(`test/mapping_rule_test.dart`), day analytics and the meeting span fallback (`test/day_insights_test.dart`),
 quick templates (`test/quick_template_test.dart`), work item search
 (`test/work_item_search_test.dart`), the ICS parser (`test/ics_parser_test.dart`)
 meeting filtering/dedup/placement (`test/meeting_test.dart`), the rules' Any text field (`test/rule_any_text_test.dart`),
@@ -47,7 +47,8 @@ assert contrast ratios. `test/widget_test.dart` covers Settings navigation
 the duration stepper and Log Time's action bar; `test/log_time_screen_test.dart`
 the Log Time screen itself; `test/recent_entries_screen_test.dart` Recent's
 future days; `test/time_entry_card_test.dart` the entry card; `test/edit_time_screen_test.dart`
-Edit Time's duration stepper and its running-timer panel.
+Edit Time's duration stepper and its running-timer panel; `test/insights_screen_test.dart`
+Insights on a partial, fully timed and unplaceable day.
 
 ## Setup Requirement
 
