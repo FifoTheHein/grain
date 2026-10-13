@@ -1131,15 +1131,22 @@ class _UnplacedCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 6),
+                              // The label gives way to a long title; the
+                              // duration always shows.
                               Flexible(
                                 child: Text(
-                                  '${entryLabel(c.entry, workItemTitle: titleOf(c.entry))} · '
-                                  '${formatDuration(c.minutes)}',
+                                  entryLabel(c.entry,
+                                      workItemTitle: titleOf(c.entry)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                       fontSize: 11, color: palette.text2),
                                 ),
+                              ),
+                              Text(
+                                ' · ${formatDuration(c.minutes)}',
+                                style: TextStyle(
+                                    fontSize: 11, color: palette.text2),
                               ),
                             ],
                           ),

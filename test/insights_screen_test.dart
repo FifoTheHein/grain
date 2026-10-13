@@ -193,6 +193,15 @@ String _ics(List<String> titles) {
   return ['BEGIN:VCALENDAR', ...events, 'END:VCALENDAR'].join('\r\n');
 }
 
+/// A duration chip on the unplaced card: its label beside its duration.
+/// The label's closest Row is the chip's own, so the duration must be in it.
+Finder _chip(String label, String duration) => find.descendant(
+      of: find
+          .ancestor(of: find.text(label), matching: find.byType(Row))
+          .first,
+      matching: find.text(' · $duration'),
+    );
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
@@ -225,8 +234,8 @@ void main() {
     expect(
         find.textContaining('4h of the work day unlogged', findRichText: true),
         findsOneWidget);
-    expect(find.text('Development kick off · 2h 15m'), findsOneWidget);
-    expect(find.text('Review spec · 45m'), findsOneWidget);
+    expect(_chip('Development kick off', '2h 15m'), findsOneWidget);
+    expect(_chip('Review spec', '45m'), findsOneWidget);
 
     expect(find.text('Open between meetings'), findsOneWidget);
     expect(find.text('15m or more · longest 5h'), findsOneWidget);
@@ -426,15 +435,28 @@ void main() {
     await tester.tap(find.text('Work item'));
     await tester.pumpAndSettle();
 
-    // Cached: the ADO title, in the state's colour.
-    expect(find.text('Recon process between Mamastops and TFN'),
+    // Cached: the ADO title, in the state's colour. (The duration chips
+    // below name it too, so look in its breakdown row.)
+    final row = find
+        .ancestor(of: find.text('#47994'), matching: find.byType(Row))
+        .first;
+    expect(
+        find.descendant(
+            of: row,
+            matching: find.text('Recon process between Mamastops and TFN')),
         findsOneWidget);
     expect(find.text('2 entries'), findsOneWidget);
     expect(find.text('3h 12m'), findsOneWidget);
     final id = tester.widget<Text>(find.text('#47994'));
     expect(id.style?.color, HarvestTokens.stateActive);
     // Not cached: what was typed after the prefix.
-    expect(find.text('Rounding design'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find
+                .ancestor(of: find.text('#50938'), matching: find.byType(Row))
+                .first,
+            matching: find.text('Rounding design')),
+        findsOneWidget);
     expect(find.text('No work item'), findsOneWidget);
     expect(find.text('TFN Project Development | CRT Team · Development'),
         findsNothing);
@@ -456,10 +478,10 @@ void main() {
       },
     });
 
-    expect(find.text('Recon process between Mamastops and TFN · 2h'),
+    expect(_chip('Recon process between Mamastops and TFN', '2h'),
         findsOneWidget);
     // Not cached: the task, as before.
-    expect(find.text('Development · 30m'), findsOneWidget);
+    expect(_chip('Development', '30m'), findsOneWidget);
   });
 
   testWidgets('the remembered work item view is restored', (tester) async {
