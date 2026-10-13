@@ -66,8 +66,12 @@ colour) · then one of three, by `placement`:
   with the timed entries.
 - **partial** (`_partialDay`) — "The day" with "Xh placed from your
   calendar"; `_PlacedTimeline`, placed spans in project colours over a
-  hatched (`_HatchPainter`) background, hour ticks and a legend ("Meeting,
-  from your calendar" / "Open: other work or nothing"); `_UnplacedCard`, a
+  hatched (`_HatchPainter`) background. A block carries its title (ellipsis
+  when long) once it is 48 px wide or the whole title fits. Hour ticks run
+  hourly, two-hourly past six hours, each kept only where its measured label
+  clears the end labels and the tick before it. The legend has one swatch per
+  project on the timeline, named by the part after the last `|` ("CRT
+  Team"), then "Open: other work or nothing"; `_UnplacedCard`, a
   dashed card saying how much was logged by duration and how much of the work
   day that leaves unlogged (the Unlogged tile's figure, goal − logged), with a
   chip per unplaced entry (`entryLabel` · duration, largest first); and

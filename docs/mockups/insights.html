@@ -11,7 +11,9 @@
   .tl2 { position: relative; height: 24px; border-radius: 5px; overflow: hidden;
          background: repeating-linear-gradient(135deg, var(--surface3) 0 5px, transparent 5px 10px);
          border: 1px solid var(--border); }
-  .tl2 i { position: absolute; top: 0; bottom: 0; background: var(--cat-color); border-right: 1px solid var(--bg); }
+  .tl2 i { position: absolute; top: 0; bottom: 0; background: var(--cat-color); border-right: 1px solid var(--bg);
+          font-style: normal; font-size: 10px; font-weight: 600; color: #fff; line-height: 24px; padding: 0 5px;
+          box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ticks { position: relative; height: 14px; margin-top: 4px; font-size: 10px; color: var(--text3); }
   .ticks span { position: absolute; transform: translateX(-50%); }
   .legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: var(--text2); align-items: center; }
@@ -88,11 +90,11 @@
         <i class="cat-orange" style="left:0%;width:1.96%"></i>
         <i class="cat-cyan" style="left:1.96%;width:3.92%"></i>
         <i class="cat-green" style="left:5.88%;width:3.92%"></i>
-        <i class="cat-green" style="left:70.59%;width:5.88%"></i>
+        <i class="cat-green" style="left:70.59%;width:5.88%">Release Planning</i>
         <i class="cat-orange" style="left:88.24%;width:3.92%"></i>
       </div>
       <div class="ticks"><span style="left:0;transform:none">08:30</span><span style="left:17.65%">10:00</span><span style="left:41.18%">12:00</span><span style="left:64.71%">14:00</span><span style="left:88.24%">16:00</span><span style="left:auto;right:0;transform:none">17:00</span></div>
-      <div class="legend"><span><span class="sw" style="background:#FA5D24"></span>Meeting, from your calendar</span><span><span class="sw hatch"></span>Open: other work or nothing</span></div>
+      <div class="legend"><span class="cat-orange"><span class="sw" style="background:var(--cat-color)"></span>Contoso Operations</span><span class="cat-cyan"><span class="sw" style="background:var(--cat-color)"></span>Helpdesk</span><span class="cat-green"><span class="sw" style="background:var(--cat-color)"></span>Platform</span><span><span class="sw hatch"></span>Open: other work or nothing</span></div>
 
       <div class="unplaced">
         <svg class="i i-20" style="color:var(--text3);margin-top:1px"><use href="#ic-clock"/></svg>

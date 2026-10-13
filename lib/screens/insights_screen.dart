@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:provider/provider.dart';
 import '../models/day_insights.dart';
 import '../models/entry_display.dart';
@@ -8,6 +8,7 @@ import '../models/future_days.dart';
 import '../models/time_entry.dart';
 import '../providers/project_category_provider.dart';
 import '../providers/time_entry_provider.dart';
+import '../theme/harvest_palette.dart';
 import '../theme/harvest_tokens.dart';
 import '../widgets/dashed_border.dart';
 import '../widgets/error_banner.dart';
@@ -51,6 +52,7 @@ class InsightsScreen extends StatelessWidget {
     required DayInsights insights,
     required List<InsightSpan> spans,
     required List<TimeEntry> unplaced,
+    required Map<int, String> projectNames,
     required int unloggedMinutes,
     required int windowStart,
     required int windowEnd,
@@ -78,9 +80,7 @@ class InsightsScreen extends StatelessWidget {
         spans: spans,
         windowStart: windowStart,
         windowEnd: windowEnd,
-        placedLabel: allCalendar
-            ? 'Meeting, from your calendar'
-            : 'Placed: meetings and timed entries',
+        projectNames: projectNames,
       ),
       const SizedBox(height: 14),
       _UnplacedCard(
@@ -237,6 +237,9 @@ class InsightsScreen extends StatelessWidget {
               insights: insights,
               spans: spans,
               unplaced: unplaced,
+              projectNames: {
+                for (final e in entries) e.projectId: e.projectName,
+              },
               unloggedMinutes: unloggedMinutes,
               windowStart: windowStart,
               windowEnd: windowEnd,
@@ -622,32 +625,71 @@ class _DayTimeline extends StatelessWidget {
 }
 
 /// The partial day's timeline: placed spans in their project colours over a
-/// hatched background (open — other work or nothing), with hour ticks and a
-/// legend.
+/// hatched background (open — other work or nothing), each titled when wide
+/// enough, with hour ticks and a legend naming the projects.
 class _PlacedTimeline extends StatelessWidget {
   final List<InsightSpan> spans;
   final int windowStart;
   final int windowEnd;
-  final String placedLabel;
+
+  /// Harvest project names by id, for the legend.
+  final Map<int, String> projectNames;
 
   const _PlacedTimeline({
     required this.spans,
     required this.windowStart,
     required this.windowEnd,
-    required this.placedLabel,
+    required this.projectNames,
   });
 
-  /// Whole hours between the window's ends, every two hours on a long day,
-  /// skipping any that would crowd an end label.
-  List<int> _ticks() {
+  static const _tickStyle = TextStyle(fontSize: 10);
+  static const _blockLabelStyle =
+      TextStyle(fontSize: 10, fontWeight: FontWeight.w600);
+
+  static int _projectOf(InsightSpan s) =>
+      int.tryParse(s.key.split(':').first) ?? 0;
+
+  /// The legend's name for a project: the part after the last `|`, so
+  /// "TFN Project Development | CRT Team" reads "CRT Team".
+  static String _shortName(String name) {
+    final tail = name.split('|').last.trim();
+    return tail.isEmpty ? name.trim() : tail;
+  }
+
+  static double _textWidth(String text, TextStyle style, TextScaler scaler) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    return painter.width;
+  }
+
+  /// Whole hours inside the window — every hour, or every other on a day
+  /// longer than six — keeping each only where its label clears the end
+  /// labels and the tick before it.
+  List<int> _ticks(double width, TextScaler scaler) {
     final length = windowEnd - windowStart;
+    double x(int minutes) => (minutes - windowStart) / length * width;
+    double labelWidth(int minutes) =>
+        _textWidth(formatClock(minutes), _tickStyle, scaler);
+    const clearance = 8.0;
+
     final step = length > 6 * 60 ? 120 : 60;
-    final ticks = <int>[];
     var t = ((windowStart + 59) ~/ 60) * 60;
     // Even hours on a two-hour step, so the ticks read 10:00, 12:00, 14:00.
     if (step == 120 && (t ~/ 60).isOdd) t += 60;
+
+    final ticks = <int>[];
+    var leftEdge = labelWidth(windowStart) + clearance;
+    final rightEdge = width - labelWidth(windowEnd) - clearance;
     for (; t < windowEnd; t += step) {
-      if (t - windowStart >= 45 && windowEnd - t >= 45) ticks.add(t);
+      final half = labelWidth(t) / 2;
+      if (x(t) - half >= leftEdge && x(t) + half <= rightEdge) {
+        ticks.add(t);
+        leftEdge = x(t) + half + clearance;
+      }
     }
     return ticks;
   }
@@ -656,16 +698,17 @@ class _PlacedTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
     final categories = context.watch<ProjectCategoryProvider>();
+    final scaler = MediaQuery.textScalerOf(context);
     final length = windowEnd - windowStart;
     if (length <= 0) return const SizedBox.shrink();
 
-    Color colourOf(InsightSpan s) {
-      final projectId = int.tryParse(s.key.split(':').first) ?? 0;
-      return categories.categoryFor(projectId, fallbackCode: '?').color;
-    }
+    Color colourOf(int projectId) =>
+        categories.categoryFor(projectId, fallbackCode: '?').color;
 
-    final tickStyle = TextStyle(fontSize: 10, color: palette.text3);
+    final tickStyle = _tickStyle.copyWith(color: palette.text3);
     final legendStyle = TextStyle(fontSize: 11, color: palette.text2);
+    // One legend entry per project on the timeline, in order of appearance.
+    final projects = spans.map(_projectOf).toSet().toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -694,19 +737,9 @@ class _PlacedTimeline extends StatelessWidget {
                         ),
                         for (final s in spans)
                           if (s.end > windowStart && s.start < windowEnd)
-                            Positioned(
-                              left: x(s.start),
-                              width: (x(s.end) - x(s.start)).clamp(1.0, width),
-                              top: 0,
-                              bottom: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: colourOf(s),
-                                  border: Border(
-                                      right: BorderSide(color: palette.bg)),
-                                ),
-                              ),
-                            ),
+                            _block(s, x(s.start),
+                                (x(s.end) - x(s.start)).clamp(1.0, width),
+                                colourOf(_projectOf(s)), palette, scaler),
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -729,7 +762,7 @@ class _PlacedTimeline extends StatelessWidget {
                         left: 0,
                         child: Text(formatClock(windowStart), style: tickStyle),
                       ),
-                      for (final t in _ticks())
+                      for (final t in _ticks(width, scaler))
                         Positioned(
                           left: x(t),
                           child: FractionalTranslation(
@@ -753,21 +786,23 @@ class _PlacedTimeline extends StatelessWidget {
           spacing: 16,
           runSpacing: 4,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: spans.isEmpty ? palette.brand : colourOf(spans.first),
-                    borderRadius: BorderRadius.circular(3),
+            for (final id in projects)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: colourOf(id),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Text(placedLabel, style: legendStyle),
-              ],
-            ),
+                  const SizedBox(width: 6),
+                  Text(_shortName(projectNames[id] ?? '?'),
+                      style: legendStyle),
+                ],
+              ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -791,6 +826,46 @@ class _PlacedTimeline extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  /// One placed span, titled inside — cut short with an ellipsis when the
+  /// title is longer than the block, left out when the block is too narrow
+  /// for more than a letter or two.
+  Widget _block(InsightSpan s, double left, double width, Color colour,
+      HarvestPalette palette, TextScaler scaler) {
+    const padding = 5.0;
+    const minTitledWidth = 48.0;
+    final fits = s.label.isNotEmpty &&
+        (width >= minTitledWidth ||
+            _textWidth(s.label, _blockLabelStyle, scaler) + padding * 2 <=
+                width);
+    final ink =
+        ThemeData.estimateBrightnessForColor(colour) == Brightness.dark
+            ? Colors.white
+            : Colors.black87;
+    return Positioned(
+      left: left,
+      width: width,
+      top: 0,
+      bottom: 0,
+      child: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: padding),
+        decoration: BoxDecoration(
+          color: colour,
+          border: Border(right: BorderSide(color: palette.bg)),
+        ),
+        child: fits
+            ? Text(
+                s.label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: _blockLabelStyle.copyWith(color: ink),
+              )
+            : null,
+      ),
     );
   }
 }

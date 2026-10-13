@@ -49,7 +49,12 @@ Map<String, Object?> _entry(int id, String notes, double hours,
       'spent_date': _spentDate,
       'hours': hours,
       'notes': notes,
-      'project': {'id': projectId, 'name': 'TFN001'},
+      'project': {
+        'id': projectId,
+        'name': projectId == 4
+            ? 'TFN Project Development | Support Team'
+            : 'TFN Project Development | CRT Team',
+      },
       'task': {'id': task == 'Meetings' ? 3 : 2, 'name': task},
       'is_running': false,
       'started_time': started,
@@ -102,8 +107,14 @@ void main() {
     expect(find.text('The day'), findsOneWidget);
     expect(find.text('1h placed from your calendar'), findsOneWidget);
     expect(find.byKey(const ValueKey('placed-timeline')), findsOneWidget);
-    expect(find.text('Meeting, from your calendar'), findsOneWidget);
+    // The legend names each project on the timeline, by the part after `|`.
+    expect(find.text('CRT Team'), findsOneWidget);
+    expect(find.text('Support Team'), findsOneWidget);
     expect(find.text('Open: other work or nothing'), findsOneWidget);
+    // Hour ticks every other hour on a full work day.
+    for (final tick in ['08:30', '10:00', '12:00', '14:00', '16:00', '17:00']) {
+      expect(find.text(tick), findsOneWidget, reason: tick);
+    }
 
     // 3h by duration; goal 8h − 4h logged leaves 4h.
     expect(
@@ -128,6 +139,30 @@ void main() {
     expect(find.text('Switches'), findsNothing);
     expect(find.text('No clock times on these entries'), findsNothing);
     expect(find.textContaining('Gaps of'), findsNothing);
+  });
+
+  testWidgets('blocks are titled when wide enough, cut short if need be',
+      (tester) async {
+    await _pumpInsights(tester, [
+      _meeting(1, 'Workshop', 10, 0, 2),
+      // ~57 px: too narrow for the whole title in the test font, so it is
+      // cut short rather than left out.
+      _meeting(2, 'CRT Daily Scrum', 13, 0, 0.5),
+      // ~19 px: no room for a title at all.
+      _meeting(3, 'Quick sync', 15, 0, 1 / 6),
+      _entry(4, 'Development kick off', 2.25),
+    ]);
+
+    Finder onTimeline(String text) => find.descendant(
+          of: find.byKey(const ValueKey('placed-timeline')),
+          matching: find.text(text),
+        );
+    expect(onTimeline('Workshop'), findsOneWidget);
+    expect(onTimeline('CRT Daily Scrum'), findsOneWidget);
+    expect(
+        tester.widget<Text>(onTimeline('CRT Daily Scrum')).overflow,
+        TextOverflow.ellipsis);
+    expect(onTimeline('Quick sync'), findsNothing);
   });
 
   testWidgets('a fully timed day keeps the gap list, meetings merged in',
