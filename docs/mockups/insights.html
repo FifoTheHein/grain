@@ -3,6 +3,38 @@
 <title>Grain — Insights</title>
 <link rel="stylesheet" href="grain.css">
 <script src="icons.js"></script>
+<style>
+  /* A duration account's day: imported meetings placed from the calendar,
+     everything else counted but not drawn. */
+  .tiles.three { grid-template-columns: repeat(3, 1fr); }
+
+  .tl2 { position: relative; height: 24px; border-radius: 5px; overflow: hidden;
+         background: repeating-linear-gradient(135deg, var(--surface3) 0 5px, transparent 5px 10px);
+         border: 1px solid var(--border); }
+  .tl2 i { position: absolute; top: 0; bottom: 0; background: var(--cat-color); border-right: 1px solid var(--bg);
+          font-style: normal; font-size: 10px; font-weight: 600; color: #fff; line-height: 24px; padding: 0 5px;
+          box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ticks { position: relative; height: 14px; margin-top: 4px; font-size: 10px; color: var(--text3); }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+  .legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: var(--text2); align-items: center; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+  .legend .hatch { background: repeating-linear-gradient(135deg, var(--surface3) 0 2.5px, transparent 2.5px 5px); border: 1px solid var(--border); }
+
+  .unplaced { display: flex; gap: 12px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+              border: 1px dashed var(--borderStrong); background: var(--surface); }
+  .unplaced .t { font-size: 12.5px; line-height: 1.45; color: var(--text2); }
+  .unplaced .t b { color: var(--text); font-weight: 600; }
+  .unplaced .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .unplaced .chip { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: var(--surface2); color: var(--text2);
+                    display: inline-flex; gap: 6px; align-items: center; }
+  .unplaced .chip i { width: 7px; height: 7px; border-radius: 4px; background: var(--cat-color); display: inline-block; }
+
+  .open { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; background: var(--surface2); margin-bottom: 6px; }
+  .open .d { width: 8px; height: 8px; border-radius: 4px; border: 1.5px solid var(--text3); box-sizing: border-box; }
+  .open .m { font-size: 12px; font-weight: 600; width: 64px; }
+  .open .h { font-size: 12px; color: var(--text3); flex: 1; }
+  .open .tm { font-size: 11px; color: var(--text3); }
+</style>
 <body class="grain-light">
 <div class="shell">
 
@@ -23,48 +55,64 @@
 
       <div class="datenav">
         <span class="iconbtn"><svg class="i i-22"><use href="#ic-left"/></svg></span>
-        <div class="label"><div class="one">Friday, 21 Aug 2026</div></div>
+        <div class="label"><div class="one">Monday, 12 Oct 2026</div></div>
         <span class="iconbtn"><svg class="i i-22"><use href="#ic-right"/></svg></span>
       </div>
 
-      <div class="tiles">
+      <div class="tiles three">
         <div class="tile em"><div class="lab">Logged</div><div class="val">6h 25m</div><div class="det">of 8h goal</div></div>
-        <div class="tile"><div class="lab">Coverage</div><div class="val">75%</div><div class="det">of the work day</div></div>
-        <div class="tile"><div class="lab">Unlogged</div><div class="val">1h 35m</div><div class="det">still to account for</div></div>
-        <div class="tile"><div class="lab">Switches</div><div class="val">3</div><div class="det">avg 1h 17m session</div></div>
+        <div class="tile"><div class="lab">Coverage</div><div class="val">80%</div><div class="det">of the work day</div></div>
+        <div class="tile"><div class="lab">Unlogged</div><div class="val">1h 35m</div><div class="det">from totals, no clock times needed</div></div>
       </div>
 
       <div class="subhead">Where it went</div>
 
       <div class="brow cat-green">
-        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Platform · Development</span><span class="amt">4h 20m</span></div>
+        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Platform · Development</span><span class="amt">4h 45m</span></div>
         <div class="bar"><i style="width:100%"></i></div>
       </div>
       <div class="brow cat-green">
-        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Platform · Meetings</span><span class="amt">1h 15m</span></div>
-        <div class="bar"><i style="width:29%"></i></div>
+        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Platform · Meetings</span><span class="amt">50m</span></div>
+        <div class="bar"><i style="width:18%"></i></div>
+      </div>
+      <div class="brow cat-orange">
+        <div class="top"><span class="swatch"></span><span class="name">Contoso Operations · Meetings</span><span class="amt">30m</span></div>
+        <div class="bar"><i style="width:11%"></i></div>
       </div>
       <div class="brow cat-cyan">
-        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Helpdesk · Meetings</span><span class="amt">50m</span></div>
-        <div class="bar"><i style="width:19%"></i></div>
+        <div class="top"><span class="swatch"></span><span class="name">Northwind Retail | Helpdesk · Meetings</span><span class="amt">20m</span></div>
+        <div class="bar"><i style="width:7%"></i></div>
       </div>
 
-      <div class="subhead row"><span>Gaps of 15m or more</span><span class="note">Longest 1h</span></div>
-
-      <div class="timeline">
-        <i style="left:0.98%;width:18.63%"></i>
-        <i style="left:22.55%;width:18.63%"></i>
-        <i style="left:52.94%;width:15.69%"></i>
-        <i style="left:71.57%;width:10.78%"></i>
-        <i style="left:88.24%;width:11.76%"></i>
+      <div class="subhead row"><span>The day</span><span class="note">1h 40m placed from your calendar</span></div>
+      <!-- window 08:30–17:00 = 510 min -->
+      <div class="tl2">
+        <i class="cat-orange" style="left:0%;width:1.96%"></i>
+        <i class="cat-cyan" style="left:1.96%;width:3.92%"></i>
+        <i class="cat-green" style="left:5.88%;width:3.92%"></i>
+        <i class="cat-green" style="left:70.59%;width:5.88%">Release Planning</i>
+        <i class="cat-orange" style="left:88.24%;width:3.92%"></i>
       </div>
-      <div class="tlabels"><span>8:30am</span><span>6h 25m covered · 2h 5m dead</span><span>5:00pm</span></div>
+      <div class="ticks"><span style="left:0;transform:none">08:30</span><span style="left:17.65%">10:00</span><span style="left:41.18%">12:00</span><span style="left:64.71%">14:00</span><span style="left:88.24%">16:00</span><span style="left:auto;right:0;transform:none">17:00</span></div>
+      <div class="legend"><span class="cat-orange"><span class="sw" style="background:var(--cat-color)"></span>Contoso Operations</span><span class="cat-cyan"><span class="sw" style="background:var(--cat-color)"></span>Helpdesk</span><span class="cat-green"><span class="sw" style="background:var(--cat-color)"></span>Platform</span><span><span class="sw hatch"></span>Open: other work or nothing</span></div>
 
-      <div style="margin-top:12px"></div>
-      <div class="gap"><span class="d"></span><span class="m">1h</span><span class="t">12:00pm – 1:00pm</span></div>
-      <div class="gap"><span class="d"></span><span class="m">30m</span><span class="t">3:30pm – 4:00pm</span></div>
-      <div class="gap"><span class="d"></span><span class="m">15m</span><span class="t">10:10am – 10:25am</span></div>
-      <div class="gap"><span class="d"></span><span class="m">15m</span><span class="t">2:20pm – 2:35pm</span></div>
+      <div class="unplaced">
+        <svg class="i i-20" style="color:var(--text3);margin-top:1px"><use href="#ic-clock"/></svg>
+        <div>
+          <div class="t"><b>4h 45m of other work isn’t on the timeline.</b> It was logged by duration, so it sits somewhere in the open stretches. That leaves <b>1h 35m of the work day unlogged</b>.</div>
+          <div class="chips">
+            <span class="chip cat-green"><i></i>Development kick off · 2h 15m</span>
+            <span class="chip cat-green"><i></i>Review updated screen designs · 56m</span>
+            <span class="chip cat-green"><i></i>Review spec · 47m</span>
+            <span class="chip cat-green"><i></i>Deployment checks · 47m</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="subhead row"><span>Open between meetings</span><span class="note">15m or more · longest 5h 10m</span></div>
+      <div class="open"><span class="d"></span><span class="m">5h 10m</span><span class="h">after Daily Scrum</span><span class="tm">09:20 – 14:30</span></div>
+      <div class="open"><span class="d"></span><span class="m">1h</span><span class="h">after Release Planning</span><span class="tm">15:00 – 16:00</span></div>
+      <div class="open"><span class="d"></span><span class="m">40m</span><span class="h">after Afternoon Check-in</span><span class="tm">16:20 – 17:00</span></div>
 
     </div></div></div>
   </div>

@@ -24,14 +24,7 @@ class LastTimedEntry {
 
   /// How the entry is named in "since … ended": its notes when it has any
   /// worth reading (work item prefixes stripped), otherwise its task.
-  String get label {
-    final ref = entry.adoReference;
-    final notes = ref != null
-        ? workItemNotesLine(entry.notes, ref.id.split('_').last)
-        : entry.notes?.trim();
-    final firstLine = notes?.split('\n').first.trim() ?? '';
-    return firstLine.isEmpty ? entry.taskName : firstLine;
-  }
+  String get label => entryLabel(entry);
 }
 
 /// The timed entry that ended latest, or null when none of [entries] carries

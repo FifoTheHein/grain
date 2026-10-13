@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:harvest/models/day_insights.dart';
+import 'package:harvest/models/entry_display.dart';
 import 'package:harvest/models/time_entry.dart';
 
 /// 08:30 and 17:00 — the app's default work day.
@@ -189,6 +190,191 @@ void main() {
     test('an entry ending at or before its start is dropped', () {
       expect(entry(started: '5:00pm', ended: '9:00am').span, isNull);
       expect(entry(started: '9:00am', ended: '9:00am').span, isNull);
+    });
+  });
+
+  group('placedSpanOf', () {
+    /// `GrainCalendar_…` for a meeting starting at [hour]:[minute] local time
+    /// on 12 Oct 2026.
+    String meetingRef(int hour, int minute, {int day = 12}) {
+      final epoch =
+          DateTime(2026, 10, day, hour, minute).millisecondsSinceEpoch ~/ 1000;
+      return 'GrainCalendar_0123456789abcdef_$epoch';
+    }
+
+    TimeEntry entry({
+      String? refId,
+      double hours = 0.5,
+      String? started,
+      String? ended,
+      String? notes = 'CRT Daily Scrum',
+    }) =>
+        TimeEntry(
+          id: 1,
+          spentDate: '2026-10-12',
+          hours: hours,
+          notes: notes,
+          projectId: 7,
+          projectName: 'P',
+          taskId: 9,
+          taskName: 'Meetings',
+          startedTime: started,
+          endedTime: ended,
+          externalReference: refId == null
+              ? null
+              : ExternalReference(id: refId, groupId: 'GrainCalendar'),
+        );
+
+    test('a meeting reference places the entry for its hours', () {
+      final span = placedSpanOf(entry(refId: meetingRef(9, 0), hours: 0.5));
+      expect(span, isNotNull);
+      expect(span!.start, 9 * 60);
+      expect(span.end, 9 * 60 + 30);
+      expect(span.key, '7:9');
+      expect(span.label, 'CRT Daily Scrum');
+      expect(span.fromCalendar, isTrue);
+    });
+
+    test('clock times win over the meeting reference', () {
+      final span = placedSpanOf(entry(
+        refId: meetingRef(9, 0),
+        started: '2:00pm',
+        ended: '3:00pm',
+      ));
+      expect(span!.start, 14 * 60);
+      expect(span.end, 15 * 60);
+      expect(span.fromCalendar, isFalse);
+    });
+
+    test('a malformed or foreign reference is not placed', () {
+      expect(placedSpanOf(entry(refId: 'GrainCalendar_0123_1791966600')),
+          isNull);
+      expect(placedSpanOf(entry(refId: 'GrainCalendar_0123456789abcdef_x')),
+          isNull);
+      expect(placedSpanOf(entry(refId: 'AzureDevOps_guid_Task_13222')),
+          isNull);
+      expect(placedSpanOf(entry()), isNull);
+    });
+
+    test('a meeting outside the entry’s day is not placed', () {
+      // The slot is on the 11th but the entry was logged on the 12th.
+      expect(placedSpanOf(entry(refId: meetingRef(9, 0, day: 11))), isNull);
+      // Running past midnight.
+      expect(placedSpanOf(entry(refId: meetingRef(23, 30), hours: 1)),
+          isNull);
+      // Zero length.
+      expect(placedSpanOf(entry(refId: meetingRef(9, 0), hours: 0)), isNull);
+    });
+
+    test('the label falls back to the task without notes', () {
+      expect(placedSpanOf(entry(refId: meetingRef(9, 0), notes: null))!.label,
+          'Meetings');
+    });
+  });
+
+  group('partial days', () {
+    // Three meetings placed — 9:00–9:30, 12:00–13:00, 16:00–16:30 — and
+    // 3h logged by duration.
+    final meetings = [
+      InsightSpan(start: 9 * 60, end: 9 * 60 + 30, key: 'a', label: 'Scrum'),
+      InsightSpan(start: 12 * 60, end: 13 * 60, key: 'b', label: 'Planning'),
+      InsightSpan(start: 16 * 60, end: 16 * 60 + 30, key: 'a', label: 'Sync'),
+    ];
+
+    DayInsights partial({int unplaced = 180}) => computeDayInsights(
+          spans: meetings,
+          windowStart: dayStart,
+          windowEnd: dayEnd,
+          minGapMinutes: 15,
+          unplacedMinutes: unplaced,
+        );
+
+    test('placement says which kind of day it is', () {
+      expect(partial().placement, DayPlacement.partial);
+      expect(partial(unplaced: 0).placement, DayPlacement.full);
+      expect(
+          computeDayInsights(
+            spans: const [],
+            windowStart: dayStart,
+            windowEnd: dayEnd,
+            minGapMinutes: 15,
+            unplacedMinutes: 180,
+          ).placement,
+          DayPlacement.none);
+    });
+
+    test('open stretches are the gaps between placed spans', () {
+      final result = partial();
+      expect(result.workedMinutes, 120);
+      expect(result.openMinutes, 510 - 120);
+      expect(
+        result.gaps.map((g) => (g.start, g.end)).toList(),
+        [
+          (dayStart, 9 * 60),
+          (9 * 60 + 30, 12 * 60),
+          (13 * 60, 16 * 60),
+          (16 * 60 + 30, dayEnd),
+        ],
+      );
+      expect(result.longestGapMinutes, 180);
+    });
+
+    test('a gap names the spans either side of it', () {
+      final gaps = partial().gaps;
+      expect(gaps.first.previous, isNull);
+      expect(gaps.first.next!.label, 'Scrum');
+      expect(gaps[1].previous!.label, 'Scrum');
+      expect(gaps[1].next!.label, 'Planning');
+      expect(gaps.last.previous!.label, 'Sync');
+      expect(gaps.last.next, isNull);
+    });
+
+    test('the span ending an overlap names the gap after it', () {
+      final result = computeDayInsights(
+        spans: [
+          InsightSpan(start: 9 * 60, end: 10 * 60, label: 'Long'),
+          InsightSpan(start: 9 * 60 + 15, end: 9 * 60 + 45, label: 'Inside'),
+          InsightSpan(start: 9 * 60 + 30, end: 10 * 60 + 30, label: 'Late'),
+        ],
+        windowStart: dayStart,
+        windowEnd: dayEnd,
+        minGapMinutes: 15,
+      );
+      expect(result.gaps.last.previous!.label, 'Late');
+    });
+
+    test('unplaced minutes count as logged, and dead time from totals', () {
+      final result = partial();
+      expect(result.unplacedMinutes, 180);
+      expect(result.loggedMinutes, 300);
+      // 510 window − 120 placed − 180 unplaced.
+      expect(result.deadMinutes, 210);
+      expect(result.productivity, closeTo(300 / 510, 1e-9));
+    });
+
+    test('placed overlaps are merged before the totals', () {
+      final result = computeDayInsights(
+        spans: [
+          InsightSpan(start: 9 * 60, end: 10 * 60),
+          InsightSpan(start: 9 * 60 + 30, end: 10 * 60 + 30),
+        ],
+        windowStart: dayStart,
+        windowEnd: dayEnd,
+        minGapMinutes: 15,
+        unplacedMinutes: 60,
+      );
+      expect(result.workedMinutes, 90);
+      expect(result.deadMinutes, 510 - 90 - 60);
+    });
+
+    test('dead time floors at zero when more is logged than the window', () {
+      expect(partial(unplaced: 600).deadMinutes, 0);
+      expect(partial(unplaced: 600).productivity, 1.0);
+    });
+
+    test('context switches only count on a fully timed day', () {
+      expect(partial().contextSwitches, 0);
+      expect(partial(unplaced: 0).contextSwitches, 2);
     });
   });
 
