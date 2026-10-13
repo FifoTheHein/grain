@@ -443,6 +443,25 @@ void main() {
     expect(prefs.getBool(kInsightsByWorkItemKey), isTrue);
   });
 
+  testWidgets('duration chips name a work item by its cached title',
+      (tester) async {
+    await _pumpInsights(tester, [
+      _meeting(1, 'CRT Daily Scrum', 9, 0, 0.5),
+      _linked(2, '47994', 2),
+      _linked(3, '50938', 0.5),
+    ], workItems: {
+      '47994': {
+        'System.Title': 'Recon process between Mamastops and TFN',
+        'System.State': 'Active',
+      },
+    });
+
+    expect(find.text('Recon process between Mamastops and TFN · 2h'),
+        findsOneWidget);
+    // Not cached: the task, as before.
+    expect(find.text('Development · 30m'), findsOneWidget);
+  });
+
   testWidgets('the remembered work item view is restored', (tester) async {
     SharedPreferences.setMockInitialValues({kInsightsByWorkItemKey: true});
     await _pumpInsights(tester, [_entry(1, 'Development kick off', 2.25)]);

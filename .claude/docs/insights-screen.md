@@ -111,7 +111,9 @@ two on a phone) · `_WhereItWent` · then one of three, by `placement`:
   window outlined on the timeline in success green; `_UnplacedCard`, a
   dashed card saying how much was logged by duration and how much of the work
   day that leaves unlogged (the Unlogged tile's figure, goal − logged), with a
-  chip per unplaced entry (`entryLabel` · duration, largest first); and
+  chip per unplaced entry (`entryLabel` · duration, largest first; a
+  work item entry whose notes are only the reference reads as the item's
+  cached title, `_cachedWorkItem`, rather than its task); and
   "Open between meetings" ("15m or more · longest X"), one `_OpenRow` per gap:
   "after <previous span>", or "before <first span>" for a stretch opening the
   day. The Unlogged tile reads "from totals, no clock times needed".

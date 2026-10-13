@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/ado_work_item.dart';
 import '../models/calendar_event.dart';
 import '../models/day_breakdown.dart';
 import '../models/day_insights.dart';
@@ -1036,6 +1037,18 @@ class _UnplacedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = HarvestTokens.of(context);
     final categories = context.watch<ProjectCategoryProvider>();
+    final ado = context.watch<AdoService>();
+    final instances = context.watch<AdoInstanceProvider>().instances;
+    // A work item entry whose notes are only the reference would otherwise
+    // read as its task ("Development"); its cached title says more.
+    String? titleOf(TimeEntry e) {
+      final ref = e.adoReference;
+      if (ref == null) return null;
+      return _cachedWorkItem(
+              ado, instances, ref.permalink, ref.id.split('_').last)
+          ?.title;
+    }
+
     final strong = TextStyle(fontWeight: FontWeight.w600, color: palette.text);
     final chips = entries
         .map((e) => (entry: e, minutes: (e.hours * 60).round()))
@@ -1120,7 +1133,7 @@ class _UnplacedCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  '${entryLabel(c.entry)} · '
+                                  '${entryLabel(c.entry, workItemTitle: titleOf(c.entry))} · '
                                   '${formatDuration(c.minutes)}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1549,8 +1562,13 @@ class _WhereItWentState extends State<_WhereItWent> {
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 textStyle: const TextStyle(fontSize: 11),
-                selectedBackgroundColor: palette.brandTint,
-                selectedForegroundColor: palette.brand600,
+                // The chosen side filled with the accent and the other one
+                // quiet. A tint on the chosen side read backwards on palettes
+                // whose tint is darker than the canvas.
+                foregroundColor: palette.text3,
+                selectedBackgroundColor: palette.brand,
+                selectedForegroundColor: palette.onBrand,
+                side: BorderSide(color: palette.borderStrong),
               ),
             ),
           ],
@@ -1584,13 +1602,9 @@ class _WorkItemBreakdown extends StatelessWidget {
         for (final group in groupByWorkItem(entries))
           Builder(builder: (context) {
             final id = group.workItemId;
-            final permalink = group.permalink ?? '';
-            final instance = id == null || permalink.isEmpty
+            final cached = id == null
                 ? null
-                : instances.firstWhereOrNull(
-                    (i) => i.matchesPermalink(permalink));
-            final cached =
-                instance == null ? null : ado.getCached(instance.label, id!);
+                : _cachedWorkItem(ado, instances, group.permalink, id);
             final accent = cached != null
                 ? workItemStateColor(cached.state)
                 : palette.borderStrong;
@@ -1649,4 +1663,15 @@ class _WorkItemBreakdown extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The cached ADO work item [id], looked up under the instance its
+/// [permalink] belongs to; null when no instance matches or the item hasn't
+/// been fetched. Insights only reads the cache — Recent's prefetch fills it.
+AdoWorkItem? _cachedWorkItem(AdoService ado, List<AdoInstance> instances,
+    String? permalink, String id) {
+  if (permalink == null || permalink.isEmpty) return null;
+  final instance =
+      instances.firstWhereOrNull((i) => i.matchesPermalink(permalink));
+  return instance == null ? null : ado.getCached(instance.label, id);
 }
