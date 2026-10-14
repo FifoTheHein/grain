@@ -52,6 +52,7 @@ Future<void> pumpLogTime(WidgetTester tester,
     DateTime? initialDate,
     LogTimePrefill? prefill,
     http.Client? client,
+    http.Client? adoClient,
     DateTime? loadWeekOf}) async {
   tester.view.physicalSize = const Size(420, 1400);
   tester.view.devicePixelRatio = 1;
@@ -70,7 +71,8 @@ Future<void> pumpLogTime(WidgetTester tester,
     providers: [
       ChangeNotifierProvider(
           create: (_) => AdoService(
-              client: MockClient((_) async => http.Response('{}', 404)))),
+              client: adoClient ??
+                  MockClient((_) async => http.Response('{}', 404)))),
       ChangeNotifierProvider.value(value: adoInstances),
       ChangeNotifierProvider.value(value: assignments),
       ChangeNotifierProvider.value(value: entries),
@@ -86,6 +88,20 @@ Future<void> pumpLogTime(WidgetTester tester,
   ));
   await tester.pumpAndSettle();
 }
+
+/// ADO behind a MockClient: every work item is titled `Title of #id`.
+http.Client adoMock() => MockClient((req) async {
+      final id = req.url.pathSegments.last;
+      return http.Response(
+          jsonEncode({
+            'fields': {
+              'System.Title': 'Title of #$id',
+              'System.State': 'Active',
+              'System.WorkItemType': 'User Story',
+            }
+          }),
+          200);
+    });
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -314,5 +330,70 @@ void main() {
     expect(find.widgetWithText(TextFormField, '2207'), findsOneWidget);
     // One instance: selected for you, no picker.
     expect(find.byType(SegmentedButton<AdoInstance>), findsNothing);
+  });
+
+  group('work item title in Notes', () {
+    const instance = AdoInstance(
+        label: 'Northwind',
+        baseUrl: 'https://dev.azure.com/nw/p',
+        pat: 'secret');
+
+    Finder notesField() => find.widgetWithText(TextFormField, 'Notes');
+    Finder idField() => find.widgetWithText(TextFormField, 'Work Item #');
+
+    Future<void> linkItem(WidgetTester tester, String id) async {
+      await tester.enterText(idField(), id);
+      // The preview is debounced 600 ms, then the fetch runs.
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> tickLink(WidgetTester tester) async {
+      await tester.tap(find.text('Link Azure DevOps Work Item'));
+      await tester.pumpAndSettle();
+    }
+
+    String notes(WidgetTester tester) =>
+        tester.widget<TextFormField>(notesField()).controller!.text;
+
+    testWidgets('fills empty Notes with the title once it loads',
+        (tester) async {
+      await pumpLogTime(tester, instances: [instance], adoClient: adoMock());
+      await tickLink(tester);
+      await linkItem(tester, '2207');
+      expect(notes(tester), 'Title of #2207');
+    });
+
+    testWidgets('leaves what you already wrote alone', (tester) async {
+      await pumpLogTime(tester, instances: [instance], adoClient: adoMock());
+      await tester.enterText(notesField(), 'Pairing on the retry logic');
+      await tester.pump();
+      await tickLink(tester);
+      await linkItem(tester, '2207');
+      expect(notes(tester), 'Pairing on the retry logic');
+    });
+
+    testWidgets('a different work item swaps the title, not your edit',
+        (tester) async {
+      await pumpLogTime(tester, instances: [instance], adoClient: adoMock());
+      await tickLink(tester);
+      await linkItem(tester, '2207');
+      await linkItem(tester, '2208');
+      expect(notes(tester), 'Title of #2208');
+
+      await tester.enterText(notesField(), 'Title of #2208, plus my words');
+      await tester.pump();
+      await linkItem(tester, '2209');
+      expect(notes(tester), 'Title of #2208, plus my words');
+    });
+
+    testWidgets('unlinking takes the title back out', (tester) async {
+      await pumpLogTime(tester, instances: [instance], adoClient: adoMock());
+      await tickLink(tester);
+      await linkItem(tester, '2207');
+      await tickLink(tester);
+      expect(notes(tester), isEmpty);
+    });
   });
 }

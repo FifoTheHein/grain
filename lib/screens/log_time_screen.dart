@@ -93,6 +93,11 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
   /// a rebuild or a re-fetch never overrides a selection the user has since
   /// changed by hand.
   String? _mappingAppliedKey;
+
+  /// The work item title last dropped into Notes for you, and which item it was
+  /// for. Notes are only replaced while they still hold exactly that title.
+  String? _prefilledTitle;
+  String? _prefilledTitleKey;
   String? _mappingBanner;
   _MappingUndo? _mappingUndo;
 
@@ -312,6 +317,7 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     if (cached != null) {
       setState(() => _previewLoading = false);
       _maybeApplyMapping(cached);
+      _maybePrefillTitle(cached);
       return;
     }
 
@@ -325,7 +331,10 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
       if (!mounted) return;
       setState(() => _previewLoading = false);
       final item = adoService.getCached(instance.label, text);
-      if (item != null) _maybeApplyMapping(item);
+      if (item != null) {
+        _maybeApplyMapping(item);
+        _maybePrefillTitle(item);
+      }
     });
   }
 
@@ -427,6 +436,27 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
     });
   }
 
+  /// Fills empty Notes with the work item's title, once per work item. A
+  /// mapping rule's note template wins (it ran first and left Notes non-empty),
+  /// and so does anything you typed. Switching to another work item swaps the
+  /// title only while Notes still hold the one we put there.
+  void _maybePrefillTitle(AdoWorkItem item) {
+    final instance = _selectedAdoInstance;
+    if (instance == null) return;
+    final key = '${instance.label}:${item.id}';
+    if (_prefilledTitleKey == key) return;
+
+    final notes = _notesController.text.trim();
+    if (notes.isNotEmpty && notes != _prefilledTitle) return;
+
+    _notesController.text = item.title;
+    _notesFromTemplateId = null;
+    setState(() {
+      _prefilledTitle = item.title;
+      _prefilledTitleKey = key;
+    });
+  }
+
   void _undoMapping() {
     final undo = _mappingUndo;
     if (undo == null) return;
@@ -468,6 +498,13 @@ class _LogTimeScreenState extends State<LogTimeScreen> {
 
   /// Caller is responsible for being inside `setState`.
   void _clearMappingBanner() {
+    // Unlinking takes back a title we filled in, but never your own words.
+    if (_prefilledTitle != null &&
+        _notesController.text.trim() == _prefilledTitle) {
+      _notesController.clear();
+    }
+    _prefilledTitle = null;
+    _prefilledTitleKey = null;
     _mappingAppliedKey = null;
     _mappingUndo = null;
     _mappingBanner = null;
