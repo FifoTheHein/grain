@@ -1,0 +1,364 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Insights — next improvements mockup</title>
+<link rel="stylesheet" href="grain.css">
+<script src="icons.js"></script>
+<style>
+
+  body { margin: 0; background: #15171c; }
+  .board { display: flex; gap: 36px; padding: 28px 36px 36px; align-items: flex-start; width: max-content; }
+  .col { display: flex; flex-direction: column; gap: 12px; width: 820px; }
+  .cap { color: #e6e6e6; font-size: 18px; font-weight: 600; min-height: 62px; }
+  .cap small { display: block; color: #9aa0a6; font-size: 13px; font-weight: 400; margin-top: 3px; line-height: 1.4; }
+  .shell { width: 820px; height: 980px; border-radius: 14px; border: 1px solid #2c2f36; }
+  .tiles.three { grid-template-columns: repeat(3, 1fr); }
+
+  .n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 10px;
+       background: #3b82f6; color: #fff; font-size: 11px; font-weight: 700; flex: 0 0 20px; }
+  .tag { position: relative; }
+  .tag > .n { position: absolute; top: -8px; left: -10px; z-index: 2; box-shadow: 0 0 0 2px var(--bg); }
+
+  .empty { display: flex; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--border); margin-top: 18px; }
+  .empty .t { font-size: 14px; font-weight: 600; }
+  .empty .d { font-size: 12.5px; color: var(--text3); margin-top: 4px; line-height: 1.45; }
+
+  /* Timeline with placed meetings and hatched open stretches */
+  .tl2 { position: relative; height: 26px; border-radius: 5px; overflow: hidden;
+         background: repeating-linear-gradient(135deg, var(--surface3) 0 6px, transparent 6px 11px); border: 1px solid var(--border); }
+  .tl2 i { position: absolute; top: 0; bottom: 0; background: var(--cat-color); border-right: 1px solid var(--bg); }
+  .ticks { position: relative; height: 16px; margin-top: 4px; font-size: 10px; color: var(--text3); }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+  .legend { display: flex; gap: 18px; margin-top: 8px; font-size: 11.5px; color: var(--text2); align-items: center; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+  .legend .hatch { background: repeating-linear-gradient(135deg, var(--surface3) 0 3px, transparent 3px 6px); border: 1px solid var(--border); }
+
+  .unplaced { display: flex; gap: 12px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+              border: 1px dashed var(--borderStrong); background: var(--surface); }
+  .unplaced .t { font-size: 13.5px; line-height: 1.45; color: var(--text2); }
+  .unplaced .t b { color: var(--text); font-weight: 600; }
+  .unplaced .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .unplaced .chip { font-size: 11.5px; padding: 3px 8px; border-radius: 10px; background: var(--surface2); color: var(--text2); display: inline-flex; gap: 6px; align-items: center; }
+  .unplaced .chip i { width: 7px; height: 7px; border-radius: 4px; background: var(--cat-color); display: inline-block; }
+
+  .mrow { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; margin-top: 4px; }
+  .mrow .ic { color: var(--text3); }
+  .mrow .w { font-size: 12px; color: var(--text2); width: 92px; }
+  .mrow .nm { flex: 1; font-size: 13px; }
+  .mrow .dur { font-size: 12px; color: var(--text2); }
+  .open { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--surface2); margin-top: 6px; }
+  .open .d { width: 8px; height: 8px; border-radius: 4px; border: 1.5px solid var(--text3); }
+  .open .m { font-size: 12px; font-weight: 600; width: 64px; }
+  .open .h { font-size: 12px; color: var(--text3); flex: 1; }
+  .open .tm { font-size: 11px; color: var(--text3); }
+
+
+  body { margin: 0; background: #15171c; }
+  .board { display: flex; gap: 36px; padding: 28px 36px 36px; align-items: flex-start; width: max-content; }
+  .col { display: flex; flex-direction: column; gap: 12px; width: 390px; }
+  .cap { color: #e6e6e6; font-size: 18px; font-weight: 600; }
+  .cap small { display: block; color: #9aa0a6; font-size: 13px; font-weight: 400; margin-top: 3px; line-height: 1.4; }
+
+  .phone { width: 390px; height: 820px; border-radius: 28px; overflow: hidden;
+           background: var(--bg); color: var(--text); display: flex; flex-direction: column;
+           border: 1px solid #2c2f36; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .phone .appbar { padding: 12px 14px; }
+  .phone .appbar .logo { width: 36px; height: 36px; }
+  .content { flex: 1; overflow: hidden; padding: 0 16px; position: relative; }
+  .content.fade:after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
+                        background: linear-gradient(transparent, var(--bg)); }
+  .nav { display: flex; justify-content: space-around; padding: 10px 0 14px; background: var(--surface2);
+         font-size: 11px; color: var(--text2); }
+  .nav div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .nav div.on { color: var(--text); font-weight: 600; }
+  .phone .field { padding: 12px 12px; }
+  .phone .seg > div { padding: 9px; }
+
+  /* Callout numbers that tie the picture to the list of suggestions. */
+  .n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 10px;
+       background: #3b82f6; color: #fff; font-size: 11px; font-weight: 700; flex: 0 0 20px; }
+  .tag { position: relative; }
+  .seg.tag { overflow: visible; } .actionbar.tag > .n { top: 2px; left: 4px; }
+  .tag > .n { position: absolute; top: -8px; left: -10px; z-index: 2; box-shadow: 0 0 0 2px var(--bg); }
+
+  /* Date chips */
+  .dchips { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+  .dchip { padding: 8px 14px; border-radius: 18px; border: 1px solid var(--borderStrong); font-size: 13px; color: var(--text2); }
+  .dchip.on { background: var(--brandTint2); border-color: var(--brand); color: var(--text); font-weight: 600; }
+  .dchip.ic { padding: 7px 10px; display: flex; align-items: center; gap: 6px; }
+  .dchips .when { margin-left: auto; font-size: 12px; color: var(--text3); }
+
+  /* Duration stepper */
+  .stepper { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .sbtn { width: 52px; height: 52px; border-radius: 26px; border: 1px solid var(--borderStrong);
+          display: grid; place-items: center; font-size: 26px; font-weight: 300; color: var(--text); flex: 0 0 52px; }
+  .sbtn.dis { color: var(--text4); border-color: var(--border); }
+  .dur { flex: 1; text-align: center; border: 1px solid var(--borderStrong); border-radius: 12px; padding: 8px 0 7px; }
+  .dur .big { font-size: 30px; font-weight: 700; letter-spacing: -.5px; }
+  .dur .big.zero { color: var(--text4); }
+  .dur .big small { font-size: 18px; font-weight: 600; color: var(--text2); margin: 0 2px 0 1px; }
+  .dur .big.zero small { color: var(--text4); }
+  .dur .sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .dur.typing { border-color: var(--brand); border-width: 2px; padding: 7px 0 6px; }
+  .qchips { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .q { padding: 7px 0; flex: 1; text-align: center; border-radius: 16px; border: 1px solid var(--borderStrong); font-size: 13px; color: var(--text2); }
+  .q.on { background: var(--brand); border-color: var(--brand); color: var(--onBrand); font-weight: 600; }
+  .gapchip { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px;
+             border-radius: 10px; border: 1px dashed var(--brand); background: var(--brandTint); }
+  .gapchip .t { flex: 1; font-size: 13px; color: var(--text2); line-height: 1.35; }
+  .gapchip .t b { color: var(--text); font-weight: 600; }
+  .gapchip .use { font-size: 13px; font-weight: 600; color: var(--brand); }
+
+  /* Start & End with nudges */
+  .se { display: flex; gap: 10px; margin-top: 16px; }
+  .tbox { flex: 1; border: 1px solid var(--borderStrong); border-radius: 10px; padding: 8px 6px 8px; text-align: center; position: relative; }
+  .tbox .l { font-size: 11px; color: var(--text3); }
+  .tbox .row { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+  .tbox .nudge { font-size: 11px; color: var(--brand); font-weight: 600; padding: 6px 6px; border-radius: 6px; background: var(--brandTint); }
+  .tbox .tm { font-size: 22px; font-weight: 700; }
+  .tbox .from { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .eq { text-align: center; font-size: 13px; color: var(--text2); margin-top: 8px; }
+  .eq b { color: var(--text); }
+
+  /* Notes and work-item detection */
+  .notes { border: 1px solid var(--borderStrong); border-radius: 6px; padding: 12px; margin-top: 16px; min-height: 64px; font-size: 15px; position: relative; }
+  .notes .lab { position: absolute; top: -7px; left: 10px; padding: 0 4px; background: var(--bg); font-size: 11px; color: var(--text3); }
+  .notes .ph { color: var(--text4); }
+  .notes mark { background: var(--brandTint2); color: var(--text); border-radius: 3px; padding: 0 2px; }
+  .detect { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px;
+            background: var(--surface2); border-left: 3px solid var(--stateNew); }
+  .detect .t { flex: 1; min-width: 0; }
+  .detect .title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .detect .meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .detect .go { font-size: 13px; font-weight: 600; color: var(--brand); }
+  .adorow { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 14px; color: var(--text2); }
+  .adorow .box { width: 18px; height: 18px; border-radius: 3px; border: 2px solid var(--text3); flex: 0 0 18px; }
+
+  /* Sticky action bar */
+  .actionbar { padding: 10px 14px 12px; border-top: 1px solid var(--divider); background: var(--surface); display: flex; gap: 10px; align-items: stretch; }
+  .logbtn { flex: 1; border-radius: 10px; padding: 9px 14px; background: var(--brand); color: var(--onBrand); }
+  .logbtn .a { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+  .logbtn .b { font-size: 12px; opacity: .9; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .logbtn.dis { background: var(--surface3); color: var(--text3); }
+  .timerbtn { width: 54px; border-radius: 10px; border: 1px solid var(--borderStrong); display: grid; place-items: center; color: var(--text2); flex: 0 0 54px; }
+
+  /* "Now" column bits */
+  .now .err { font-size: 12px; color: var(--error); margin: 6px 0 0 12px; }
+  .ddopen { position: absolute; z-index: 3; left: 16px; top: 395px; width: 170px; background: var(--surface2);
+            border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.5); padding: 4px 0; font-size: 14px; }
+  .ddopen div { padding: 7px 14px; color: var(--text2); }
+  .ddopen div.on { background: var(--brandTint2); color: var(--text); }
+  .scroll-hint { font-size: 11px; color: var(--text3); text-align: center; padding: 3px 0 0; }
+
+  .board { display: grid; grid-template-columns: 820px 820px 390px; gap: 36px; padding: 28px 36px 36px; width: max-content; align-items: start; }
+  .col { width: auto; }
+  .col.phonecol { width: 390px; }
+  .shell { height: 1240px; }
+  .phone { height: 900px; }
+  .phone .content { flex: 1; overflow: hidden; padding: 0 16px; position: relative; }
+
+  /* Day / Week toggle */
+  .dw { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .dwseg { display: inline-flex; border: 1px solid var(--borderStrong); border-radius: 8px; overflow: hidden; }
+  .dwseg div { padding: 7px 16px; font-size: 13px; color: var(--text2); }
+  .dwseg div.on { background: var(--brandTint2); color: var(--text); font-weight: 600; }
+  .dw .label { font-size: 15px; font-weight: 500; }
+  .tiles.four { grid-template-columns: repeat(4, 1fr); }
+
+  /* Pending meetings banner */
+  .pend { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: var(--brandTint); border: 1px solid var(--brandTint2); font-size: 13px; color: var(--text2); }
+  .pend b { color: var(--text); }
+  .pend .go { margin-left: auto; color: var(--brand); font-weight: 600; }
+
+  /* Focus highlight on the timeline */
+  .tl2 .focus { position: absolute; top: -1px; bottom: -1px; border: 2px solid var(--success); border-radius: 4px; background: rgba(22,163,74,.10); }
+  .focusnote { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 12.5px; color: var(--text2); }
+  .focusnote b { color: var(--text); }
+  .focusnote .sw { width: 12px; height: 12px; border-radius: 3px; border: 2px solid var(--success); }
+
+  .open .log { margin-left: 14px; font-size: 12px; font-weight: 600; color: var(--brand); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--brand); }
+
+  /* Work item breakdown */
+  .wirow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--surface2); margin-top: 6px; border-left: 3px solid var(--stateActive); }
+  .wirow.done { border-left-color: var(--success); }
+  .wirow .id { font-size: 12px; font-weight: 600; color: var(--stateActive); width: 56px; }
+  .wirow.done .id { color: var(--success); }
+  .wirow .tt { flex: 1; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wirow .ct { font-size: 11px; color: var(--text3); }
+  .wirow .amt { font-size: 13px; font-weight: 600; width: 62px; text-align: right; }
+  .seg2 { display: inline-flex; gap: 4px; }
+  .seg2 span { font-size: 11px; padding: 2px 8px; border-radius: 10px; color: var(--text3); }
+  .seg2 span.on { background: var(--surface3); color: var(--text); }
+
+  /* Week chart */
+  .wk3 { display: flex; gap: 14px; align-items: flex-end; height: 200px; padding: 10px 6px 0; border-bottom: 1px solid var(--border); position: relative; margin-top: 10px; }
+  .wk3 .goal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--text3); }
+  .wk3 .goal span { position: absolute; right: 0; top: -16px; font-size: 10px; color: var(--text3); }
+  .wk3 .d { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; }
+  .wk3 .bar { border-radius: 4px 4px 0 0; overflow: hidden; display: flex; flex-direction: column-reverse; }
+  .wk3 .bar i { display: block; }
+  .wk3 .v { text-align: center; font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 600; }
+  .wk3 .d.fut .bar { border: 1.5px dashed var(--border); border-bottom: none; height: 4px; }
+  .wk3 .d.sel .v { color: var(--brand); }
+  .wkl { display: flex; gap: 14px; padding: 6px 6px 0; }
+  .wkl div { flex: 1; text-align: center; font-size: 11px; color: var(--text3); }
+  .wkl div b { display: block; font-size: 12px; color: var(--text2); font-weight: 600; }
+  .wkl div.under b { color: var(--warn); }
+  .mtg { background: repeating-linear-gradient(135deg, #7C5CFF 0 3px, #9b85ff 3px 6px); }
+  .lg2 { display: flex; gap: 16px; margin-top: 10px; font-size: 11.5px; color: var(--text2); }
+  .lg2 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+
+  /* Phone Log Time bits */
+  .fromins { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 8px 12px; border-radius: 10px; background: var(--surface2); font-size: 12.5px; color: var(--text2); }
+  .fromins b { color: var(--text); }
+</style>
+<body class="grain-dark">
+<div class="board">
+
+  <!-- ─────────── DAY ─────────── -->
+  <div class="col">
+    <div class="cap">Day view<small>Day/Week toggle (2), a Meetings tile and the longest focus window (3), "Log this" on each open slot (1), a time-per-work-item breakdown (4), and unlogged meetings called out (5).</small></div>
+    <div class="shell">
+      <nav class="rail">
+        <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-recent"/></svg></span><span class="rail-label">Recent</span></div>
+        <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-plus"/></svg></span><span class="rail-label">Log Time</span></div>
+        <div class="rail-item on"><span class="rail-icon"><svg class="i i-22"><use href="#ic-insights"/></svg></span><span class="rail-label">Insights</span></div>
+        <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-settings"/></svg></span><span class="rail-label">Settings</span></div>
+      </nav>
+      <div class="pane">
+        <header class="appbar"><span class="logo"><img src="../../assets/icon.svg" alt=""></span><div><h1>Grain</h1><div class="sub">A better Harvest</div></div></header>
+        <div class="body"><div class="scroll"><div class="wrap">
+          <div class="dw tag"><span class="n">2</span>
+            <span class="iconbtn"><svg class="i i-22"><use href="#ic-left"/></svg></span>
+            <span class="label">Monday, 12 Oct 2026</span>
+            <span style="display:flex;align-items:center;gap:8px"><span class="dwseg"><div class="on">Day</div><div>Week</div></span><span class="iconbtn"><svg class="i i-22"><use href="#ic-right"/></svg></span></span>
+          </div>
+
+          <div class="pend tag"><span class="n">5</span>
+            <svg class="i i-18" style="color:var(--brand)"><use href="#ic-calendar"/></svg>
+            <span><b>2 meetings from today aren't logged</b> · Sprint retro needs a project, Vendor sync was skipped</span>
+            <span class="go">Review</span>
+          </div>
+
+          <div class="tiles four tag"><span class="n">3</span>
+            <div class="tile em"><div class="lab">Logged</div><div class="val">6h 25m</div><div class="det">of 8h goal</div></div>
+            <div class="tile"><div class="lab">Coverage</div><div class="val">75%</div><div class="det">of the work day</div></div>
+            <div class="tile"><div class="lab">Unlogged</div><div class="val">1h 35m</div><div class="det">from totals</div></div>
+            <div class="tile"><div class="lab">Meetings</div><div class="val">1h 40m</div><div class="det">26% of logged · 5 meetings</div></div>
+          </div>
+
+          <div class="subhead row"><span>The day</span><span class="note">1h 40m placed from your calendar</span></div>
+          <div class="tl2">
+            <span class="focus" style="left:9.8%;width:60.79%"></span>
+            <i class="cat-orange" style="left:0%;width:1.96%"></i>
+            <i class="cat-cyan" style="left:1.96%;width:3.92%"></i>
+            <i class="cat-green" style="left:5.88%;width:3.92%"></i>
+            <i class="cat-green" style="left:70.59%;width:5.88%"></i>
+            <i class="cat-orange" style="left:88.24%;width:3.92%"></i>
+          </div>
+          <div class="ticks"><span style="left:0;transform:none">8:30</span><span style="left:17.6%">10:00</span><span style="left:41.2%">12:00</span><span style="left:64.7%">14:00</span><span style="left:88.2%">16:00</span><span style="right:0;left:auto;transform:none">17:00</span></div>
+          <div class="focusnote"><span class="sw"></span>Longest focus window: <b>9:20 – 14:30 · 5h 10m</b> with no meetings</div>
+
+          <div class="unplaced">
+            <svg class="i i-20" style="color:var(--text3);margin-top:1px"><use href="#ic-clock"/></svg>
+            <div><div class="t"><b>4h 45m of other work isn't on the timeline.</b> It was logged by duration, so it sits somewhere in the open stretches. That leaves <b>1h 35m of the work day unlogged</b>.</div></div>
+          </div>
+
+          <div class="subhead row"><span>Open between meetings</span><span class="note">15m or more · longest 5h 10m</span></div>
+          <div class="open tag"><span class="n">1</span><span class="d"></span><span class="m">5h 10m</span><span class="h">after CRT Daily Scrum</span><span class="tm">9:20 – 14:30</span><span class="log">Log this</span></div>
+          <div class="open"><span class="d"></span><span class="m">1h 00m</span><span class="h">after Release Planning</span><span class="tm">15:00 – 16:00</span><span class="log">Log this</span></div>
+          <div class="open"><span class="d"></span><span class="m">40m</span><span class="h">after Afternoon Check-in</span><span class="tm">16:20 – 17:00</span><span class="log">Log this</span></div>
+
+          <div class="subhead row tag"><span class="n">4</span><span style="margin-left:16px">Where it went</span><span class="seg2"><span>Project · task</span><span class="on">Work item</span></span></div>
+          <div class="wirow"><span class="id">#47994</span><span class="tt">Recon process between Mamastops and TFN</span><span class="ct">2 entries</span><span class="amt">3h 11m</span></div>
+          <div class="wirow done"><span class="id">#50938</span><span class="tt">Compile Technical Design for Rounding development</span><span class="ct">1 entry</span><span class="amt">47m</span></div>
+          <div class="wirow" style="border-left-color:var(--border)"><span class="id" style="color:var(--text3)">—</span><span class="tt" style="color:var(--text2)">No work item · meetings and other entries</span><span class="ct">6 entries</span><span class="amt">2h 27m</span></div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── WEEK ─────────── -->
+  <div class="col">
+    <div class="cap">Week view (2)<small>Each day against the daily goal, split into meetings and other work. Then the week's totals by project, and by work item.</small></div>
+    <div class="shell">
+      <nav class="rail">
+        <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-recent"/></svg></span><span class="rail-label">Recent</span></div>
+        <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-plus"/></svg></span><span class="rail-label">Log Time</span></div>
+        <div class="rail-item on"><span class="rail-icon"><svg class="i i-22"><use href="#ic-insights"/></svg></span><span class="rail-label">Insights</span></div>
+        <div class="rail-item"><span class="rail-icon"><svg class="i i-22"><use href="#ic-settings"/></svg></span><span class="rail-label">Settings</span></div>
+      </nav>
+      <div class="pane">
+        <header class="appbar"><span class="logo"><img src="../../assets/icon.svg" alt=""></span><div><h1>Grain</h1><div class="sub">A better Harvest</div></div></header>
+        <div class="body"><div class="scroll"><div class="wrap">
+          <div class="dw">
+            <span class="iconbtn"><svg class="i i-22"><use href="#ic-left"/></svg></span>
+            <span class="label">Week of 5 Oct 2026</span>
+            <span style="display:flex;align-items:center;gap:8px"><span class="dwseg"><div>Day</div><div class="on">Week</div></span><span class="iconbtn"><svg class="i i-22"><use href="#ic-right"/></svg></span></span>
+          </div>
+
+          <div class="tiles four">
+            <div class="tile em"><div class="lab">Logged</div><div class="val">36h 20m</div><div class="det">of 40h goal</div></div>
+            <div class="tile warn"><div class="lab">Short</div><div class="val">3h 40m</div><div class="det">Wed and Fri under goal</div></div>
+            <div class="tile"><div class="lab">Meetings</div><div class="val">9h 05m</div><div class="det">25% of logged · 31 meetings</div></div>
+            <div class="tile"><div class="lab">Best focus day</div><div class="val">Thu</div><div class="det">5h 40m without meetings</div></div>
+          </div>
+
+          <div class="subhead">Each day</div>
+          <!-- scale: 200px = 10h, goal 8h = 160px -->
+          <div class="wk3">
+            <div class="goal" style="bottom:160px"><span>8h goal</span></div>
+            <div class="d"><div class="v">8h 10m</div><div class="bar" style="height:163px"><i class="mtg" style="height:40px"></i><i style="height:123px;background:var(--brand)"></i></div></div>
+            <div class="d"><div class="v">8h 05m</div><div class="bar" style="height:162px"><i class="mtg" style="height:46px"></i><i style="height:116px;background:var(--brand)"></i></div></div>
+            <div class="d"><div class="v">6h 15m</div><div class="bar" style="height:125px"><i class="mtg" style="height:58px"></i><i style="height:67px;background:var(--brand)"></i></div></div>
+            <div class="d"><div class="v">8h 20m</div><div class="bar" style="height:167px"><i class="mtg" style="height:22px"></i><i style="height:145px;background:var(--brand)"></i></div></div>
+            <div class="d"><div class="v">5h 30m</div><div class="bar" style="height:110px"><i class="mtg" style="height:16px"></i><i style="height:94px;background:var(--brand)"></i></div></div>
+            <div class="d fut"><div class="v" style="color:var(--text4)">–</div><div class="bar"></div></div>
+            <div class="d fut"><div class="v" style="color:var(--text4)">–</div><div class="bar"></div></div>
+          </div>
+          <div class="wkl"><div>MON<b>5</b></div><div>TUE<b>6</b></div><div class="under">WED<b>7</b></div><div>THU<b>8</b></div><div class="under">FRI<b>9</b></div><div>SAT<b>10</b></div><div>SUN<b>11</b></div></div>
+          <div class="lg2"><span><span class="sw mtg"></span>Meetings</span><span><span class="sw" style="background:var(--brand)"></span>Other work</span><span style="color:var(--text3)">Tap a day to open it in Day view</span></div>
+
+          <div class="subhead row"><span>Where the week went</span><span class="seg2"><span class="on">Project · task</span><span>Work item</span></span></div>
+          <div class="brow cat-green"><div class="top"><span class="swatch"></span><span class="name">TFN001 · Development</span><span class="amt">22h 10m</span></div><div class="bar"><i style="width:100%"></i></div></div>
+          <div class="brow cat-green"><div class="top"><span class="swatch"></span><span class="name">TFN001 · Meetings</span><span class="amt">5h 20m</span></div><div class="bar"><i style="width:24%"></i></div></div>
+          <div class="brow cat-cyan"><div class="top"><span class="swatch"></span><span class="name">SUPRT · Meetings</span><span class="amt">2h 15m</span></div><div class="bar"><i style="width:10%"></i></div></div>
+          <div class="brow cat-cyan"><div class="top"><span class="swatch"></span><span class="name">SUPRT · Development</span><span class="amt">4h 05m</span></div><div class="bar"><i style="width:18%"></i></div></div>
+          <div class="brow cat-orange"><div class="top"><span class="swatch"></span><span class="name">ABOPS · Meetings</span><span class="amt">1h 30m</span></div><div class="bar"><i style="width:7%"></i></div></div>
+          <div class="brow cat-orange"><div class="top"><span class="swatch"></span><span class="name">ABOPS · Admin</span><span class="amt">1h 00m</span></div><div class="bar"><i style="width:5%"></i></div></div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── LOG THIS ─────────── -->
+  <div class="col phonecol">
+    <div class="cap">"Log this" (1) on a phone<small>Opens Log Time on that day in Start &amp; End mode with the slot filled in. You only pick the project and type the notes.</small></div>
+    <div class="phone">
+      <header class="appbar"><span class="logo"><img src="../../assets/icon.svg" alt=""></span><div><h1>Grain</h1><div class="sub">A better Harvest</div></div></header>
+      <div class="content">
+        <div class="fromins"><svg class="i i-16"><use href="#ic-insights"/></svg><span>From Insights · <b>open after CRT Daily Scrum</b></span></div>
+        <div class="field"><span class="lab">Project</span><span class="val">TFN001 — TFN Project Development | CRT Team</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+        <div class="field"><span class="lab">Task</span><span class="val">Development</span><svg class="i i-22" style="color:var(--text3)"><use href="#ic-caret"/></svg></div>
+        <div class="dchips">
+          <span class="dchip">Yesterday</span><span class="dchip on">Today</span><span class="dchip">Tomorrow</span><span class="dchip ic"><svg class="i i-16"><use href="#ic-calendar"/></svg></span>
+          <span class="when">Mon 12 Oct</span>
+        </div>
+        <div class="seg"><div><svg class="i i-18"><use href="#ic-clock"/></svg>Duration</div><div class="on"><svg class="i i-18"><use href="#ic-check"/></svg>Start &amp; End</div></div>
+        <div class="se">
+          <div class="tbox"><div class="l">Start</div><div class="row"><span class="nudge">−1</span><span class="tm">09:20</span><span class="nudge">+1</span></div><div class="from">after CRT Daily Scrum</div></div>
+          <div class="tbox"><div class="l">End</div><div class="row"><span class="nudge">−1</span><span class="tm">14:30</span><span class="nudge">+1</span></div><div class="from">before Release Planning</div></div>
+        </div>
+        <div class="eq">= <b>5h 10m</b></div>
+        <div class="hint" style="text-align:center">Already logged 4h 45m by duration today, so trim this to what's left.</div>
+        <div class="notes"><span class="lab">Notes</span><span class="ph">What did you work on?</span></div>
+      </div>
+      <div class="actionbar">
+        <div class="logbtn"><div class="a"><svg class="i i-18"><use href="#ic-check"/></svg>Log 5h 10m</div><div class="b">TFN001 · Development · 09:20–14:30</div></div>
+        <div class="timerbtn"><svg class="i i-22"><use href="#ic-play-solid"/></svg></div>
+      </div>
+      <div class="nav"><div><svg class="i i-22"><use href="#ic-recent"/></svg>Recent</div><div class="on"><svg class="i i-22"><use href="#ic-plus"/></svg>Log Time</div><div><svg class="i i-22"><use href="#ic-insights"/></svg>Insights</div><div><svg class="i i-22"><use href="#ic-settings"/></svg>Settings</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
