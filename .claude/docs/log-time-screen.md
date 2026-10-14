@@ -102,6 +102,13 @@ while one runs, tooltip naming the project holding it.
   from the selected instance, else the first with a PAT, else the first),
   **Link** (ticks the ADO box, picks that instance, fills the id and runs the
   normal preview + mapping-rule path) and a dismiss.
+- **The work item's title goes into empty Notes** (`_maybePrefillTitle`) when
+  the item resolves, once per `instance:id`, after the mapping rule has had its
+  turn — a rule's note template wins, and so does anything already typed. The
+  title and its item are remembered (`_prefilledTitle`), so linking a different
+  item swaps the title only while Notes still hold exactly that title, and
+  unlinking (`_clearMappingBanner`) takes it back out. Submit then writes
+  `{instance} Azure DevOps {type} #{id} - {title}`, as it does for typed notes.
 - The ADO instance `SegmentedButton` only appears with two or more instances;
   ticking the box with one selects it.
 
@@ -122,7 +129,7 @@ gives way to `_RunningPanel` (see `timers.md`).
 `test/log_time_screen_test.dart` (the screen behind a `MockClient`: disabled
 bar and error, chips, date word, Start & End persistence and nudges, Tomorrow
 and its disabled timer, Start & End on a future day, `initialDate`, the Link
-card with a single instance, and both prefill modes: Duration over a
+card with a single instance, the title prefill (filled, typed notes kept, swapped, taken back out), and both prefill modes: Duration over a
 remembered Start & End, cleared by a date change; Start & End with captions,
 cleared by a mode change). `test/edit_time_screen_test.dart` covers Edit
 Time's stepper: seeded from the entry, ± and a chip change it, Update sends
